@@ -16,4 +16,19 @@ RETURNS bytea
 AS '$libdir/pgsodium'
 LANGUAGE C IMMUTABLE STRICT;
 
+CREATE FUNCTION pgsodium_crypto_secretbox_keygen()
+RETURNS bytea
+AS '$libdir/pgsodium'
+LANGUAGE C IMMUTABLE STRICT;
+
+CREATE FUNCTION pgsodium_crypto_secretbox_noncegen()
+RETURNS bytea
+AS '$libdir/pgsodium'
+LANGUAGE C IMMUTABLE STRICT;
+
+CREATE FUNCTION pgsodium_crypto_secretbox(text, bytea, bytea)
+RETURNS bytea
+AS '$libdir/pgsodium'
+LANGUAGE C IMMUTABLE STRICT;
+
 
