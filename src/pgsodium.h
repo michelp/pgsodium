@@ -8,16 +8,24 @@
 
 void _PG_init(void);
 
-// Random data
+/* Random data */
 
 Datum pgsodium_randombytes_random(PG_FUNCTION_ARGS);
 Datum pgsodium_randombytes_uniform(PG_FUNCTION_ARGS);
 Datum pgsodium_randombytes_buf(PG_FUNCTION_ARGS);
 
-// Authenticated encryption
+/* Authenticated encryption */
 
 Datum pgsodium_crypto_secretbox_keygen(PG_FUNCTION_ARGS);
 Datum pgsodium_crypto_secretbox_noncegen(PG_FUNCTION_ARGS);
 Datum pgsodium_crypto_secretbox(PG_FUNCTION_ARGS);
+Datum pgsodium_crypto_secretbox_open(PG_FUNCTION_ARGS);
 
-#endif // PGSODIUM_H
+/* Authentication */
+
+Datum pgsodium_crypto_auth(PG_FUNCTION_ARGS);
+Datum pgsodium_crypto_auth_verify(PG_FUNCTION_ARGS);
+Datum pgsodium_crypto_auth_keygen(PG_FUNCTION_ARGS);
+
+#endif /* PGSODIUM_H */
+

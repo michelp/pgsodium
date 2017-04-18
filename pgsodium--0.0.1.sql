@@ -4,31 +4,49 @@
 CREATE FUNCTION pgsodium_randombytes_random()
 RETURNS integer
 AS '$libdir/pgsodium'
-LANGUAGE C IMMUTABLE STRICT;
+LANGUAGE C VOLATILE;
 
 CREATE FUNCTION pgsodium_randombytes_uniform(integer)
 RETURNS integer
 AS '$libdir/pgsodium'
-LANGUAGE C IMMUTABLE STRICT;
+LANGUAGE C VOLATILE STRICT;
 
 CREATE FUNCTION pgsodium_randombytes_buf(integer)
 RETURNS bytea
 AS '$libdir/pgsodium'
-LANGUAGE C IMMUTABLE STRICT;
+LANGUAGE C VOLATILE STRICT;
 
 CREATE FUNCTION pgsodium_crypto_secretbox_keygen()
 RETURNS bytea
 AS '$libdir/pgsodium'
-LANGUAGE C IMMUTABLE STRICT;
+LANGUAGE C VOLATILE;
 
 CREATE FUNCTION pgsodium_crypto_secretbox_noncegen()
 RETURNS bytea
 AS '$libdir/pgsodium'
-LANGUAGE C IMMUTABLE STRICT;
+LANGUAGE C VOLATILE;
 
 CREATE FUNCTION pgsodium_crypto_secretbox(text, bytea, bytea)
 RETURNS bytea
 AS '$libdir/pgsodium'
 LANGUAGE C IMMUTABLE STRICT;
 
+CREATE FUNCTION pgsodium_crypto_secretbox_open(bytea, bytea, bytea)
+RETURNS text
+AS '$libdir/pgsodium'
+LANGUAGE C IMMUTABLE STRICT;
 
+CREATE FUNCTION pgsodium_crypto_auth(text, bytea)
+RETURNS bytea
+AS '$libdir/pgsodium'
+LANGUAGE C IMMUTABLE STRICT;
+
+CREATE FUNCTION pgsodium_crypto_auth_verify(bytea, text, bytea)
+RETURNS boolean
+AS '$libdir/pgsodium'
+LANGUAGE C IMMUTABLE STRICT;
+
+CREATE FUNCTION pgsodium_crypto_auth_keygen()
+RETURNS bytea
+AS '$libdir/pgsodium'
+LANGUAGE C VOLATILE;
