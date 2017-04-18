@@ -27,5 +27,9 @@ Datum pgsodium_crypto_auth(PG_FUNCTION_ARGS);
 Datum pgsodium_crypto_auth_verify(PG_FUNCTION_ARGS);
 Datum pgsodium_crypto_auth_keygen(PG_FUNCTION_ARGS);
 
+/* Hashing */
+
+Datum pgsodium_crypto_generichash(PG_FUNCTION_ARGS);
+
 #endif /* PGSODIUM_H */
 

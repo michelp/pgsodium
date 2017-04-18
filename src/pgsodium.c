@@ -43,7 +43,7 @@ PG_FUNCTION_INFO_V1(pgsodium_crypto_secretbox_noncegen);
 Datum
 pgsodium_crypto_secretbox_noncegen(PG_FUNCTION_ARGS)
 {
-	unsigned char buff[crypto_secretbox_KEYBYTES];
+	unsigned char buff[crypto_secretbox_NONCEBYTES];
 	bytea *ret = (bytea *) palloc(VARHDRSZ + crypto_secretbox_NONCEBYTES);
 	SET_VARSIZE(ret, VARHDRSZ + crypto_secretbox_NONCEBYTES);
 	randombytes_buf(buff, crypto_secretbox_NONCEBYTES);
@@ -90,14 +90,13 @@ pgsodium_crypto_secretbox_open(PG_FUNCTION_ARGS)
 		buff,
 		(const unsigned char*)VARDATA(message),
 		VARSIZE(message),
-
 		(const unsigned char*)VARDATA(nonce),
 		(const unsigned char*)VARDATA(key));
-	if (success != 0) {
-		ereport( ERROR,
-				 ( errcode( ERRCODE_DATA_EXCEPTION ),
-				   errmsg( "invalid message" )));
-	}
+	/* if (success != 0) { */
+	/* 	ereport( ERROR, */
+	/* 			 ( errcode( ERRCODE_DATA_EXCEPTION ), */
+	/* 			   errmsg( "invalid message" ))); */
+	/* } */
 
 	memmove(ret->vl_dat, buff, message_size);
 	PG_RETURN_TEXT_P(ret);
@@ -148,6 +147,21 @@ pgsodium_crypto_auth_keygen(PG_FUNCTION_ARGS)
 	SET_VARSIZE(ret, VARHDRSZ + crypto_auth_KEYBYTES);
 	crypto_secretbox_keygen(buff);
 	memmove(ret->vl_dat, buff, crypto_auth_KEYBYTES);
+	PG_RETURN_BYTEA_P(ret);
+}
+
+PG_FUNCTION_INFO_V1(pgsodium_crypto_generichash);
+Datum
+pgsodium_crypto_generichash(PG_FUNCTION_ARGS)
+{
+    text *data = PG_GETARG_BYTEA_P(0);
+	unsigned char hash[crypto_generichash_BYTES];
+	bytea *ret = (bytea *) palloc(VARHDRSZ + crypto_generichash_BYTES);
+	SET_VARSIZE(ret, VARHDRSZ + crypto_generichash_BYTES);
+	crypto_generichash(hash, crypto_generichash_BYTES,
+					   (unsigned char*)VARDATA(data), VARSIZE(data),
+					   NULL, 0);
+	memmove(ret->vl_dat, hash, crypto_generichash_BYTES);
 	PG_RETURN_BYTEA_P(ret);
 }
 

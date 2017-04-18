@@ -50,3 +50,8 @@ CREATE FUNCTION pgsodium_crypto_auth_keygen()
 RETURNS bytea
 AS '$libdir/pgsodium'
 LANGUAGE C VOLATILE;
+
+CREATE FUNCTION pgsodium_crypto_generichash(text)
+RETURNS bytea
+AS '$libdir/pgsodium'
+LANGUAGE C IMMUTABLE STRICT;
