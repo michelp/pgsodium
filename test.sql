@@ -38,15 +38,15 @@ UPDATE test_secretbox SET crypted = pgsodium_crypto_secretbox(message, key, nonc
 SELECT pgsodium_crypto_auth_keygen() authkey \gset
 \set quoted_authkey '\'' :authkey '\''
 
-SELECT pgsodium_crypto_auth('bob is your uncle', :quoted_authkey) mac \gset
-\set quoted_mac '\'' :mac '\''
+SELECT pgsodium_crypto_auth('bob is your uncle', :quoted_authkey) auth_mac \gset
+\set quoted_auth_mac '\'' :auth_mac '\''
 
-SELECT ok(pgsodium_crypto_auth_verify(:quoted_mac, 'bob is your uncle', :quoted_authkey),
+SELECT ok(pgsodium_crypto_auth_verify(:quoted_auth_mac, 'bob is your uncle', :quoted_authkey),
           'crypto_auth_verify');
 SELECT ok(not pgsodium_crypto_auth_verify('bad mac', 'bob is your uncle', :quoted_authkey),
-          'crypto_auth_verify');
-SELECT ok(not pgsodium_crypto_auth_verify(:quoted_mac, 'bob is your uncle', 'bad key'),
-          'crypto_auth_verify');
+          'crypto_auth_verify bad mac');
+SELECT ok(not pgsodium_crypto_auth_verify(:quoted_auth_mac, 'bob is your uncle', 'bad key'),
+          'crypto_auth_verify bad key');
 
 SELECT is(pgsodium_crypto_generichash('bob is your uncle'),
           '\x6540d56aa40be032add2afa9a7709b4dd20c1f12632a7fec7656e44ca6d101f2',
