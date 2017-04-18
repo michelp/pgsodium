@@ -13,7 +13,7 @@ DROP EXTENSION IF EXISTS pgsodium;
 CREATE EXTENSION pgsodium;
 
 BEGIN;
-SELECT plan(4);
+SELECT plan(6);
 
 SELECT lives_ok($$SELECT pgsodium_randombytes_random()$$);
 SELECT lives_ok($$SELECT pgsodium_randombytes_uniform(10)$$);
@@ -40,6 +40,8 @@ SELECT pgsodium_crypto_auth('bob is your uncle', :quoted_authkey) mac \gset
 \set quoted_mac '\'' :mac '\''
 
 SELECT ok(pgsodium_crypto_auth_verify(:quoted_mac, 'bob is your uncle', :quoted_authkey));
+SELECT ok(not pgsodium_crypto_auth_verify('bad mac', 'bob is your uncle', :quoted_authkey));
+SELECT ok(not pgsodium_crypto_auth_verify(:quoted_mac, 'bob is your uncle', 'bad key'));
 
 SELECT * FROM finish();
 ROLLBACK;
