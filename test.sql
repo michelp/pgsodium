@@ -13,7 +13,7 @@ DROP EXTENSION IF EXISTS pgsodium;
 CREATE EXTENSION pgsodium;
 
 BEGIN;
-SELECT plan(7);
+SELECT plan(8);
 
 SELECT lives_ok($$SELECT pgsodium_randombytes_random()$$, 'randombytes_random');
 SELECT lives_ok($$SELECT pgsodium_randombytes_uniform(10)$$, 'randombytes_uniform');
@@ -49,7 +49,11 @@ SELECT ok(not pgsodium_crypto_auth_verify(:quoted_auth_mac, 'bob is your uncle',
           'crypto_auth_verify bad key');
 
 SELECT is(pgsodium_crypto_generichash('bob is your uncle'),
-          '\x6540d56aa40be032add2afa9a7709b4dd20c1f12632a7fec7656e44ca6d101f2',
+          '\xc20ed19135a7a09d230ba5b822afa53a939b6ddf3d90e2382102ac5513f01858',
+          'crypto_generichash');
+
+SELECT is(pgsodium_crypto_generichash('bob is your uncle', NULL),
+          '\xc20ed19135a7a09d230ba5b822afa53a939b6ddf3d90e2382102ac5513f01858',
           'crypto_generichash');
 
 SELECT * FROM finish();

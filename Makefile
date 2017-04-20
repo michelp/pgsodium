@@ -7,6 +7,7 @@ PGXS := $(shell $(PG_CONFIG) --pgxs)
 MODULE_big = pgsodium
 OBJS = $(patsubst %.c,%.o,$(wildcard src/*.c))
 SHLIB_LINK = -lsodium
+PG_CPPFLAGS = -O0
 
 TESTS        = $(wildcard test/sql/*.sql)
 REGRESS      = $(patsubst test/sql/%.sql,%,$(TESTS))

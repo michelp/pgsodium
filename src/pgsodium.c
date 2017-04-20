@@ -35,7 +35,7 @@ pgsodium_crypto_secretbox_keygen(PG_FUNCTION_ARGS)
 	bytea *ret = (bytea *) palloc(VARHDRSZ + crypto_secretbox_KEYBYTES);
 	SET_VARSIZE(ret, VARHDRSZ + crypto_secretbox_KEYBYTES);
 	crypto_secretbox_keygen(buff);
-	memmove(ret->vl_dat, buff, crypto_secretbox_KEYBYTES);
+	memmove((void*)VARDATA(ret), buff, crypto_secretbox_KEYBYTES);
 	PG_RETURN_BYTEA_P(ret);
 }
 
@@ -47,7 +47,7 @@ pgsodium_crypto_secretbox_noncegen(PG_FUNCTION_ARGS)
 	bytea *ret = (bytea *) palloc(VARHDRSZ + crypto_secretbox_NONCEBYTES);
 	SET_VARSIZE(ret, VARHDRSZ + crypto_secretbox_NONCEBYTES);
 	randombytes_buf(buff, crypto_secretbox_NONCEBYTES);
-	memmove(ret->vl_dat, buff, crypto_secretbox_NONCEBYTES);
+	memmove((void*)VARDATA(ret), buff, crypto_secretbox_NONCEBYTES);
 	PG_RETURN_BYTEA_P(ret);
 }
 
@@ -55,13 +55,12 @@ PG_FUNCTION_INFO_V1(pgsodium_crypto_secretbox);
 Datum
 pgsodium_crypto_secretbox(PG_FUNCTION_ARGS)
 {
-    text *message = PG_GETARG_TEXT_P(0);
+	text *message = PG_GETARG_TEXT_P(0);
 	bytea *key = PG_GETARG_BYTEA_P(1);
 	bytea *nonce = PG_GETARG_BYTEA_P(2);
-
 	size_t message_size = crypto_secretbox_MACBYTES + VARSIZE(message);
-	unsigned char buff[message_size];
 	bytea *ret = (bytea *) palloc(VARHDRSZ + message_size);
+	unsigned char *buff = (unsigned char*) palloc(message_size);
 	SET_VARSIZE(ret, VARHDRSZ + message_size);
 	crypto_secretbox_easy(
 		buff,
@@ -69,7 +68,7 @@ pgsodium_crypto_secretbox(PG_FUNCTION_ARGS)
 		VARSIZE(message),
 		(const unsigned char*)VARDATA(nonce),
 		(const unsigned char*)VARDATA(key));
-	memmove(ret->vl_dat, buff, message_size);
+	memmove((void*)VARDATA(ret), buff, message_size);
 	PG_RETURN_BYTEA_P(ret);
 }
 
@@ -78,13 +77,12 @@ Datum
 pgsodium_crypto_secretbox_open(PG_FUNCTION_ARGS)
 {
 	int success;
-    bytea *message = PG_GETARG_BYTEA_P(0);
+	bytea *message = PG_GETARG_BYTEA_P(0);
 	bytea *key = PG_GETARG_BYTEA_P(1);
 	bytea *nonce = PG_GETARG_BYTEA_P(2);
 	size_t message_size = VARSIZE(message) - crypto_secretbox_MACBYTES;
-	unsigned char buff[message_size];
-
 	text *ret = (text *) palloc(VARHDRSZ + message_size);
+	unsigned char *buff = (unsigned char*) palloc(message_size);
 	SET_VARSIZE(ret, VARHDRSZ + message_size);
 	success = crypto_secretbox_open_easy(
 		buff,
@@ -92,13 +90,13 @@ pgsodium_crypto_secretbox_open(PG_FUNCTION_ARGS)
 		VARSIZE(message),
 		(const unsigned char*)VARDATA(nonce),
 		(const unsigned char*)VARDATA(key));
-	/* if (success != 0) { */
-	/* 	ereport( ERROR, */
-	/* 			 ( errcode( ERRCODE_DATA_EXCEPTION ), */
-	/* 			   errmsg( "invalid message" ))); */
-	/* } */
-
-	memmove(ret->vl_dat, buff, message_size);
+	if (success != 0) {
+		ereport(
+			ERROR,
+			(errcode(ERRCODE_DATA_EXCEPTION),
+			 errmsg("invalid message")));
+	}
+	memmove((void*)VARDATA(ret), buff, message_size);
 	PG_RETURN_TEXT_P(ret);
 }
 
@@ -106,15 +104,17 @@ PG_FUNCTION_INFO_V1(pgsodium_crypto_auth);
 Datum
 pgsodium_crypto_auth(PG_FUNCTION_ARGS)
 {
-    text *message = PG_GETARG_TEXT_P(0);
-	bytea *key = PG_GETARG_BYTEA_P(1);
-
 	unsigned char buff[crypto_auth_BYTES];
+	text *message = PG_GETARG_TEXT_P(0);
+	bytea *key = PG_GETARG_BYTEA_P(1);
 	bytea *ret = (bytea *) palloc(VARHDRSZ + crypto_auth_BYTES);
 	SET_VARSIZE(ret, VARHDRSZ + crypto_auth_BYTES);
-	crypto_auth(buff, (const unsigned char*)VARDATA(message), VARSIZE(message),
-				(const unsigned char*)VARDATA(key));
-	memmove(ret->vl_dat, buff, crypto_auth_BYTES);
+	crypto_auth(
+		buff,
+		(const unsigned char*)VARDATA(message),
+		VARSIZE(message),
+		(const unsigned char*)VARDATA(key));
+	memmove((void*)VARDATA(ret), buff, crypto_auth_BYTES);
 	PG_RETURN_BYTEA_P(ret);
 }
 
@@ -124,9 +124,8 @@ pgsodium_crypto_auth_verify(PG_FUNCTION_ARGS)
 {
 	int success;
 	bytea *mac = PG_GETARG_BYTEA_P(0);
-    text *message = PG_GETARG_BYTEA_P(1);
+	text *message = PG_GETARG_BYTEA_P(1);
 	bytea *key = PG_GETARG_BYTEA_P(2);
-
 	success = crypto_auth_verify(
 		(unsigned char*)VARDATA(mac),
 		(const unsigned char*)VARDATA(message),
@@ -146,7 +145,7 @@ pgsodium_crypto_auth_keygen(PG_FUNCTION_ARGS)
 	bytea *ret = (bytea *) palloc(VARHDRSZ + crypto_auth_KEYBYTES);
 	SET_VARSIZE(ret, VARHDRSZ + crypto_auth_KEYBYTES);
 	crypto_secretbox_keygen(buff);
-	memmove(ret->vl_dat, buff, crypto_auth_KEYBYTES);
+	memmove((void*)VARDATA(ret), buff, crypto_auth_KEYBYTES);
 	PG_RETURN_BYTEA_P(ret);
 }
 
@@ -154,14 +153,21 @@ PG_FUNCTION_INFO_V1(pgsodium_crypto_generichash);
 Datum
 pgsodium_crypto_generichash(PG_FUNCTION_ARGS)
 {
-    text *data = PG_GETARG_BYTEA_P(0);
 	unsigned char hash[crypto_generichash_BYTES];
-	bytea *ret = (bytea *) palloc(VARHDRSZ + crypto_generichash_BYTES);
+	text *data;
+	bytea *ret;
+
+	data = PG_GETARG_TEXT_P(0);
+	ret = (bytea *) palloc(VARHDRSZ + crypto_generichash_BYTES);
+	crypto_generichash(
+		hash,
+		sizeof hash,
+		(unsigned char*)VARDATA(data),
+		VARSIZE(data),
+		NULL,
+		0);
+	memcpy((void*)VARDATA(ret), (void*)hash, crypto_generichash_BYTES);
 	SET_VARSIZE(ret, VARHDRSZ + crypto_generichash_BYTES);
-	crypto_generichash(hash, crypto_generichash_BYTES,
-					   (unsigned char*)VARDATA(data), VARSIZE(data),
-					   NULL, 0);
-	memmove(ret->vl_dat, hash, crypto_generichash_BYTES);
 	PG_RETURN_BYTEA_P(ret);
 }
 
