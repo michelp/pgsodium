@@ -13,27 +13,23 @@ DROP EXTENSION IF EXISTS pgsodium;
 CREATE EXTENSION pgsodium;
 
 BEGIN;
-SELECT plan(8);
+SELECT plan(10);
 
 SELECT lives_ok($$SELECT pgsodium_randombytes_random()$$, 'randombytes_random');
 SELECT lives_ok($$SELECT pgsodium_randombytes_uniform(10)$$, 'randombytes_uniform');
 SELECT lives_ok($$SELECT pgsodium_randombytes_buf(10)$$, 'randombytes_buf');
 
-CREATE TABLE test_secretbox (
-       id SERIAL PRIMARY KEY,
-       message text NOT NULL,
-       crypted bytea,
-       key bytea DEFAULT pgsodium_crypto_secretbox_keygen(),
-       nonce bytea DEFAULT pgsodium_crypto_secretbox_noncegen()
-       );
+select pgsodium_crypto_secretbox_keygen() boxkey \gset
+\set quoted_boxkey '\'' :boxkey '\''
 
-INSERT INTO test_secretbox (message) VALUES ('bob is your uncle');
-UPDATE test_secretbox SET crypted = pgsodium_crypto_secretbox(message, key, nonce);
+select pgsodium_crypto_secretbox_noncegen() boxnonce \gset
+\set quoted_boxnonce '\'' :boxnonce '\''
 
--- SELECT * from test_secretbox;
+select pgsodium_crypto_secretbox('bob is your uncle', :quoted_boxkey, :quoted_boxnonce) secretbox \gset
+\set quoted_secretbox '\'' :secretbox '\''
 
--- WITH t AS (SELECT * FROM test_secretbox)
---      SELECT pgsodium_crypto_secretbox_open(t.crypted, t.key, t.nonce) FROM t;
+SELECT is(pgsodium_crypto_secretbox_open(:quoted_secretbox, :quoted_boxkey, :quoted_boxnonce),
+          'bob is your uncle', 'secretbox_open');
 
 SELECT pgsodium_crypto_auth_keygen() authkey \gset
 \set quoted_authkey '\'' :authkey '\''
@@ -49,12 +45,16 @@ SELECT ok(not pgsodium_crypto_auth_verify(:quoted_auth_mac, 'bob is your uncle',
           'crypto_auth_verify bad key');
 
 SELECT is(pgsodium_crypto_generichash('bob is your uncle'),
-          '\xc20ed19135a7a09d230ba5b822afa53a939b6ddf3d90e2382102ac5513f01858',
+          '\x6c80c5f772572423c3910a9561710313e4b6e74abc0d65f577a8ac1583673657',
           'crypto_generichash');
 
 SELECT is(pgsodium_crypto_generichash('bob is your uncle', NULL),
-          '\xc20ed19135a7a09d230ba5b822afa53a939b6ddf3d90e2382102ac5513f01858',
-          'crypto_generichash');
+          '\x6c80c5f772572423c3910a9561710313e4b6e74abc0d65f577a8ac1583673657',
+          'crypto_generichash NULL key');
+
+SELECT is(pgsodium_crypto_generichash('bob is your uncle', 'super sekret key'),
+          '\xe8e9e180d918ea9afe0bf44d1945ec356b2b6845e9a4c31acc6c02d826036e41',
+          'crypto_generichash with key');
 
 SELECT * FROM finish();
 ROLLBACK;

@@ -51,7 +51,7 @@ RETURNS bytea
 AS '$libdir/pgsodium'
 LANGUAGE C VOLATILE;
 
-CREATE FUNCTION pgsodium_crypto_generichash(text)
+CREATE FUNCTION pgsodium_crypto_generichash(text, bytea DEFAULT NULL)
 RETURNS bytea
 AS '$libdir/pgsodium'
 LANGUAGE C VOLATILE;
