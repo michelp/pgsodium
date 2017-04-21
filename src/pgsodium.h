@@ -5,6 +5,7 @@
 #include "postgres.h"
 #include "utils/builtins.h"
 #include "libpq/pqformat.h"
+#include "funcapi.h"
 
 void _PG_init(void);
 
@@ -31,5 +32,6 @@ Datum pgsodium_crypto_auth_keygen(PG_FUNCTION_ARGS);
 
 Datum pgsodium_crypto_generichash(PG_FUNCTION_ARGS);
 
-#endif /* PGSODIUM_H */
+Datum pgsodium_crypto_shorthash(PG_FUNCTION_ARGS);
 
+#endif /* PGSODIUM_H */

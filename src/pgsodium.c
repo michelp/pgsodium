@@ -156,16 +156,16 @@ pgsodium_crypto_generichash(PG_FUNCTION_ARGS)
 	unsigned char hash[crypto_generichash_BYTES];
 	text *data;
 	bytea *ret;
-    bytea *keyarg;
-    unsigned char *key = NULL;
-    size_t keylen = 0;
+	bytea *keyarg;
+	unsigned char *key = NULL;
+	size_t keylen = 0;
 
 	data = PG_GETARG_TEXT_P(0);
-    if (!PG_ARGISNULL(1)) {
-      keyarg = PG_GETARG_BYTEA_P(1);
-      key = (unsigned char*)VARDATA(keyarg);
-      keylen = VARSIZE_ANY_EXHDR(keyarg);
-    }
+	if (!PG_ARGISNULL(1)) {
+		keyarg = PG_GETARG_BYTEA_P(1);
+		key = (unsigned char*)VARDATA(keyarg);
+		keylen = VARSIZE_ANY_EXHDR(keyarg);
+	}
 
 	ret = (bytea *) palloc(VARHDRSZ + crypto_generichash_BYTES);
 	crypto_generichash(
@@ -187,12 +187,12 @@ pgsodium_crypto_shorthash(PG_FUNCTION_ARGS)
 	unsigned char hash[crypto_shorthash_BYTES];
 	text *data;
 	bytea *ret;
-    bytea *key;
+	bytea *key;
 
 	data = PG_GETARG_TEXT_P(0);
-    key = PG_GETARG_BYTEA_P(1);
-    if (VARSIZE_ANY_EXHDR(key) != crypto_shorthash_KEYBYTES)
-      PG_RETURN_NULL();
+	key = PG_GETARG_BYTEA_P(1);
+	if (VARSIZE_ANY_EXHDR(key) != crypto_shorthash_KEYBYTES)
+		PG_RETURN_NULL();
 
 	ret = (bytea *) palloc(VARHDRSZ + crypto_shorthash_BYTES);
 	crypto_shorthash(
