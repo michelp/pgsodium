@@ -205,6 +205,44 @@ pgsodium_crypto_shorthash(PG_FUNCTION_ARGS)
 	PG_RETURN_BYTEA_P(ret);
 }
 
+PG_FUNCTION_INFO_V1(pgsodium_crypto_box_keypair);
+Datum
+pgsodium_crypto_box_keypair(PG_FUNCTION_ARGS)
+{
+    TupleDesc tupdesc;
+	Datum values[2];
+	bool nulls[2] = {false, false};
+	HeapTuple tuple;
+	Datum result;
+	unsigned char pkey[crypto_box_PUBLICKEYBYTES];
+	unsigned char skey[crypto_box_SECRETKEYBYTES];
+	bytea *publickey;
+	bytea *secretkey;
+
+	if (get_call_result_type(fcinfo, NULL, &tupdesc) != TYPEFUNC_COMPOSITE)
+		ereport(ERROR,
+				(errcode(ERRCODE_FEATURE_NOT_SUPPORTED),
+				 errmsg("function returning record called in context "
+						"that cannot accept type record")));
+	
+	publickey = (bytea *) palloc(crypto_box_PUBLICKEYBYTES + VARHDRSZ);
+	secretkey = (bytea *) palloc(crypto_box_SECRETKEYBYTES + VARHDRSZ);
+	SET_VARSIZE(publickey, VARHDRSZ + crypto_box_PUBLICKEYBYTES);
+	SET_VARSIZE(secretkey, VARHDRSZ + crypto_box_SECRETKEYBYTES);
+	
+	crypto_box_keypair(pkey, skey);
+
+	memcpy((void*)VARDATA(publickey), pkey, crypto_box_PUBLICKEYBYTES);
+	memcpy((void*)VARDATA(secretkey), skey, crypto_box_PUBLICKEYBYTES);
+
+	values[0] = PointerGetDatum(publickey);
+	values[1] = PointerGetDatum(secretkey);
+	
+	tuple = heap_form_tuple(tupdesc, values, nulls);
+	result = HeapTupleGetDatum(tuple);
+	return result;
+}
+
 void _PG_init(void)
 {
 	if (sodium_init() == -1)
