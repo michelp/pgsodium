@@ -35,7 +35,7 @@ pgsodium_crypto_secretbox_keygen(PG_FUNCTION_ARGS)
 	bytea *ret = (bytea *) palloc(VARHDRSZ + crypto_secretbox_KEYBYTES);
 	SET_VARSIZE(ret, VARHDRSZ + crypto_secretbox_KEYBYTES);
 	crypto_secretbox_keygen(buff);
-	memmove((void*)VARDATA(ret), buff, crypto_secretbox_KEYBYTES);
+	memcpy((void*)VARDATA(ret), buff, crypto_secretbox_KEYBYTES);
 	PG_RETURN_BYTEA_P(ret);
 }
 
@@ -47,7 +47,7 @@ pgsodium_crypto_secretbox_noncegen(PG_FUNCTION_ARGS)
 	bytea *ret = (bytea *) palloc(VARHDRSZ + crypto_secretbox_NONCEBYTES);
 	SET_VARSIZE(ret, VARHDRSZ + crypto_secretbox_NONCEBYTES);
 	randombytes_buf(buff, crypto_secretbox_NONCEBYTES);
-	memmove((void*)VARDATA(ret), buff, crypto_secretbox_NONCEBYTES);
+	memcpy((void*)VARDATA(ret), buff, crypto_secretbox_NONCEBYTES);
 	PG_RETURN_BYTEA_P(ret);
 }
 
@@ -68,7 +68,7 @@ pgsodium_crypto_secretbox(PG_FUNCTION_ARGS)
 		VARSIZE_ANY_EXHDR(message),
 		(const unsigned char*)VARDATA(nonce),
 		(const unsigned char*)VARDATA(key));
-	memmove((void*)VARDATA(ret), buff, message_size);
+	memcpy((void*)VARDATA(ret), buff, message_size);
 	PG_RETURN_BYTEA_P(ret);
 }
 
@@ -96,7 +96,7 @@ pgsodium_crypto_secretbox_open(PG_FUNCTION_ARGS)
 			(errcode(ERRCODE_DATA_EXCEPTION),
 			 errmsg("invalid message")));
 	}
-	memmove((void*)VARDATA(ret), buff, message_size);
+	memcpy((void*)VARDATA(ret), buff, message_size);
 	PG_RETURN_TEXT_P(ret);
 }
 
@@ -114,7 +114,7 @@ pgsodium_crypto_auth(PG_FUNCTION_ARGS)
 		(const unsigned char*)VARDATA(message),
 		VARSIZE_ANY_EXHDR(message),
 		(const unsigned char*)VARDATA(key));
-	memmove((void*)VARDATA(ret), buff, crypto_auth_BYTES);
+	memcpy((void*)VARDATA(ret), buff, crypto_auth_BYTES);
 	PG_RETURN_BYTEA_P(ret);
 }
 
@@ -145,7 +145,7 @@ pgsodium_crypto_auth_keygen(PG_FUNCTION_ARGS)
 	bytea *ret = (bytea *) palloc(VARHDRSZ + crypto_auth_KEYBYTES);
 	SET_VARSIZE(ret, VARHDRSZ + crypto_auth_KEYBYTES);
 	crypto_secretbox_keygen(buff);
-	memmove((void*)VARDATA(ret), buff, crypto_auth_KEYBYTES);
+	memcpy((void*)VARDATA(ret), buff, crypto_auth_KEYBYTES);
 	PG_RETURN_BYTEA_P(ret);
 }
 
@@ -175,8 +175,33 @@ pgsodium_crypto_generichash(PG_FUNCTION_ARGS)
 		VARSIZE_ANY_EXHDR(data),
 		key,
 		keylen);
-	memcpy((void*)VARDATA(ret), (void*)hash, crypto_generichash_BYTES);
+	memcpy((void*)VARDATA(ret), hash, crypto_generichash_BYTES);
 	SET_VARSIZE(ret, VARHDRSZ + crypto_generichash_BYTES);
+	PG_RETURN_BYTEA_P(ret);
+}
+
+PG_FUNCTION_INFO_V1(pgsodium_crypto_shorthash);
+Datum
+pgsodium_crypto_shorthash(PG_FUNCTION_ARGS)
+{
+	unsigned char hash[crypto_shorthash_BYTES];
+	text *data;
+	bytea *ret;
+    bytea *key;
+
+	data = PG_GETARG_TEXT_P(0);
+    key = PG_GETARG_BYTEA_P(1);
+    if (VARSIZE_ANY_EXHDR(key) != crypto_shorthash_KEYBYTES)
+      PG_RETURN_NULL();
+
+	ret = (bytea *) palloc(VARHDRSZ + crypto_shorthash_BYTES);
+	crypto_shorthash(
+		hash,
+		(unsigned char*)VARDATA(data),
+		VARSIZE_ANY_EXHDR(data),
+		(unsigned char*)VARDATA(key));
+	memcpy((void*)VARDATA(ret), hash, crypto_shorthash_BYTES);
+	SET_VARSIZE(ret, VARHDRSZ + crypto_shorthash_BYTES);
 	PG_RETURN_BYTEA_P(ret);
 }
 
