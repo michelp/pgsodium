@@ -61,9 +61,9 @@ RETURNS bytea
 AS '$libdir/pgsodium'
 LANGUAGE C VOLATILE STRICT;
 
-CREATE TYPE __pgcrypto_box_keypair AS (public bytea, secret bytea);
+CREATE TYPE pgsodium_crypto_box_keypair AS (public bytea, secret bytea);
 
 CREATE OR REPLACE FUNCTION pgsodium_crypto_box_keypair()
-RETURNS SETOF __pgcrypto_box_keypair
+RETURNS SETOF pgsodium_crypto_box_keypair
 AS '$libdir/pgsodium'
 LANGUAGE C VOLATILE;    
