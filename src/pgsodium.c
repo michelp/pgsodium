@@ -243,6 +243,82 @@ pgsodium_crypto_box_keypair(PG_FUNCTION_ARGS)
 	return result;
 }
 
+PG_FUNCTION_INFO_V1(pgsodium_crypto_box_noncegen);
+Datum
+pgsodium_crypto_box_noncegen(PG_FUNCTION_ARGS)
+{
+	unsigned char buff[crypto_box_NONCEBYTES];
+	bytea *ret = (bytea *) palloc(VARHDRSZ + crypto_box_NONCEBYTES);
+	SET_VARSIZE(ret, VARHDRSZ + crypto_box_NONCEBYTES);
+	randombytes_buf(buff, crypto_box_NONCEBYTES);
+	memcpy((void*)VARDATA(ret), buff, crypto_box_NONCEBYTES);
+	PG_RETURN_BYTEA_P(ret);
+}
+
+PG_FUNCTION_INFO_V1(pgsodium_crypto_box);
+Datum
+pgsodium_crypto_box(PG_FUNCTION_ARGS)
+{
+	text *message = PG_GETARG_TEXT_P(0);
+	bytea *nonce = PG_GETARG_BYTEA_P(1);
+	bytea *publickey = PG_GETARG_BYTEA_P(2);
+	bytea *secretkey = PG_GETARG_BYTEA_P(3);
+	int success;
+	
+	size_t message_size = crypto_box_MACBYTES + VARSIZE_ANY_EXHDR(message);
+	bytea *ret = (bytea *) palloc(VARHDRSZ + message_size);
+	unsigned char *buff = (unsigned char*) palloc(message_size);
+	SET_VARSIZE(ret, VARHDRSZ + message_size);
+	success = crypto_box_easy(
+		buff,
+		(const unsigned char*)VARDATA(message),
+		VARSIZE_ANY_EXHDR(message),
+		(const unsigned char*)VARDATA(nonce),
+		(const unsigned char*)VARDATA(publickey),
+		(const unsigned char*)VARDATA(secretkey)
+		);
+	if (success != 0) {
+		ereport(
+			ERROR,
+			(errcode(ERRCODE_DATA_EXCEPTION),
+			 errmsg("invalid message")));
+	}
+	
+	memcpy((void*)VARDATA(ret), buff, message_size);
+	PG_RETURN_BYTEA_P(ret);
+}
+
+PG_FUNCTION_INFO_V1(pgsodium_crypto_box_open);
+Datum
+pgsodium_crypto_box_open(PG_FUNCTION_ARGS)
+{
+	int success;
+	bytea *message = PG_GETARG_BYTEA_P(0);
+	bytea *nonce = PG_GETARG_BYTEA_P(1);
+	bytea *publickey = PG_GETARG_BYTEA_P(2);
+	bytea *secretkey = PG_GETARG_BYTEA_P(3);
+	
+	size_t message_size = VARSIZE_ANY_EXHDR(message) - crypto_box_MACBYTES;
+	text *ret = (text *) palloc(VARHDRSZ + message_size);
+	unsigned char *buff = (unsigned char*) palloc(message_size);
+	SET_VARSIZE(ret, VARHDRSZ + message_size);
+	success = crypto_box_open_easy(
+		buff,
+		(const unsigned char*)VARDATA(message),
+		VARSIZE_ANY_EXHDR(message),
+		(const unsigned char*)VARDATA(nonce),
+		(const unsigned char*)VARDATA(publickey),
+		(const unsigned char*)VARDATA(secretkey));
+	if (success != 0) {
+		ereport(
+			ERROR,
+			(errcode(ERRCODE_DATA_EXCEPTION),
+			 errmsg("invalid message")));
+	}
+	memcpy((void*)VARDATA(ret), buff, message_size);
+	PG_RETURN_TEXT_P(ret);
+}
+
 void _PG_init(void)
 {
 	if (sodium_init() == -1)
@@ -251,3 +327,4 @@ void _PG_init(void)
 		return;
 	}
 }
+

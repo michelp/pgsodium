@@ -37,5 +37,8 @@ Datum pgsodium_crypto_shorthash(PG_FUNCTION_ARGS);
 /* Public Key */
 
 Datum pgsodium_crypto_box_keypair(PG_FUNCTION_ARGS);
+Datum pgsodium_crypto_box_noncegen(PG_FUNCTION_ARGS);
+Datum pgsodium_crypto_box(PG_FUNCTION_ARGS);
+Datum pgsodium_crypto_box_open(PG_FUNCTION_ARGS);
 
 #endif /* PGSODIUM_H */

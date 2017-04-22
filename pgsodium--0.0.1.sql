@@ -66,4 +66,19 @@ CREATE TYPE pgsodium_crypto_box_keypair AS (public bytea, secret bytea);
 CREATE OR REPLACE FUNCTION pgsodium_crypto_box_keypair()
 RETURNS SETOF pgsodium_crypto_box_keypair
 AS '$libdir/pgsodium'
-LANGUAGE C VOLATILE;    
+LANGUAGE C VOLATILE;
+
+CREATE FUNCTION pgsodium_crypto_box_noncegen()
+RETURNS bytea
+AS '$libdir/pgsodium'
+LANGUAGE C VOLATILE;
+
+CREATE FUNCTION pgsodium_crypto_box(text, bytea, bytea, bytea)
+RETURNS bytea
+AS '$libdir/pgsodium'
+LANGUAGE C IMMUTABLE STRICT;
+
+CREATE FUNCTION pgsodium_crypto_box_open(bytea, bytea, bytea, bytea)
+RETURNS text
+AS '$libdir/pgsodium'
+LANGUAGE C IMMUTABLE STRICT;
