@@ -71,10 +71,10 @@ SELECT public, secret FROM pgsodium_crypto_box_keypair() \gset alice_
 \set quoted_alice_public '\'' :alice_public '\''
 \set quoted_alice_secret '\'' :alice_secret '\''
 
-SELECT pgsodium_crypto_box('bob is your uncle', :quoted_boxnonce, :quoted_bob_public, :quoted_alice_secret) secretbox \gset
-\set quoted_secretbox '\'' :secretbox '\''
+SELECT pgsodium_crypto_box('bob is your uncle', :quoted_boxnonce, :quoted_bob_public, :quoted_alice_secret) box \gset
+\set quoted_box '\'' :box '\''
 
-SELECT is(pgsodium_crypto_box_open(:quoted_secretbox, :quoted_boxnonce, :quoted_alice_public, :quoted_bob_secret),
+SELECT is(pgsodium_crypto_box_open(:quoted_box, :quoted_boxnonce, :quoted_alice_public, :quoted_bob_secret),
           'bob is your uncle', 'box_open');
 
 SELECT * FROM finish();
