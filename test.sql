@@ -19,13 +19,13 @@ SELECT lives_ok($$SELECT pgsodium_randombytes_random()$$, 'randombytes_random');
 SELECT lives_ok($$SELECT pgsodium_randombytes_uniform(10)$$, 'randombytes_uniform');
 SELECT lives_ok($$SELECT pgsodium_randombytes_buf(10)$$, 'randombytes_buf');
 
-select pgsodium_crypto_secretbox_keygen() boxkey \gset
+SELECT pgsodium_crypto_secretbox_keygen() boxkey \gset
 \set quoted_boxkey '\'' :boxkey '\''
 
-select pgsodium_crypto_secretbox_noncegen() secretboxnonce \gset
+SELECT pgsodium_crypto_secretbox_noncegen() secretboxnonce \gset
 \set quoted_secretboxnonce '\'' :secretboxnonce '\''
 
-select pgsodium_crypto_secretbox('bob is your uncle', :quoted_boxkey, :quoted_secretboxnonce) secretbox \gset
+SELECT pgsodium_crypto_secretbox('bob is your uncle', :quoted_boxkey, :quoted_secretboxnonce) secretbox \gset
 \set quoted_secretbox '\'' :secretbox '\''
 
 SELECT is(pgsodium_crypto_secretbox_open(:quoted_secretbox, :quoted_boxkey, :quoted_secretboxnonce),
@@ -70,8 +70,8 @@ SELECT public, secret FROM pgsodium_crypto_box_keypair() \gset bob_
 SELECT public, secret FROM pgsodium_crypto_box_keypair() \gset alice_
 \set quoted_alice_public '\'' :alice_public '\''
 \set quoted_alice_secret '\'' :alice_secret '\''
-    
-select pgsodium_crypto_box('bob is your uncle', :quoted_boxnonce, :quoted_bob_public, :quoted_alice_secret) secretbox \gset
+
+SELECT pgsodium_crypto_box('bob is your uncle', :quoted_boxnonce, :quoted_bob_public, :quoted_alice_secret) secretbox \gset
 \set quoted_secretbox '\'' :secretbox '\''
 
 SELECT is(pgsodium_crypto_box_open(:quoted_secretbox, :quoted_boxnonce, :quoted_alice_public, :quoted_bob_secret),

@@ -224,12 +224,12 @@ pgsodium_crypto_box_keypair(PG_FUNCTION_ARGS)
 				(errcode(ERRCODE_FEATURE_NOT_SUPPORTED),
 				 errmsg("function returning record called in context "
 						"that cannot accept type record")));
-	
+
 	publickey = (bytea *) palloc(crypto_box_PUBLICKEYBYTES + VARHDRSZ);
 	secretkey = (bytea *) palloc(crypto_box_SECRETKEYBYTES + VARHDRSZ);
 	SET_VARSIZE(publickey, VARHDRSZ + crypto_box_PUBLICKEYBYTES);
 	SET_VARSIZE(secretkey, VARHDRSZ + crypto_box_SECRETKEYBYTES);
-	
+
 	crypto_box_keypair(pkey, skey);
 
 	memcpy((void*)VARDATA(publickey), pkey, crypto_box_PUBLICKEYBYTES);
@@ -237,7 +237,7 @@ pgsodium_crypto_box_keypair(PG_FUNCTION_ARGS)
 
 	values[0] = PointerGetDatum(publickey);
 	values[1] = PointerGetDatum(secretkey);
-	
+
 	tuple = heap_form_tuple(tupdesc, values, nulls);
 	result = HeapTupleGetDatum(tuple);
 	return result;
@@ -264,7 +264,7 @@ pgsodium_crypto_box(PG_FUNCTION_ARGS)
 	bytea *publickey = PG_GETARG_BYTEA_P(2);
 	bytea *secretkey = PG_GETARG_BYTEA_P(3);
 	int success;
-	
+
 	size_t message_size = crypto_box_MACBYTES + VARSIZE_ANY_EXHDR(message);
 	bytea *ret = (bytea *) palloc(VARHDRSZ + message_size);
 	unsigned char *buff = (unsigned char*) palloc(message_size);
@@ -283,7 +283,7 @@ pgsodium_crypto_box(PG_FUNCTION_ARGS)
 			(errcode(ERRCODE_DATA_EXCEPTION),
 			 errmsg("invalid message")));
 	}
-	
+
 	memcpy((void*)VARDATA(ret), buff, message_size);
 	PG_RETURN_BYTEA_P(ret);
 }
@@ -297,7 +297,7 @@ pgsodium_crypto_box_open(PG_FUNCTION_ARGS)
 	bytea *nonce = PG_GETARG_BYTEA_P(1);
 	bytea *publickey = PG_GETARG_BYTEA_P(2);
 	bytea *secretkey = PG_GETARG_BYTEA_P(3);
-	
+
 	size_t message_size = VARSIZE_ANY_EXHDR(message) - crypto_box_MACBYTES;
 	text *ret = (text *) palloc(VARHDRSZ + message_size);
 	unsigned char *buff = (unsigned char*) palloc(message_size);
@@ -327,4 +327,3 @@ void _PG_init(void)
 		return;
 	}
 }
-
