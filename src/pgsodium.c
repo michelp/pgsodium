@@ -329,7 +329,7 @@ pgsodium_crypto_box_open(PG_FUNCTION_ARGS)
 			(errcode(ERRCODE_DATA_EXCEPTION),
 			 errmsg("invalid message")));
 
-	memcpy((void*)VARDATA(result), buf, message_size);
+	memcpy(VARDATA(result), buf, message_size);
 	PG_RETURN_TEXT_P(result);
 }
 
@@ -360,8 +360,8 @@ pgsodium_crypto_sign_keypair(PG_FUNCTION_ARGS)
 
 	crypto_sign_keypair(pkey, skey);
 
-	memcpy((void*)VARDATA(publickey), pkey, crypto_sign_PUBLICKEYBYTES);
-	memcpy((void*)VARDATA(secretkey), skey, crypto_sign_PUBLICKEYBYTES);
+	memcpy(VARDATA(publickey), pkey, crypto_sign_PUBLICKEYBYTES);
+	memcpy(VARDATA(secretkey), skey, crypto_sign_PUBLICKEYBYTES);
 
 	values[0] = PointerGetDatum(publickey);
 	values[1] = PointerGetDatum(secretkey);
