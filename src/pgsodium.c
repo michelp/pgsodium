@@ -385,7 +385,7 @@ pgsodium_crypto_sign(PG_FUNCTION_ARGS)
 	bytea *result = (bytea *) palloc(result_size);
 	unsigned char *buf = (unsigned char*) palloc(message_size);
 	SET_VARSIZE(result, result_size);
-	
+
 	success = crypto_sign(
 		buf,
 		&signed_message_len,
