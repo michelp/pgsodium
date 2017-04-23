@@ -380,11 +380,12 @@ pgsodium_crypto_sign(PG_FUNCTION_ARGS)
 	bytea *secretkey = PG_GETARG_BYTEA_P(1);
 	int success;
 	unsigned long long signed_message_len;
-
 	size_t message_size = crypto_sign_BYTES + VARSIZE_ANY_EXHDR(message);
-	bytea *ret = (bytea *) palloc(VARHDRSZ + message_size);
+	size_t result_size = VARHDRSZ + message_size;
+	bytea *result = (bytea *) palloc(result_size);
 	unsigned char *buf = (unsigned char*) palloc(message_size);
-	SET_VARSIZE(ret, VARHDRSZ + message_size);
+	SET_VARSIZE(result, result_size);
+	
 	success = crypto_sign(
 		buf,
 		&signed_message_len,
@@ -399,8 +400,8 @@ pgsodium_crypto_sign(PG_FUNCTION_ARGS)
 			 errmsg("invalid message")));
 	}
 
-	memcpy((void*)VARDATA(ret), buf, message_size);
-	PG_RETURN_BYTEA_P(ret);
+	memcpy(VARDATA(result), buf, message_size);
+	PG_RETURN_BYTEA_P(result);
 }
 
 PG_FUNCTION_INFO_V1(pgsodium_crypto_sign_open);
@@ -413,10 +414,11 @@ pgsodium_crypto_sign_open(PG_FUNCTION_ARGS)
 	bytea *publickey = PG_GETARG_BYTEA_P(1);
 
 	size_t message_size = VARSIZE_ANY_EXHDR(message) - crypto_sign_BYTES;
-	text *ret = (text *) palloc(VARHDRSZ + message_size);
+	size_t result_size = VARHDRSZ + message_size;
+	text *result = (text *) palloc(result_size);
 	unsigned char *buf = (unsigned char*) palloc(message_size);
 
-	SET_VARSIZE(ret, VARHDRSZ + message_size);
+	SET_VARSIZE(result, result_size);
 	success = crypto_sign_open(
 		buf,
 		&unsigned_message_len,
@@ -430,8 +432,8 @@ pgsodium_crypto_sign_open(PG_FUNCTION_ARGS)
 			(errcode(ERRCODE_DATA_EXCEPTION),
 			 errmsg("invalid message")));
 	}
-	memcpy((void*)VARDATA(ret), buf, message_size);
-	PG_RETURN_TEXT_P(ret);
+	memcpy(VARDATA(result), buf, message_size);
+	PG_RETURN_TEXT_P(result);
 }
 
 void _PG_init(void)
