@@ -82,3 +82,20 @@ CREATE FUNCTION pgsodium_crypto_box_open(bytea, bytea, bytea, bytea)
 RETURNS text
 AS '$libdir/pgsodium'
 LANGUAGE C IMMUTABLE STRICT;
+
+CREATE TYPE pgsodium_crypto_sign_keypair AS (public bytea, secret bytea);
+
+CREATE OR REPLACE FUNCTION pgsodium_crypto_sign_keypair()
+RETURNS SETOF pgsodium_crypto_sign_keypair
+AS '$libdir/pgsodium'
+LANGUAGE C VOLATILE;
+
+CREATE OR REPLACE FUNCTION pgsodium_crypto_sign(text, bytea)
+RETURNS bytea
+AS '$libdir/pgsodium'
+LANGUAGE C IMMUTABLE STRICT;
+
+CREATE OR REPLACE FUNCTION pgsodium_crypto_sign_open(bytea, bytea)
+RETURNS text
+AS '$libdir/pgsodium'
+LANGUAGE C IMMUTABLE STRICT;

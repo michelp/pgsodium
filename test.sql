@@ -13,7 +13,7 @@ DROP EXTENSION IF EXISTS pgsodium;
 CREATE EXTENSION pgsodium;
 
 BEGIN;
-SELECT plan(12);
+SELECT plan(13);
 
 SELECT lives_ok($$SELECT pgsodium_randombytes_random()$$, 'randombytes_random');
 SELECT lives_ok($$SELECT pgsodium_randombytes_uniform(10)$$, 'randombytes_uniform');
@@ -76,6 +76,16 @@ SELECT pgsodium_crypto_box('bob is your uncle', :quoted_boxnonce, :quoted_bob_pu
 
 SELECT is(pgsodium_crypto_box_open(:quoted_box, :quoted_boxnonce, :quoted_alice_public, :quoted_bob_secret),
           'bob is your uncle', 'box_open');
+
+SELECT public, secret FROM pgsodium_crypto_sign_keypair() \gset sign_
+\set quoted_sign_public '\'' :sign_public '\''
+\set quoted_sign_secret '\'' :sign_secret '\''
+
+SELECT pgsodium_crypto_sign('bob is your uncle', :quoted_sign_secret) signed \gset
+\set quoted_signed '\'' :signed '\''
+
+SELECT is(pgsodium_crypto_sign_open(:quoted_signed, :quoted_sign_public),
+          'bob is your uncle', 'sign_open');
 
 SELECT * FROM finish();
 ROLLBACK;

@@ -41,4 +41,8 @@ Datum pgsodium_crypto_box_noncegen(PG_FUNCTION_ARGS);
 Datum pgsodium_crypto_box(PG_FUNCTION_ARGS);
 Datum pgsodium_crypto_box_open(PG_FUNCTION_ARGS);
 
+Datum pgsodium_crypto_sign_keypair(PG_FUNCTION_ARGS);
+Datum pgsodium_crypto_sign(PG_FUNCTION_ARGS);
+Datum pgsodium_crypto_sign_open(PG_FUNCTION_ARGS);
+
 #endif /* PGSODIUM_H */
