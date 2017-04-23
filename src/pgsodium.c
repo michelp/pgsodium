@@ -98,12 +98,12 @@ pgsodium_crypto_secretbox_open(PG_FUNCTION_ARGS)
 		(unsigned char*)VARDATA(nonce),
 		(unsigned char*)VARDATA(key));
 
-	if (success != 0) {
+	if (success != 0)
 		ereport(
 			ERROR,
 			(errcode(ERRCODE_DATA_EXCEPTION),
 			 errmsg("invalid message")));
-	}
+
 	memcpy(VARDATA(result), buf, message_size);
 	PG_RETURN_TEXT_P(result);
 }
@@ -143,9 +143,8 @@ pgsodium_crypto_auth_verify(PG_FUNCTION_ARGS)
 		(unsigned char*)VARDATA(message),
 		VARSIZE_ANY_EXHDR(message),
 		(unsigned char*)VARDATA(key));
-	if (success != 0) {
+	if (success != 0)
 		PG_RETURN_BOOL(0);
-	}
 	PG_RETURN_BOOL(1);
 }
 
@@ -173,7 +172,8 @@ pgsodium_crypto_generichash(PG_FUNCTION_ARGS)
 	size_t keylen = 0;
 
 	data = PG_GETARG_TEXT_P(0);
-	if (!PG_ARGISNULL(1)) {
+	if (!PG_ARGISNULL(1))
+	{
 		keyarg = PG_GETARG_BYTEA_P(1);
 		key = (unsigned char*)VARDATA(keyarg);
 		keylen = VARSIZE_ANY_EXHDR(keyarg);
@@ -292,12 +292,11 @@ pgsodium_crypto_box(PG_FUNCTION_ARGS)
 		(unsigned char*)VARDATA(publickey),
 		(unsigned char*)VARDATA(secretkey)
 		);
-	if (success != 0) {
+	if (success != 0)
 		ereport(
 			ERROR,
 			(errcode(ERRCODE_DATA_EXCEPTION),
 			 errmsg("invalid message")));
-	}
 
 	memcpy(VARDATA(result), buf, message_size);
 	PG_RETURN_BYTEA_P(result);
@@ -324,12 +323,12 @@ pgsodium_crypto_box_open(PG_FUNCTION_ARGS)
 		(unsigned char*)VARDATA(nonce),
 		(unsigned char*)VARDATA(publickey),
 		(unsigned char*)VARDATA(secretkey));
-	if (success != 0) {
+	if (success != 0)
 		ereport(
 			ERROR,
 			(errcode(ERRCODE_DATA_EXCEPTION),
 			 errmsg("invalid message")));
-	}
+
 	memcpy((void*)VARDATA(result), buf, message_size);
 	PG_RETURN_TEXT_P(result);
 }
@@ -393,12 +392,11 @@ pgsodium_crypto_sign(PG_FUNCTION_ARGS)
 		VARSIZE_ANY_EXHDR(message),
 		(unsigned char*)VARDATA(secretkey)
 		);
-	if (success != 0) {
+	if (success != 0)
 		ereport(
 			ERROR,
 			(errcode(ERRCODE_DATA_EXCEPTION),
 			 errmsg("invalid message")));
-	}
 
 	memcpy(VARDATA(result), buf, message_size);
 	PG_RETURN_BYTEA_P(result);
@@ -426,12 +424,12 @@ pgsodium_crypto_sign_open(PG_FUNCTION_ARGS)
 		VARSIZE_ANY_EXHDR(message),
 		(unsigned char*)VARDATA(publickey)
 		);
-	if (success != 0) {
+	if (success != 0)
 		ereport(
 			ERROR,
 			(errcode(ERRCODE_DATA_EXCEPTION),
 			 errmsg("invalid message")));
-	}
+
 	memcpy(VARDATA(result), buf, message_size);
 	PG_RETURN_TEXT_P(result);
 }
