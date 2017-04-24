@@ -99,3 +99,13 @@ CREATE OR REPLACE FUNCTION pgsodium_crypto_sign_open(bytea, bytea)
 RETURNS text
 AS '$libdir/pgsodium'
 LANGUAGE C IMMUTABLE STRICT;
+
+CREATE OR REPLACE FUNCTION pgsodium_crypto_pwhash_saltgen()
+RETURNS bytea
+AS '$libdir/pgsodium'
+LANGUAGE C VOLATILE;
+
+CREATE OR REPLACE FUNCTION pgsodium_crypto_pwhash(text, bytea)
+RETURNS bytea
+AS '$libdir/pgsodium'
+LANGUAGE C IMMUTABLE STRICT;

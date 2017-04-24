@@ -34,6 +34,11 @@ Datum pgsodium_crypto_auth_keygen(PG_FUNCTION_ARGS);
 Datum pgsodium_crypto_generichash(PG_FUNCTION_ARGS);
 Datum pgsodium_crypto_shorthash(PG_FUNCTION_ARGS);
 
+/* password Hashing */
+
+Datum pgsodium_crypto_pwhash_saltgen(PG_FUNCTION_ARGS);
+Datum pgsodium_crypto_pwhash(PG_FUNCTION_ARGS);
+
 /* Public Key */
 
 Datum pgsodium_crypto_box_keypair(PG_FUNCTION_ARGS);
