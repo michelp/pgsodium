@@ -20,28 +20,22 @@ SELECT lives_ok($$SELECT pgsodium_randombytes_uniform(10)$$, 'randombytes_unifor
 SELECT lives_ok($$SELECT pgsodium_randombytes_buf(10)$$, 'randombytes_buf');
 
 SELECT pgsodium_crypto_secretbox_keygen() boxkey \gset
-\set quoted_boxkey '\'' :boxkey '\''
-
 SELECT pgsodium_crypto_secretbox_noncegen() secretboxnonce \gset
-\set quoted_secretboxnonce '\'' :secretboxnonce '\''
 
-SELECT pgsodium_crypto_secretbox('bob is your uncle', :quoted_boxkey, :quoted_secretboxnonce) secretbox \gset
-\set quoted_secretbox '\'' :secretbox '\''
+SELECT pgsodium_crypto_secretbox('bob is your uncle', :'boxkey', :'secretboxnonce') secretbox \gset
 
-SELECT is(pgsodium_crypto_secretbox_open(:quoted_secretbox, :quoted_boxkey, :quoted_secretboxnonce),
+SELECT is(pgsodium_crypto_secretbox_open(:'secretbox', :'boxkey', :'secretboxnonce'),
           'bob is your uncle', 'secretbox_open');
 
 SELECT pgsodium_crypto_auth_keygen() authkey \gset
-\set quoted_authkey '\'' :authkey '\''
 
-SELECT pgsodium_crypto_auth('bob is your uncle', :quoted_authkey) auth_mac \gset
-\set quoted_auth_mac '\'' :auth_mac '\''
+SELECT pgsodium_crypto_auth('bob is your uncle', :'authkey') auth_mac \gset
 
-SELECT ok(pgsodium_crypto_auth_verify(:quoted_auth_mac, 'bob is your uncle', :quoted_authkey),
+SELECT ok(pgsodium_crypto_auth_verify(:'auth_mac', 'bob is your uncle', :'authkey'),
           'crypto_auth_verify');
-SELECT ok(not pgsodium_crypto_auth_verify('bad mac', 'bob is your uncle', :quoted_authkey),
+SELECT ok(not pgsodium_crypto_auth_verify('bad mac', 'bob is your uncle', :'authkey'),
           'crypto_auth_verify bad mac');
-SELECT ok(not pgsodium_crypto_auth_verify(:quoted_auth_mac, 'bob is your uncle', 'bad key'),
+SELECT ok(not pgsodium_crypto_auth_verify(:'auth_mac', 'bob is your uncle', 'bad key'),
           'crypto_auth_verify bad key');
 
 SELECT is(pgsodium_crypto_generichash('bob is your uncle'),
@@ -61,30 +55,19 @@ SELECT is(pgsodium_crypto_shorthash('bob is your uncle', 'super sekret key'),
           'crypto_shorthash');
 
 SELECT pgsodium_crypto_box_noncegen() boxnonce \gset
-\set quoted_boxnonce '\'' :boxnonce '\''
-
 SELECT public, secret FROM pgsodium_crypto_box_keypair() \gset bob_
-\set quoted_bob_public '\'' :bob_public '\''
-\set quoted_bob_secret '\'' :bob_secret '\''
-
 SELECT public, secret FROM pgsodium_crypto_box_keypair() \gset alice_
-\set quoted_alice_public '\'' :alice_public '\''
-\set quoted_alice_secret '\'' :alice_secret '\''
 
-SELECT pgsodium_crypto_box('bob is your uncle', :quoted_boxnonce, :quoted_bob_public, :quoted_alice_secret) box \gset
-\set quoted_box '\'' :box '\''
+SELECT pgsodium_crypto_box('bob is your uncle', :'boxnonce', :'bob_public', :'alice_secret') box \gset
 
-SELECT is(pgsodium_crypto_box_open(:quoted_box, :quoted_boxnonce, :quoted_alice_public, :quoted_bob_secret),
+SELECT is(pgsodium_crypto_box_open(:'box', :'boxnonce', :'alice_public', :'bob_secret'),
           'bob is your uncle', 'box_open');
 
 SELECT public, secret FROM pgsodium_crypto_sign_keypair() \gset sign_
-\set quoted_sign_public '\'' :sign_public '\''
-\set quoted_sign_secret '\'' :sign_secret '\''
 
-SELECT pgsodium_crypto_sign('bob is your uncle', :quoted_sign_secret) signed \gset
-\set quoted_signed '\'' :signed '\''
+SELECT pgsodium_crypto_sign('bob is your uncle', :'sign_secret') signed \gset
 
-SELECT is(pgsodium_crypto_sign_open(:quoted_signed, :quoted_sign_public),
+SELECT is(pgsodium_crypto_sign_open(:'signed', :'sign_public'),
           'bob is your uncle', 'sign_open');
 
 SELECT * FROM finish();

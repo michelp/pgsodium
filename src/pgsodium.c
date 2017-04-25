@@ -216,10 +216,10 @@ pgsodium_crypto_box_keypair(PG_FUNCTION_ARGS)
 	bool nulls[2] = {false, false};
 	HeapTuple tuple;
 	Datum result;
-	unsigned char pkey[crypto_box_PUBLICKEYBYTES];
-	unsigned char skey[crypto_box_SECRETKEYBYTES];
 	bytea *publickey;
 	bytea *secretkey;
+	size_t public_size = crypto_box_PUBLICKEYBYTES + VARHDRSZ;
+	size_t secret_size = crypto_box_SECRETKEYBYTES + VARHDRSZ;
 
 	if (get_call_result_type(fcinfo, NULL, &tupdesc) != TYPEFUNC_COMPOSITE)
 		ereport(ERROR,
@@ -227,19 +227,18 @@ pgsodium_crypto_box_keypair(PG_FUNCTION_ARGS)
 				 errmsg("function returning record called in context "
 						"that cannot accept type record")));
 
-	publickey = (bytea*)palloc(crypto_box_PUBLICKEYBYTES + VARHDRSZ);
-	secretkey = (bytea*)palloc(crypto_box_SECRETKEYBYTES + VARHDRSZ);
-	SET_VARSIZE(publickey, VARHDRSZ + crypto_box_PUBLICKEYBYTES);
-	SET_VARSIZE(secretkey, VARHDRSZ + crypto_box_SECRETKEYBYTES);
+	publickey = (bytea*)palloc(public_size);
+	secretkey = (bytea*)palloc(secret_size);
+	SET_VARSIZE(publickey, public_size);
+	SET_VARSIZE(secretkey, secret_size);
 
-	crypto_box_keypair(pkey, skey);
-
-	memcpy(VARDATA(publickey), pkey, crypto_box_PUBLICKEYBYTES);
-	memcpy(VARDATA(secretkey), skey, crypto_box_PUBLICKEYBYTES);
+	crypto_box_keypair(
+		(unsigned char*)VARDATA(publickey),
+		(unsigned char*)VARDATA(secretkey)
+		);
 
 	values[0] = PointerGetDatum(publickey);
 	values[1] = PointerGetDatum(secretkey);
-
 	tuple = heap_form_tuple(tupdesc, values, nulls);
 	result = HeapTupleGetDatum(tuple);
 	return result;
@@ -323,10 +322,10 @@ pgsodium_crypto_sign_keypair(PG_FUNCTION_ARGS)
 	bool nulls[2] = {false, false};
 	HeapTuple tuple;
 	Datum result;
-	unsigned char pkey[crypto_sign_PUBLICKEYBYTES];
-	unsigned char skey[crypto_sign_SECRETKEYBYTES];
 	bytea *publickey;
 	bytea *secretkey;
+	size_t public_size = crypto_sign_PUBLICKEYBYTES + VARHDRSZ;
+	size_t secret_size = crypto_sign_SECRETKEYBYTES + VARHDRSZ;
 
 	if (get_call_result_type(fcinfo, NULL, &tupdesc) != TYPEFUNC_COMPOSITE)
 		ereport(ERROR,
@@ -334,19 +333,18 @@ pgsodium_crypto_sign_keypair(PG_FUNCTION_ARGS)
 				 errmsg("function returning record called in context "
 						"that cannot accept type record")));
 
-	publickey = (bytea*)palloc(crypto_sign_PUBLICKEYBYTES + VARHDRSZ);
-	secretkey = (bytea*)palloc(crypto_sign_SECRETKEYBYTES + VARHDRSZ);
-	SET_VARSIZE(publickey, VARHDRSZ + crypto_sign_PUBLICKEYBYTES);
-	SET_VARSIZE(secretkey, VARHDRSZ + crypto_sign_SECRETKEYBYTES);
+	publickey = (bytea*)palloc(public_size);
+	secretkey = (bytea*)palloc(secret_size);
+	SET_VARSIZE(publickey, public_size);
+	SET_VARSIZE(secretkey, secret_size);
 
-	crypto_sign_keypair(pkey, skey);
-
-	memcpy(VARDATA(publickey), pkey, crypto_sign_PUBLICKEYBYTES);
-	memcpy(VARDATA(secretkey), skey, crypto_sign_PUBLICKEYBYTES);
+	crypto_sign_keypair(
+		(unsigned char*)VARDATA(publickey),
+		(unsigned char*)VARDATA(secretkey)
+		);
 
 	values[0] = PointerGetDatum(publickey);
 	values[1] = PointerGetDatum(secretkey);
-
 	tuple = heap_form_tuple(tupdesc, values, nulls);
 	result = HeapTupleGetDatum(tuple);
 	return result;
