@@ -13,7 +13,7 @@ DROP EXTENSION IF EXISTS pgsodium;
 CREATE EXTENSION pgsodium;
 
 BEGIN;
-SELECT plan(13);
+SELECT plan(15);
 
 SELECT lives_ok($$SELECT pgsodium_randombytes_random()$$, 'randombytes_random');
 SELECT lives_ok($$SELECT pgsodium_randombytes_uniform(10)$$, 'randombytes_uniform');
@@ -69,6 +69,12 @@ SELECT pgsodium_crypto_sign('bob is your uncle', :'sign_secret') signed \gset
 
 SELECT is(pgsodium_crypto_sign_open(:'signed', :'sign_public'),
           'bob is your uncle', 'sign_open');
+
+SELECT lives_ok($$SELECT pgsodium_crypto_pwhash_saltgen()$$, 'pgsodium_crypto_pwhash_saltgen');
+
+SELECT is(pgsodium_crypto_pwhash('Correct Horse Battery Staple', '\xccfe2b51d426f88f6f8f18c24635616b'),
+        '\xc864fcfca5e92a04200143139f635f0925c4d58c201f8922bb42e86da828d3c1',
+        'pgsodium_crypto_pwhash');
 
 SELECT * FROM finish();
 ROLLBACK;
