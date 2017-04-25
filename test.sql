@@ -13,7 +13,7 @@ DROP EXTENSION IF EXISTS pgsodium;
 CREATE EXTENSION pgsodium;
 
 BEGIN;
-SELECT plan(15);
+SELECT plan(16);
 
 SELECT lives_ok($$SELECT pgsodium_randombytes_random()$$, 'randombytes_random');
 SELECT lives_ok($$SELECT pgsodium_randombytes_uniform(10)$$, 'randombytes_uniform');
@@ -22,9 +22,9 @@ SELECT lives_ok($$SELECT pgsodium_randombytes_buf(10)$$, 'randombytes_buf');
 SELECT pgsodium_crypto_secretbox_keygen() boxkey \gset
 SELECT pgsodium_crypto_secretbox_noncegen() secretboxnonce \gset
 
-SELECT pgsodium_crypto_secretbox('bob is your uncle', :'boxkey', :'secretboxnonce') secretbox \gset
+SELECT pgsodium_crypto_secretbox('bob is your uncle', :'secretboxnonce', :'boxkey') secretbox \gset
 
-SELECT is(pgsodium_crypto_secretbox_open(:'secretbox', :'boxkey', :'secretboxnonce'),
+SELECT is(pgsodium_crypto_secretbox_open(:'secretbox', :'secretboxnonce', :'boxkey'),
           'bob is your uncle', 'secretbox_open');
 
 SELECT pgsodium_crypto_auth_keygen() authkey \gset
@@ -73,8 +73,12 @@ SELECT is(pgsodium_crypto_sign_open(:'signed', :'sign_public'),
 SELECT lives_ok($$SELECT pgsodium_crypto_pwhash_saltgen()$$, 'pgsodium_crypto_pwhash_saltgen');
 
 SELECT is(pgsodium_crypto_pwhash('Correct Horse Battery Staple', '\xccfe2b51d426f88f6f8f18c24635616b'),
-        '\xc864fcfca5e92a04200143139f635f0925c4d58c201f8922bb42e86da828d3c1',
+        '\xd342e22c9077a5e07ab81050e269e96777609c27a245517f4eb2827bd584eeb1',
         'pgsodium_crypto_pwhash');
+
+SELECT ok(pgsodium_crypto_pwhash_str_verify(pgsodium_crypto_pwhash_str('Correct Horse Battery Staple'),
+          'Correct Horse Battery Staple'),
+          'pgsodium_crypto_pwhash_str_verify');
 
 SELECT * FROM finish();
 ROLLBACK;

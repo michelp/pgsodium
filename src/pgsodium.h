@@ -38,6 +38,8 @@ Datum pgsodium_crypto_shorthash(PG_FUNCTION_ARGS);
 
 Datum pgsodium_crypto_pwhash_saltgen(PG_FUNCTION_ARGS);
 Datum pgsodium_crypto_pwhash(PG_FUNCTION_ARGS);
+Datum pgsodium_crypto_pwhash_str(PG_FUNCTION_ARGS);
+Datum pgsodium_crypto_pwhash_str_verify(PG_FUNCTION_ARGS);
 
 /* Public Key */
 
