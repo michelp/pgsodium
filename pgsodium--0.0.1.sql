@@ -119,3 +119,13 @@ CREATE OR REPLACE FUNCTION pgsodium_crypto_pwhash_str_verify(hashed_password tex
 RETURNS bool
 AS '$libdir/pgsodium'
 LANGUAGE C IMMUTABLE STRICT;
+
+CREATE OR REPLACE FUNCTION pgsodium_crypto_box_seal(message text, public_key bytea)
+RETURNS bytea
+AS '$libdir/pgsodium'
+LANGUAGE C VOLATILE STRICT;
+
+CREATE OR REPLACE FUNCTION pgsodium_crypto_box_seal_open(ciphertext bytea, public_key bytea, secret_key bytea)
+RETURNS text
+AS '$libdir/pgsodium'
+LANGUAGE C VOLATILE STRICT;

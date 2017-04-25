@@ -6,14 +6,14 @@
 \pset pager
 
 \set ON_ERROR_ROLLBACK 1
-\set ON_ERROR_STOP true
+-- \set ON_ERROR_STOP true
 \set QUIET 1
 
 DROP EXTENSION IF EXISTS pgsodium;
 CREATE EXTENSION pgsodium;
 
 BEGIN;
-SELECT plan(16);
+SELECT plan(17);
 
 SELECT lives_ok($$SELECT pgsodium_randombytes_random()$$, 'randombytes_random');
 SELECT lives_ok($$SELECT pgsodium_randombytes_uniform(10)$$, 'randombytes_uniform');
@@ -63,12 +63,17 @@ SELECT pgsodium_crypto_box('bob is your uncle', :'boxnonce', :'bob_public', :'al
 SELECT is(pgsodium_crypto_box_open(:'box', :'boxnonce', :'alice_public', :'bob_secret'),
           'bob is your uncle', 'box_open');
 
+SELECT pgsodium_crypto_box_seal('bob is your uncle', :'bob_public') sealed \gset
+
+SELECT is(pgsodium_crypto_box_seal_open(:'sealed', :'bob_public', :'bob_secret'),
+          'bob is your uncle', 'pgsodium_crypto_box_seal/open');
+
 SELECT public, secret FROM pgsodium_crypto_sign_keypair() \gset sign_
 
 SELECT pgsodium_crypto_sign('bob is your uncle', :'sign_secret') signed \gset
 
 SELECT is(pgsodium_crypto_sign_open(:'signed', :'sign_public'),
-          'bob is your uncle', 'sign_open');
+          'bob is your uncle', 'pgsodium_crypto_sign/open');
 
 SELECT lives_ok($$SELECT pgsodium_crypto_pwhash_saltgen()$$, 'pgsodium_crypto_pwhash_saltgen');
 
