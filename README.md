@@ -1,6 +1,6 @@
 # pgsodium
 
-Postgres extension interfacing libsodium functions.
+Postgres extension for [libsodium](https://download.libsodium.org/doc/).
 
 This is a work in progress.
 
