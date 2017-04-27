@@ -133,9 +133,7 @@ pgsodium_crypto_auth_verify(PG_FUNCTION_ARGS)
 		(unsigned char*)VARDATA(message),
 		VARSIZE_ANY_EXHDR(message),
 		(unsigned char*)VARDATA(key));
-	if (success != 0)
-		PG_RETURN_BOOL(0);
-	PG_RETURN_BOOL(1);
+	PG_RETURN_BOOL(success == 0);
 }
 
 PG_FUNCTION_INFO_V1(pgsodium_crypto_auth_keygen);
