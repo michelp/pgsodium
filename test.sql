@@ -55,8 +55,8 @@ SELECT is(crypto_shorthash('bob is your uncle', 'super sekret key'),
           'crypto_shorthash');
 
 SELECT crypto_box_noncegen() boxnonce \gset
-SELECT public, secret FROM crypto_box_keypair() \gset bob_
-SELECT public, secret FROM crypto_box_keypair() \gset alice_
+SELECT public, secret FROM crypto_box_new_keypair() \gset bob_
+SELECT public, secret FROM crypto_box_new_keypair() \gset alice_
 
 SELECT crypto_box('bob is your uncle', :'boxnonce', :'bob_public', :'alice_secret') box \gset
 
@@ -68,7 +68,7 @@ SELECT crypto_box_seal('bob is your uncle', :'bob_public') sealed \gset
 SELECT is(crypto_box_seal_open(:'sealed', :'bob_public', :'bob_secret'),
           'bob is your uncle', 'crypto_box_seal/open');
 
-SELECT public, secret FROM crypto_sign_keypair() \gset sign_
+SELECT public, secret FROM crypto_sign_new_keypair() \gset sign_
 
 SELECT crypto_sign('bob is your uncle', :'sign_secret') signed \gset
 
@@ -84,6 +84,23 @@ SELECT is(crypto_pwhash('Correct Horse Battery Staple', '\xccfe2b51d426f88f6f8f1
 SELECT ok(crypto_pwhash_str_verify(crypto_pwhash_str('Correct Horse Battery Staple'),
           'Correct Horse Battery Staple'),
           'crypto_pwhash_str_verify');
+
+SELECT * FROM finish();
+ROLLBACK;
+
+-- test relocatable schema
+
+DROP SCHEMA IF EXISTS pgsodium;
+CREATE SCHEMA pgsodium;
+DROP EXTENSION IF EXISTS pgsodium;
+CREATE EXTENSION pgsodium WITH SCHEMA pgsodium;
+
+BEGIN;
+SELECT plan(3);
+
+SELECT lives_ok($$SELECT pgsodium.randombytes_random()$$, 'randombytes_random');
+SELECT lives_ok($$SELECT pgsodium.randombytes_uniform(10)$$, 'randombytes_uniform');
+SELECT lives_ok($$SELECT pgsodium.randombytes_buf(10)$$, 'randombytes_buf');
 
 SELECT * FROM finish();
 ROLLBACK;

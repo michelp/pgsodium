@@ -63,7 +63,7 @@ LANGUAGE C VOLATILE STRICT;
 
 CREATE TYPE crypto_box_keypair AS (public bytea, secret bytea);
 
-CREATE OR REPLACE FUNCTION crypto_box_keypair()
+CREATE OR REPLACE FUNCTION crypto_box_new_keypair()
 RETURNS SETOF crypto_box_keypair
 AS '$libdir/pgsodium', 'pgsodium_crypto_box_keypair'
 LANGUAGE C VOLATILE;
@@ -85,7 +85,7 @@ LANGUAGE C IMMUTABLE STRICT;
 
 CREATE TYPE crypto_sign_keypair AS (public bytea, secret bytea);
 
-CREATE OR REPLACE FUNCTION crypto_sign_keypair()
+CREATE OR REPLACE FUNCTION crypto_sign_new_keypair()
 RETURNS SETOF crypto_sign_keypair
 AS '$libdir/pgsodium', 'pgsodium_crypto_sign_keypair'
 LANGUAGE C VOLATILE;
