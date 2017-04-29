@@ -15,75 +15,75 @@ CREATE EXTENSION pgsodium;
 BEGIN;
 SELECT plan(17);
 
-SELECT lives_ok($$SELECT pgsodium_randombytes_random()$$, 'randombytes_random');
-SELECT lives_ok($$SELECT pgsodium_randombytes_uniform(10)$$, 'randombytes_uniform');
-SELECT lives_ok($$SELECT pgsodium_randombytes_buf(10)$$, 'randombytes_buf');
+SELECT lives_ok($$SELECT randombytes_random()$$, 'randombytes_random');
+SELECT lives_ok($$SELECT randombytes_uniform(10)$$, 'randombytes_uniform');
+SELECT lives_ok($$SELECT randombytes_buf(10)$$, 'randombytes_buf');
 
-SELECT pgsodium_crypto_secretbox_keygen() boxkey \gset
-SELECT pgsodium_crypto_secretbox_noncegen() secretboxnonce \gset
+SELECT crypto_secretbox_keygen() boxkey \gset
+SELECT crypto_secretbox_noncegen() secretboxnonce \gset
 
-SELECT pgsodium_crypto_secretbox('bob is your uncle', :'secretboxnonce', :'boxkey') secretbox \gset
+SELECT crypto_secretbox('bob is your uncle', :'secretboxnonce', :'boxkey') secretbox \gset
 
-SELECT is(pgsodium_crypto_secretbox_open(:'secretbox', :'secretboxnonce', :'boxkey'),
+SELECT is(crypto_secretbox_open(:'secretbox', :'secretboxnonce', :'boxkey'),
           'bob is your uncle', 'secretbox_open');
 
-SELECT pgsodium_crypto_auth_keygen() authkey \gset
+SELECT crypto_auth_keygen() authkey \gset
 
-SELECT pgsodium_crypto_auth('bob is your uncle', :'authkey') auth_mac \gset
+SELECT crypto_auth('bob is your uncle', :'authkey') auth_mac \gset
 
-SELECT ok(pgsodium_crypto_auth_verify(:'auth_mac', 'bob is your uncle', :'authkey'),
+SELECT ok(crypto_auth_verify(:'auth_mac', 'bob is your uncle', :'authkey'),
           'crypto_auth_verify');
-SELECT ok(not pgsodium_crypto_auth_verify('bad mac', 'bob is your uncle', :'authkey'),
+SELECT ok(not crypto_auth_verify('bad mac', 'bob is your uncle', :'authkey'),
           'crypto_auth_verify bad mac');
-SELECT ok(not pgsodium_crypto_auth_verify(:'auth_mac', 'bob is your uncle', 'bad key'),
+SELECT ok(not crypto_auth_verify(:'auth_mac', 'bob is your uncle', 'bad key'),
           'crypto_auth_verify bad key');
 
-SELECT is(pgsodium_crypto_generichash('bob is your uncle'),
+SELECT is(crypto_generichash('bob is your uncle'),
           '\x6c80c5f772572423c3910a9561710313e4b6e74abc0d65f577a8ac1583673657',
           'crypto_generichash');
 
-SELECT is(pgsodium_crypto_generichash('bob is your uncle', NULL),
+SELECT is(crypto_generichash('bob is your uncle', NULL),
           '\x6c80c5f772572423c3910a9561710313e4b6e74abc0d65f577a8ac1583673657',
           'crypto_generichash NULL key');
 
-SELECT is(pgsodium_crypto_generichash('bob is your uncle', 'super sekret key'),
+SELECT is(crypto_generichash('bob is your uncle', 'super sekret key'),
           '\xe8e9e180d918ea9afe0bf44d1945ec356b2b6845e9a4c31acc6c02d826036e41',
           'crypto_generichash with key');
 
-SELECT is(pgsodium_crypto_shorthash('bob is your uncle', 'super sekret key'),
+SELECT is(crypto_shorthash('bob is your uncle', 'super sekret key'),
           '\xe080614efb824a15',
           'crypto_shorthash');
 
-SELECT pgsodium_crypto_box_noncegen() boxnonce \gset
-SELECT public, secret FROM pgsodium_crypto_box_keypair() \gset bob_
-SELECT public, secret FROM pgsodium_crypto_box_keypair() \gset alice_
+SELECT crypto_box_noncegen() boxnonce \gset
+SELECT public, secret FROM crypto_box_keypair() \gset bob_
+SELECT public, secret FROM crypto_box_keypair() \gset alice_
 
-SELECT pgsodium_crypto_box('bob is your uncle', :'boxnonce', :'bob_public', :'alice_secret') box \gset
+SELECT crypto_box('bob is your uncle', :'boxnonce', :'bob_public', :'alice_secret') box \gset
 
-SELECT is(pgsodium_crypto_box_open(:'box', :'boxnonce', :'alice_public', :'bob_secret'),
-          'bob is your uncle', 'box_open');
+SELECT is(crypto_box_open(:'box', :'boxnonce', :'alice_public', :'bob_secret'),
+          'bob is your uncle', 'crypto_box_open');
 
-SELECT pgsodium_crypto_box_seal('bob is your uncle', :'bob_public') sealed \gset
+SELECT crypto_box_seal('bob is your uncle', :'bob_public') sealed \gset
 
-SELECT is(pgsodium_crypto_box_seal_open(:'sealed', :'bob_public', :'bob_secret'),
-          'bob is your uncle', 'pgsodium_crypto_box_seal/open');
+SELECT is(crypto_box_seal_open(:'sealed', :'bob_public', :'bob_secret'),
+          'bob is your uncle', 'crypto_box_seal/open');
 
-SELECT public, secret FROM pgsodium_crypto_sign_keypair() \gset sign_
+SELECT public, secret FROM crypto_sign_keypair() \gset sign_
 
-SELECT pgsodium_crypto_sign('bob is your uncle', :'sign_secret') signed \gset
+SELECT crypto_sign('bob is your uncle', :'sign_secret') signed \gset
 
-SELECT is(pgsodium_crypto_sign_open(:'signed', :'sign_public'),
-          'bob is your uncle', 'pgsodium_crypto_sign/open');
+SELECT is(crypto_sign_open(:'signed', :'sign_public'),
+          'bob is your uncle', 'crypto_sign/open');
 
-SELECT lives_ok($$SELECT pgsodium_crypto_pwhash_saltgen()$$, 'pgsodium_crypto_pwhash_saltgen');
+SELECT lives_ok($$SELECT crypto_pwhash_saltgen()$$, 'crypto_pwhash_saltgen');
 
-SELECT is(pgsodium_crypto_pwhash('Correct Horse Battery Staple', '\xccfe2b51d426f88f6f8f18c24635616b'),
+SELECT is(crypto_pwhash('Correct Horse Battery Staple', '\xccfe2b51d426f88f6f8f18c24635616b'),
         '\xd342e22c9077a5e07ab81050e269e96777609c27a245517f4eb2827bd584eeb1',
-        'pgsodium_crypto_pwhash');
+        'crypto_pwhash');
 
-SELECT ok(pgsodium_crypto_pwhash_str_verify(pgsodium_crypto_pwhash_str('Correct Horse Battery Staple'),
+SELECT ok(crypto_pwhash_str_verify(crypto_pwhash_str('Correct Horse Battery Staple'),
           'Correct Horse Battery Staple'),
-          'pgsodium_crypto_pwhash_str_verify');
+          'crypto_pwhash_str_verify');
 
 SELECT * FROM finish();
 ROLLBACK;
