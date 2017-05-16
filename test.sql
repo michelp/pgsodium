@@ -13,7 +13,7 @@ DROP EXTENSION IF EXISTS pgsodium;
 CREATE EXTENSION pgsodium;
 
 BEGIN;
-SELECT plan(17);
+SELECT plan(20);
 
 SELECT lives_ok($$SELECT randombytes_random()$$, 'randombytes_random');
 SELECT lives_ok($$SELECT randombytes_uniform(10)$$, 'randombytes_uniform');
@@ -85,18 +85,12 @@ SELECT ok(crypto_pwhash_str_verify(crypto_pwhash_str('Correct Horse Battery Stap
           'Correct Horse Battery Staple'),
           'crypto_pwhash_str_verify');
 
-SELECT * FROM finish();
-ROLLBACK;
-
 -- test relocatable schema
 
 DROP SCHEMA IF EXISTS pgsodium;
 CREATE SCHEMA pgsodium;
 DROP EXTENSION IF EXISTS pgsodium;
 CREATE EXTENSION pgsodium WITH SCHEMA pgsodium;
-
-BEGIN;
-SELECT plan(3);
 
 SELECT lives_ok($$SELECT pgsodium.randombytes_random()$$, 'randombytes_random');
 SELECT lives_ok($$SELECT pgsodium.randombytes_uniform(10)$$, 'randombytes_uniform');
