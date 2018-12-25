@@ -9,7 +9,7 @@
 -- \set ON_ERROR_STOP true
 \set QUIET 1
 
-DROP EXTENSION IF EXISTS pgsodium;
+CREATE EXTENSION pgtap;
 CREATE EXTENSION pgsodium;
 
 BEGIN;
@@ -78,7 +78,7 @@ SELECT is(crypto_sign_open(:'signed', :'sign_public'),
 SELECT lives_ok($$SELECT crypto_pwhash_saltgen()$$, 'crypto_pwhash_saltgen');
 
 SELECT is(crypto_pwhash('Correct Horse Battery Staple', '\xccfe2b51d426f88f6f8f18c24635616b'),
-        '\xd342e22c9077a5e07ab81050e269e96777609c27a245517f4eb2827bd584eeb1',
+        '\x77d029a9b3035c88f186ed0f69f58386ad0bd5252851b4e89f0d7057b5081342',
         'crypto_pwhash');
 
 SELECT ok(crypto_pwhash_str_verify(crypto_pwhash_str('Correct Horse Battery Staple'),
@@ -87,7 +87,6 @@ SELECT ok(crypto_pwhash_str_verify(crypto_pwhash_str('Correct Horse Battery Stap
 
 -- test relocatable schema
 
-DROP SCHEMA IF EXISTS pgsodium;
 CREATE SCHEMA pgsodium;
 DROP EXTENSION IF EXISTS pgsodium;
 CREATE EXTENSION pgsodium WITH SCHEMA pgsodium;
