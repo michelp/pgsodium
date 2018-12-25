@@ -10,8 +10,9 @@ header files typically in the '-dev' package.
 
 Clone the repo and run 'sudo make install'.
 
-pgTAP tests can be run with 'sudo -u postgres pg_prove test.sql'.
-
+pgTAP tests can be run with 'sudo -u postgres pg_prove test.sql' or
+they can be run in a self-contained Docker test image by running
+`./test.sh` if you have docker installed.
 
 ## Usage
 
