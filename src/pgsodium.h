@@ -1,12 +1,35 @@
 #ifndef PGSODIUM_H
 #define PGSODIUM_H
 
+#include <stdio.h>
 #include <sodium.h>
 #include "postgres.h"
 #include "utils/builtins.h"
 #include "libpq/pqformat.h"
 #include "funcapi.h"
 #include "access/htup_details.h"
+
+typedef struct pgsodium_cb_data {
+  void* ptr;
+  size_t size;
+} pgsodium_cb_data;
+
+static void context_cb_zero_buff(void*);
+
+#define ZERO_BUFF_CB(_ptr, _size)                                       \
+  do {                                                                  \
+    MemoryContextCallback *ctxcb = (MemoryContextCallback*)              \
+    MemoryContextAlloc(                                                 \
+                       CurrentMemoryContext,                            \
+                       sizeof(MemoryContextCallback));                  \
+  pgsodium_cb_data* d = (pgsodium_cb_data*)palloc(sizeof(pgsodium_cb_data)); \
+  d->ptr = _ptr;                                                        \
+  d->size = _size;                                                      \
+  ctxcb->func = context_cb_zero_buff;                                   \
+  ctxcb->arg = d;                                                       \
+  MemoryContextRegisterResetCallback(CurrentMemoryContext, ctxcb);      \
+  } while(0);                                                           \
+
 
 void _PG_init(void);
 

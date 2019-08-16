@@ -5,7 +5,7 @@ Postgres extension for [libsodium](https://download.libsodium.org/doc/).
 ## Installation
 
 Tested with Postgres 9.6, 10, and 11.  You will need libsodium >=
-1.0.16.  If your operating system provides packages you may also need
+1.0.18.  If your operating system provides packages you may also need
 the header files typically in the '-dev' package.
 
 Clone the repo and run 'sudo make install'.

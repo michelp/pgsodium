@@ -26,5 +26,5 @@ echo running tests
 $EXEC pg_prove -U "$SU" /pgsodium/test.sql
 
 echo destroying test container and image
-docker rm --force "$DB_HOST"
-docker rmi pgsodium/test
+# docker rm --force "$DB_HOST"
+# docker rmi pgsodium/test
