@@ -4,9 +4,10 @@ Postgres extension for [libsodium](https://download.libsodium.org/doc/).
 
 ## Installation
 
-Tested with Postgres 9.6, 10, and 11.  You will need libsodium >=
-1.0.18.  If your operating system provides packages you may also need
-the header files typically in the '-dev' package.
+Tested with Postgres 11.5, but has and should work with 10 and 9.6.
+Recommend libsodium >= 1.0.18 but has and should work with >= 1.0.16.
+If your operating system provides packages you may also need the
+header files typically in the '-dev' package.
 
 Clone the repo and run 'sudo make install'.
 
@@ -30,6 +31,7 @@ postgres=# SELECT * FROM crypto_box_new_keypair();
 Here's an example usage from the test.sql file:
 
 ```
+-- Generate a boxnonce, and public and secret keypairs for bob and alice
 SELECT crypto_box_noncegen() boxnonce \gset
 SELECT public, secret FROM crypto_box_new_keypair() \gset bob_
 SELECT public, secret FROM crypto_box_new_keypair() \gset alice_
