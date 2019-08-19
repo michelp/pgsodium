@@ -38,7 +38,7 @@ storage into each session with `SET LOCAL` statements.  If the
 database is hacked or stolen, the keys will not be available to the
 attacker.  This approach has problems in that if your `log_statements`
 is set to `all` the `SET LOCAL` statement will log the secrets so be
-aware.
+careful to disable logging while injecting the key, as shown below.
 
 Here's an example usage from the test.sql that uses `psql` client
 commands to encrypt data.  Note in this example, no secrets are stored
@@ -77,10 +77,10 @@ local variables and then resets the logging:
     RESET log_statement;
 
     -- Alice encrypts the box for bob using her secret key and his public key
-    SELECT crypto_box('bob is your uncle', :'boxnonce', :'bob_public', current_setting('alice_secret')) box \gset
+    SELECT crypto_box('bob is your uncle', :'boxnonce', :'bob_public', current_setting('app.alice_secret')) box \gset
 
     -- Bob decrypts the box using his secret key and Alice's public key
-    SELECT is(crypto_box_open(:'box', :'boxnonce', :'alice_public', current_setting('bob_secret')),
+    SELECT is(crypto_box_open(:'box', :'boxnonce', :'alice_public', current_setting('app.bob_secret')),
               'bob is your uncle', 'crypto_box_open');
 
     COMMIT;
