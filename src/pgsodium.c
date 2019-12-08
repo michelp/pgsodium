@@ -4,7 +4,7 @@ PG_MODULE_MAGIC;
 static void
 context_cb_zero_buff(void* a) {
   pgsodium_cb_data *data = (pgsodium_cb_data *) a;
-  memset(data->ptr, 0, data->size);
+  sodium_memzero(data->ptr, data->size);
 }
 
 PG_FUNCTION_INFO_V1(pgsodium_randombytes_random);
