@@ -4,7 +4,7 @@ Postgres extension for [libsodium](https://download.libsodium.org/doc/).
 
 ## Installation
 
-Tested with Postgres 11.5, 10.x and 9.6.  Requires libsodium >=
+Tested with Postgres 12.2 11.7, 10.12 and 9.6.  Requires libsodium >=
 1.0.18.  In addition to the libsodium library and it's development
 headers, you may also need the postgres header files typically in the
 '-dev' packages to build the extension.
@@ -12,8 +12,10 @@ headers, you may also need the postgres header files typically in the
 Clone the repo and run 'sudo make install'.
 
 pgTAP tests can be run with 'sudo -u postgres pg_prove test.sql' or
-they can be run in a self-contained Docker test image based on
-postgres 11.5.  Run `./test.sh` if you have docker installed.
+they can be run in a self-contained Docker image.  Run `./test.sh` if
+you have docker installed to run all tests.  Note that this will
+download and run the tests against four different major versions of
+postgresql, so it takes a while.
 
 ## Usage
 
