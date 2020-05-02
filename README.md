@@ -1,4 +1,6 @@
-[![Build Status](https://travis-ci.org/michelp/pgsodium.svg?branch=master)](https://travis-ci.org/michelp/pgsodium)
+
+
+[![Build Status](https://api.travis-ci.com/michelp/pgsodium.svg?branch=master)](https://travis-ci.com/github/michelp/pgsodium)
 <br />
 # pgsodium
 
