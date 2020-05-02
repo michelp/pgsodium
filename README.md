@@ -33,18 +33,8 @@ allocated memory used by the extension on freeing.  In general it is a
 bad idea to store secrets in the database itself, although this can
 still be done carefully it has a higher risk.
 
-Other options include injecting the key from an external secret
-storage into each session with `SET LOCAL` statements.  If the
-database is hacked or stolen, the keys will not be available to the
-attacker.  This approach has problems in that if your `log_statements`
-is set to `all` the `SET LOCAL` statement will log the secrets so be
-careful to disable logging while injecting the key, as shown below.
-
 Here's an example usage from the test.sql that uses `psql` client
-commands to encrypt data.  Note in this example, no secrets are stored
-in the db, but they are interpolated into the sql that is sent to the
-server, so it's possible they can show up in logs as well.
-
+commands to encrypt data.
 
     -- Generate a boxnonce, and public and secret keypairs for bob and alice
     SELECT crypto_box_noncegen() boxnonce \gset
@@ -59,28 +49,50 @@ server, so it's possible they can show up in logs as well.
               'bob is your uncle', 'crypto_box_open');
 
 
-A more paranoid approach disables logging and injects the keys into
+Note in the above example, no secrets are *stored* in the db, but they
+are *interpolated* into the sql that is sent to the server, so it's
+possible they can show up in the database logs.
+
+Another options is to include the key from an external secret storage
+into each session with [`SET
+LOCAL`](https://www.postgresql.org/docs/12/sql-set.html)
+statements. If the images of database are hacked or stolen, the keys
+will not be available to the attacker.  This approach still has the
+problem that if your
+[`log_statements`](https://www.postgresql.org/docs/12/runtime-config-logging.html#RUNTIME-CONFIG-LOGGING-WHAT)
+is set to `all` the `SET LOCAL` statement will log the secrets so be
+careful to disable logging while injecting the key, as shown below.
+
+A more paranoid approachdisables logging and injects the keys into
 local variables and then resets the logging:
 
     -- SET LOCAL must be done in a transaction block
     BEGIN;
 
     -- Generate a boxnonce, and public and secret keypairs for bob and alice
+    -- This creates secrets that are sent back to the client but not stored
+    -- or logged.  Make sure you're using an encrypted database connection!
+
     SELECT crypto_box_noncegen() boxnonce \gset
     SELECT public, secret FROM crypto_box_new_keypair() \gset bob_
     SELECT public, secret FROM crypto_box_new_keypair() \gset alice_
 
-    -- Turn off logging and inject secrets into session with set local, then resume logging
+    -- Now use the secrets in a query. Turn off logging and inject secrets
+    -- into session with set local, then resume logging.
+
     SET LOCAL log_statement = 'none';
     SET LOCAL app.bob_secret = :'bob_secret';
     SET LOCAL app.alice_secret = :'alice_secret';
     RESET log_statement;
 
     -- Alice encrypts the box for bob using her secret key and his public key
-    SELECT crypto_box('bob is your uncle', :'boxnonce', :'bob_public', current_setting('app.alice_secret')) box \gset
 
-    -- Bob decrypts the box using his secret key and Alice's public key
-    SELECT is(crypto_box_open(:'box', :'boxnonce', :'alice_public', current_setting('app.bob_secret')),
-              'bob is your uncle', 'crypto_box_open');
+    SELECT crypto_box('bob is your uncle', :'boxnonce', :'bob_public',
+                      current_setting('app.alice_secret')) box \gset
+
+    -- Bob decrypts the box using his secret key and Alice's public key.
+
+    SELECT crypto_box_open(:'box', :'boxnonce', :'alice_public',
+                              current_setting('app.bob_secret'));
 
     COMMIT;
