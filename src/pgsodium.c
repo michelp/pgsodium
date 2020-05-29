@@ -428,6 +428,55 @@ pgsodium_crypto_sign_open(PG_FUNCTION_ARGS)
 	PG_RETURN_TEXT_P(result);
 }
 
+PG_FUNCTION_INFO_V1(pgsodium_crypto_sign_detached);
+Datum
+pgsodium_crypto_sign_detached(PG_FUNCTION_ARGS)
+{
+	int success;
+	bytea *message = PG_GETARG_BYTEA_P(0);
+	bytea *secretkey = PG_GETARG_BYTEA_P(1);
+	size_t sig_size = crypto_sign_BYTES;
+	unsigned long long result_size = VARHDRSZ + sig_size;
+	bytea *result = (bytea*)palloc(result_size);
+        ZERO_BUFF_CB(result, result_size);
+	SET_VARSIZE(result, result_size);
+
+	success = crypto_sign_detached(
+		(unsigned char*)VARDATA(result),
+		NULL,
+		(unsigned char*)VARDATA(message),
+		VARSIZE_ANY_EXHDR(message),
+		(unsigned char*)VARDATA(secretkey)
+		);
+	if (success != 0)
+		ereport(
+			ERROR,
+			(errcode(ERRCODE_DATA_EXCEPTION),
+			 errmsg("invalid message")));
+	PG_RETURN_BYTEA_P(result);
+}
+
+PG_FUNCTION_INFO_V1(pgsodium_crypto_sign_verify_detached);
+Datum
+pgsodium_crypto_sign_verify_detached(PG_FUNCTION_ARGS)
+{
+	int success;
+	bytea *sig = PG_GETARG_BYTEA_P(0);
+	bytea *message = PG_GETARG_BYTEA_P(1);
+	bytea *publickey = PG_GETARG_BYTEA_P(2);
+
+	success = crypto_sign_verify_detached(
+	        (unsigned char*)VARDATA(sig),
+		(unsigned char*)VARDATA(message),
+		VARSIZE_ANY_EXHDR(message),
+		(unsigned char*)VARDATA(publickey)
+		);
+	if (success == 0) 
+		PG_RETURN_BOOL(true);
+	else
+		PG_RETURN_BOOL(false);
+}
+
 
 PG_FUNCTION_INFO_V1(pgsodium_crypto_pwhash_saltgen);
 Datum
