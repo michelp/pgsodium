@@ -13,7 +13,7 @@ CREATE EXTENSION pgtap;
 CREATE EXTENSION pgsodium;
 
 BEGIN;
-SELECT plan(20);
+SELECT plan(22);
 
 SELECT lives_ok($$SELECT randombytes_random()$$, 'randombytes_random');
 SELECT lives_ok($$SELECT randombytes_uniform(10)$$, 'randombytes_uniform');
@@ -75,6 +75,21 @@ SELECT crypto_sign('bob is your uncle', :'sign_secret') signed \gset
 SELECT is(crypto_sign_open(:'signed', :'sign_public'),
           'bob is your uncle', 'crypto_sign/open');
 
+-- MM Start Tests for crypto_sign_detached.  You may want to move
+-- these if you want to preserve the previous test numbering
+
+-- We will sign our previously generated sealed box
+SELECT crypto_sign_detached(:'sealed', :'sign_secret') detached \gset
+
+SELECT is(crypto_sign_verify_detached(:'detached', :'sealed', :'sign_public'),
+          true, 'crypto_sign_detached/verify');
+
+SELECT is(crypto_sign_verify_detached(:'detached', 'xyzzy'::bytea, :'sign_public'),
+          false, 'crypto_sign_detached/verify (incorrect message)');
+
+-- MM End
+
+
 SELECT lives_ok($$SELECT crypto_pwhash_saltgen()$$, 'crypto_pwhash_saltgen');
 
 SELECT is(crypto_pwhash('Correct Horse Battery Staple', '\xccfe2b51d426f88f6f8f18c24635616b'),
@@ -84,6 +99,7 @@ SELECT is(crypto_pwhash('Correct Horse Battery Staple', '\xccfe2b51d426f88f6f8f1
 SELECT ok(crypto_pwhash_str_verify(crypto_pwhash_str('Correct Horse Battery Staple'),
           'Correct Horse Battery Staple'),
           'crypto_pwhash_str_verify');
+
 
 -- test relocatable schema
 

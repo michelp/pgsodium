@@ -100,6 +100,16 @@ RETURNS text
 AS '$libdir/pgsodium', 'pgsodium_crypto_sign_open'
 LANGUAGE C IMMUTABLE STRICT;
 
+CREATE OR REPLACE FUNCTION crypto_sign_detached(message bytea, key bytea)
+RETURNS bytea
+AS '$libdir/pgsodium', 'pgsodium_crypto_sign_detached'
+LANGUAGE C IMMUTABLE STRICT;
+
+CREATE OR REPLACE FUNCTION crypto_sign_verify_detached(sig bytea, message bytea, key bytea)
+RETURNS boolean
+AS '$libdir/pgsodium', 'pgsodium_crypto_sign_verify_detached'
+LANGUAGE C IMMUTABLE STRICT;
+
 CREATE OR REPLACE FUNCTION crypto_pwhash_saltgen()
 RETURNS bytea
 AS '$libdir/pgsodium', 'pgsodium_crypto_pwhash_saltgen'

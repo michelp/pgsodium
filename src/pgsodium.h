@@ -78,5 +78,7 @@ Datum pgsodium_crypto_box_seal_open(PG_FUNCTION_ARGS);
 Datum pgsodium_crypto_sign_keypair(PG_FUNCTION_ARGS);
 Datum pgsodium_crypto_sign(PG_FUNCTION_ARGS);
 Datum pgsodium_crypto_sign_open(PG_FUNCTION_ARGS);
+Datum pgsodium_crypto_sign_detached(PG_FUNCTION_ARGS);
+Datum pgsodium_crypto_sign_verify_detached(PG_FUNCTION_ARGS);
 
 #endif /* PGSODIUM_H */
