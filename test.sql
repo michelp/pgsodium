@@ -94,6 +94,19 @@ SELECT ok(crypto_pwhash_str_verify(crypto_pwhash_str('Correct Horse Battery Stap
           'Correct Horse Battery Staple'),
           'crypto_pwhash_str_verify');
 
+-- this pattern below is an example of how to turn off query logging
+-- of secrets via session variables.
+
+SET LOCAL log_statement = 'none';
+SET LOCAL app.bob_secret = :'bob_secret';
+SET LOCAL app.alice_secret = :'alice_secret';
+RESET log_statement;
+
+SELECT crypto_box('bob is your uncle', :'boxnonce', :'bob_public',
+                  current_setting('app.alice_secret')::bytea) box \gset
+
+SELECT crypto_box_open(:'box', :'boxnonce', :'alice_public',
+                          current_setting('app.bob_secret')::bytea);
 
 -- test relocatable schema
 

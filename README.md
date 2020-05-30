@@ -116,11 +116,11 @@ and then re-enable normal logging afterwards. as shown below:
     -- Alice encrypts the box for bob using her secret key and his public key
 
     SELECT crypto_box('bob is your uncle', :'boxnonce', :'bob_public',
-                      current_setting('app.alice_secret')) box \gset
+                      current_setting('app.alice_secret')::bytea) box \gset
 
     -- Bob decrypts the box using his secret key and Alice's public key.
 
     SELECT crypto_box_open(:'box', :'boxnonce', :'alice_public',
-                              current_setting('app.bob_secret'));
+                              current_setting('app.bob_secret')::bytea);
 
     COMMIT;
