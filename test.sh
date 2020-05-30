@@ -31,4 +31,3 @@ do
     echo destroying test container and image
     docker rm --force "$DB_HOST"
 done
-

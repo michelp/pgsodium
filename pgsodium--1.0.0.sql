@@ -26,22 +26,22 @@ RETURNS bytea
 AS '$libdir/pgsodium', 'pgsodium_crypto_secretbox_noncegen'
 LANGUAGE C VOLATILE;
 
-CREATE FUNCTION crypto_secretbox(message text, nonce bytea, key bytea)
+CREATE FUNCTION crypto_secretbox(message bytea, nonce bytea, key bytea)
 RETURNS bytea
 AS '$libdir/pgsodium', 'pgsodium_crypto_secretbox'
 LANGUAGE C IMMUTABLE STRICT;
 
 CREATE FUNCTION crypto_secretbox_open(ciphertext bytea, nonce bytea, key bytea)
-RETURNS text
+RETURNS bytea
 AS '$libdir/pgsodium', 'pgsodium_crypto_secretbox_open'
 LANGUAGE C IMMUTABLE STRICT;
 
-CREATE FUNCTION crypto_auth(message text, key bytea)
+CREATE FUNCTION crypto_auth(message bytea, key bytea)
 RETURNS bytea
 AS '$libdir/pgsodium', 'pgsodium_crypto_auth'
 LANGUAGE C IMMUTABLE STRICT;
 
-CREATE FUNCTION crypto_auth_verify(mac bytea, message text, key bytea)
+CREATE FUNCTION crypto_auth_verify(mac bytea, message bytea, key bytea)
 RETURNS boolean
 AS '$libdir/pgsodium', 'pgsodium_crypto_auth_verify'
 LANGUAGE C IMMUTABLE STRICT;
@@ -51,12 +51,12 @@ RETURNS bytea
 AS '$libdir/pgsodium', 'pgsodium_crypto_auth_keygen'
 LANGUAGE C VOLATILE;
 
-CREATE FUNCTION crypto_generichash(message text, key bytea DEFAULT NULL)
+CREATE FUNCTION crypto_generichash(message bytea, key bytea DEFAULT NULL)
 RETURNS bytea
 AS '$libdir/pgsodium', 'pgsodium_crypto_generichash'
 LANGUAGE C VOLATILE;
 
-CREATE FUNCTION crypto_shorthash(message text, key bytea)
+CREATE FUNCTION crypto_shorthash(message bytea, key bytea)
 RETURNS bytea
 AS '$libdir/pgsodium', 'pgsodium_crypto_shorthash'
 LANGUAGE C VOLATILE STRICT;
@@ -73,13 +73,13 @@ RETURNS bytea
 AS '$libdir/pgsodium', 'pgsodium_crypto_box_noncegen'
 LANGUAGE C VOLATILE;
 
-CREATE FUNCTION crypto_box(message text, nonce bytea, public bytea, secret bytea)
+CREATE FUNCTION crypto_box(message bytea, nonce bytea, public bytea, secret bytea)
 RETURNS bytea
 AS '$libdir/pgsodium', 'pgsodium_crypto_box'
 LANGUAGE C IMMUTABLE STRICT;
 
 CREATE FUNCTION crypto_box_open(ciphertext bytea, nonce bytea, public bytea, secret bytea)
-RETURNS text
+RETURNS bytea
 AS '$libdir/pgsodium', 'pgsodium_crypto_box_open'
 LANGUAGE C IMMUTABLE STRICT;
 
@@ -90,13 +90,13 @@ RETURNS SETOF crypto_sign_keypair
 AS '$libdir/pgsodium', 'pgsodium_crypto_sign_keypair'
 LANGUAGE C VOLATILE;
 
-CREATE OR REPLACE FUNCTION crypto_sign(message text, key bytea)
+CREATE OR REPLACE FUNCTION crypto_sign(message bytea, key bytea)
 RETURNS bytea
 AS '$libdir/pgsodium', 'pgsodium_crypto_sign'
 LANGUAGE C IMMUTABLE STRICT;
 
 CREATE OR REPLACE FUNCTION crypto_sign_open(signed_message bytea, key bytea)
-RETURNS text
+RETURNS bytea
 AS '$libdir/pgsodium', 'pgsodium_crypto_sign_open'
 LANGUAGE C IMMUTABLE STRICT;
 
@@ -115,27 +115,27 @@ RETURNS bytea
 AS '$libdir/pgsodium', 'pgsodium_crypto_pwhash_saltgen'
 LANGUAGE C VOLATILE;
 
-CREATE OR REPLACE FUNCTION crypto_pwhash(password text, salt bytea)
+CREATE OR REPLACE FUNCTION crypto_pwhash(password bytea, salt bytea)
 RETURNS bytea
 AS '$libdir/pgsodium', 'pgsodium_crypto_pwhash'
 LANGUAGE C IMMUTABLE STRICT;
 
-CREATE OR REPLACE FUNCTION crypto_pwhash_str(password text)
-RETURNS text
+CREATE OR REPLACE FUNCTION crypto_pwhash_str(password bytea)
+RETURNS bytea
 AS '$libdir/pgsodium', 'pgsodium_crypto_pwhash_str'
 LANGUAGE C VOLATILE STRICT;
 
-CREATE OR REPLACE FUNCTION crypto_pwhash_str_verify(hashed_password text, password text)
+CREATE OR REPLACE FUNCTION crypto_pwhash_str_verify(hashed_password bytea, password bytea)
 RETURNS bool
 AS '$libdir/pgsodium', 'pgsodium_crypto_pwhash_str_verify'
 LANGUAGE C IMMUTABLE STRICT;
 
-CREATE OR REPLACE FUNCTION crypto_box_seal(message text, public_key bytea)
+CREATE OR REPLACE FUNCTION crypto_box_seal(message bytea, public_key bytea)
 RETURNS bytea
 AS '$libdir/pgsodium', 'pgsodium_crypto_box_seal'
 LANGUAGE C VOLATILE STRICT;
 
 CREATE OR REPLACE FUNCTION crypto_box_seal_open(ciphertext bytea, public_key bytea, secret_key bytea)
-RETURNS text
+RETURNS bytea
 AS '$libdir/pgsodium', 'pgsodium_crypto_box_seal_open'
 LANGUAGE C VOLATILE STRICT;

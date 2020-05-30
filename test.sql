@@ -75,20 +75,14 @@ SELECT crypto_sign('bob is your uncle', :'sign_secret') signed \gset
 SELECT is(crypto_sign_open(:'signed', :'sign_public'),
           'bob is your uncle', 'crypto_sign/open');
 
--- MM Start Tests for crypto_sign_detached.  You may want to move
--- these if you want to preserve the previous test numbering
-
 -- We will sign our previously generated sealed box
 SELECT crypto_sign_detached(:'sealed', :'sign_secret') detached \gset
 
 SELECT is(crypto_sign_verify_detached(:'detached', :'sealed', :'sign_public'),
           true, 'crypto_sign_detached/verify');
 
-SELECT is(crypto_sign_verify_detached(:'detached', 'xyzzy'::bytea, :'sign_public'),
+SELECT is(crypto_sign_verify_detached(:'detached', 'xyzzy', :'sign_public'),
           false, 'crypto_sign_detached/verify (incorrect message)');
-
--- MM End
-
 
 SELECT lives_ok($$SELECT crypto_pwhash_saltgen()$$, 'crypto_pwhash_saltgen');
 
