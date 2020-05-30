@@ -23,8 +23,18 @@ postgresql, so it takes a while.
 
 ## Usage
 
-Most of the libsodium API is available.  Keys that are generated in
-pairs are returned as a record type, for example:
+pgsodium arguments and return values for content and keys are of type
+`bytea`.  If you wish to use `text` or `varchar` values for general
+content, you must make sure they are encoded/decoded correctly using
+the [`encode() and
+decode()`](https://www.postgresql.org/docs/12/functions-binarystring.html)
+binary string functions.  Simple `text` strings without escape
+characters will be cast by the database implicitly, and this is how it
+is done in the tests to save time, but you should really be using
+`encode()/decode()`.
+
+Most of the libsodium API is available as SQL functions.  Keys that
+are generated in pairs are returned as a record type, for example:
 
 ```
 postgres=# SELECT * FROM crypto_box_new_keypair();
@@ -36,8 +46,8 @@ postgres=# SELECT * FROM crypto_box_new_keypair();
 
 pgsodium is careful to use memory cleanup callbacks to zero out all
 allocated memory used by the extension on freeing.  In general it is a
-bad idea to store secrets in the database itself, although this can
-still be done carefully it has a higher risk.
+bad idea to store secrets in the database itself, although this can be
+done carefully it has a higher risk.
 
 # Simple public key encryption with `crypto_box()`
 
