@@ -1,38 +1,42 @@
 
-
 [![Build Status](https://api.travis-ci.com/michelp/pgsodium.svg?branch=master)](https://travis-ci.com/github/michelp/pgsodium)
 <br />
 # pgsodium
 
-Postgres extension for [libsodium](https://download.libsodium.org/doc/).
+pgsodium is a [PostgreSQL](https://www.postgresql.org/) extension that
+exposes modern [libsodium](https://download.libsodium.org/doc/) based
+cryptographic functions to SQL.
 
 ## Installation
 
-Tested with the [official docker
-images](https://hub.docker.com/_/postgres) for PostgreSQL 13, 12,
-11, 10.  Requires libsodium >= 1.0.18.  In addition to the libsodium
-library and it's development headers, you may also need the postgres
-header files typically in the '-dev' packages to build the extension.
+[Travis CI](https://travis-ci.com/github/michelp/pgsodium) tested with
+the [official docker images](https://hub.docker.com/_/postgres) for
+PostgreSQL 13, 12, 11, and 10.  Requires libsodium >= 1.0.18.  In
+addition to the libsodium library and it's development headers, you
+may also need the postgres header files typically in the '-dev'
+packages to build the extension.
 
 Clone the repo and run 'sudo make install'.
 
 pgTAP tests can be run with 'sudo -u postgres pg_prove test.sql' or
 they can be run in a self-contained Docker image.  Run `./test.sh` if
-you have docker installed to run all tests.  Note that this will
-download and run the tests against four different major versions of
-postgresql, so it takes a while.
+you have docker installed to run all tests.  Note that this will run
+the tests against and download docker imags for four different major
+versions of postgresql, so it takes a while and requires a lot of
+network bandwidth the first time you run it.
 
 ## Usage
 
 pgsodium arguments and return values for content and keys are of type
 `bytea`.  If you wish to use `text` or `varchar` values for general
-content, you must make sure they are encoded/decoded correctly using
-the [`encode() and
-decode()`](https://www.postgresql.org/docs/12/functions-binarystring.html)
-binary string functions.  Simple `text` strings without escape
-characters will be cast by the database implicitly, and this is how it
-is done in the tests to save time, but you should really be using
-`encode()/decode()`.
+content, you must make sure they are encoded correctly.  The
+[`encode() and decode()` and
+`convert_to()/convert_from()`](https://www.postgresql.org/docs/12/functions-binarystring.html)
+binary string functions can convert from `text` to `bytea`.Simple
+ascii `text` strings without escape or unicode characters will be cast
+by the database implicitly, and this is how it is done in the tests to
+save time, but you should really be explicitly converting your `text`
+content if you wish to use pgsodium without conversion errors.
 
 Most of the libsodium API is available as SQL functions.  Keys that
 are generated in pairs are returned as a record type, for example:
@@ -46,9 +50,9 @@ postgres=# SELECT * FROM crypto_box_new_keypair();
 ```
 
 pgsodium is careful to use memory cleanup callbacks to zero out all
-allocated memory used by the extension on freeing.  In general it is a
-bad idea to store secrets in the database itself, although this can be
-done carefully it has a higher risk.
+allocated memory used by the when freed.  In general it is a bad idea
+to store secrets in the database itself, although this can be done
+carefully it has a higher risk.
 
 # Simple public key encryption with `crypto_box()`
 
@@ -58,19 +62,21 @@ commands (which begin with a backslash) to create keypairs and encrypt
 a message from Alice to Bob.
 
     -- Generate public and secret keypairs for bob and alice
+    -- \gset [prefix] is a psql command that will create local 
+    -- script variables
 
     SELECT public, secret FROM crypto_box_new_keypair() \gset bob_
     SELECT public, secret FROM crypto_box_new_keypair() \gset alice_
 
-    -- Create a boxnonice
+    -- Create a boxnonce
 
     SELECT crypto_box_noncegen() boxnonce \gset
 
-    -- Alice encrypts the box for bob using her secret key and his public key
+    -- Alice encrypts the box for bob using her secret key, the nonce and his public key
 
     SELECT crypto_box('bob is your uncle', :'boxnonce', :'bob_public', :'alice_secret') box \gset
 
-    -- Bob decrypts the box using his secret key and Alice's public key
+    -- Bob decrypts the box using his secret key, the nonce, and Alice's public key
 
     SELECT crypto_box_open(:'box', :'boxnonce', :'alice_public', :'bob_secret');
 
