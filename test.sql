@@ -13,7 +13,7 @@ CREATE EXTENSION pgtap;
 CREATE EXTENSION pgsodium;
 
 BEGIN;
-SELECT plan(22);
+SELECT plan(23);
 
 SELECT lives_ok($$SELECT randombytes_random()$$, 'randombytes_random');
 SELECT lives_ok($$SELECT randombytes_uniform(10)$$, 'randombytes_uniform');
@@ -105,9 +105,9 @@ RESET log_statement;
 SELECT crypto_box('bob is your uncle', :'boxnonce', :'bob_public',
                   current_setting('app.alice_secret')::bytea) box \gset
 
-SELECT crypto_box_open(:'box', :'boxnonce', :'alice_public',
-                          current_setting('app.bob_secret')::bytea);
-
+SELECT is(crypto_box_open(:'box', :'boxnonce', :'alice_public',
+                          current_setting('app.bob_secret')::bytea),
+                          'bob is your uncle', 'crypto_box_open');
 -- test relocatable schema
 
 CREATE SCHEMA pgsodium;

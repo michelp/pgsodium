@@ -2,7 +2,7 @@
 
 set -e
 
-for version in 10 11 12
+for version in 10 11 12 13
 do
     DB_HOST="pgsodium-test-db-$version"
     DB_NAME="postgres"
@@ -26,7 +26,7 @@ do
     done
 
     echo running tests
-    $EXEC pg_prove -U "$SU" /pgsodium/test.sql
+    $EXEC psql -U "$SU" -f /pgsodium/test.sql
 
     echo destroying test container and image
     docker rm --force "$DB_HOST"
