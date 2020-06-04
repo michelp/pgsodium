@@ -33,7 +33,7 @@ pgsodium_crypto_secretbox_keygen(PG_FUNCTION_ARGS)
 {
 	unsigned long long result_size = VARHDRSZ + crypto_secretbox_KEYBYTES;
 	bytea *result = _pgsodium_zalloc_bytea(result_size);
-	crypto_secretbox_keygen((unsigned char*)VARDATA(result));
+	crypto_secretbox_keygen(CHARDATA(result));
 	PG_RETURN_BYTEA_P(result);
 }
 
@@ -58,11 +58,11 @@ pgsodium_crypto_secretbox(PG_FUNCTION_ARGS)
 	unsigned long long result_size = VARHDRSZ + message_size;
 	bytea *result = _pgsodium_zalloc_bytea(result_size);
 	crypto_secretbox_easy(
-		(unsigned char*)VARDATA(result),
-		(unsigned char*)VARDATA(message),
+		CHARDATA(result),
+		CHARDATA(message),
 		VARSIZE_ANY_EXHDR(message),
-		(unsigned char*)VARDATA(nonce),
-		(unsigned char*)VARDATA(key));
+		CHARDATA(nonce),
+		CHARDATA(key));
 
 	PG_RETURN_BYTEA_P(result);
 }
@@ -79,11 +79,11 @@ pgsodium_crypto_secretbox_open(PG_FUNCTION_ARGS)
 	unsigned long long result_size = VARHDRSZ + message_size;
 	bytea *result = _pgsodium_zalloc_bytea(result_size);
 	success = crypto_secretbox_open_easy(
-		(unsigned char*)VARDATA(result),
-		(unsigned char*)VARDATA(message),
+		CHARDATA(result),
+		CHARDATA(message),
 		VARSIZE_ANY_EXHDR(message),
-		(unsigned char*)VARDATA(nonce),
-		(unsigned char*)VARDATA(key));
+		CHARDATA(nonce),
+		CHARDATA(key));
 
 	if (success != 0)
 		ereport(
@@ -104,10 +104,10 @@ pgsodium_crypto_auth(PG_FUNCTION_ARGS)
 	bytea *result = _pgsodium_zalloc_bytea(result_size);
 
 	crypto_auth(
-		(unsigned char*)VARDATA(result),
-		(unsigned char*)VARDATA(message),
+		CHARDATA(result),
+		CHARDATA(message),
 		VARSIZE_ANY_EXHDR(message),
-		(unsigned char*)VARDATA(key));
+		CHARDATA(key));
 	PG_RETURN_BYTEA_P(result);
 }
 
@@ -121,10 +121,10 @@ pgsodium_crypto_auth_verify(PG_FUNCTION_ARGS)
 	bytea *key = PG_GETARG_BYTEA_P(2);
 
 	success = crypto_auth_verify(
-		(unsigned char*)VARDATA(mac),
-		(unsigned char*)VARDATA(message),
+		CHARDATA(mac),
+		CHARDATA(message),
 		VARSIZE_ANY_EXHDR(message),
-		(unsigned char*)VARDATA(key));
+		CHARDATA(key));
 	PG_RETURN_BOOL(success == 0);
 }
 
@@ -134,7 +134,7 @@ pgsodium_crypto_auth_keygen(PG_FUNCTION_ARGS)
 {
 	unsigned long long result_size = VARHDRSZ + crypto_auth_KEYBYTES;
 	bytea *result = _pgsodium_zalloc_bytea(result_size);
-	crypto_secretbox_keygen((unsigned char*)VARDATA(result));
+	crypto_secretbox_keygen(CHARDATA(result));
 	PG_RETURN_BYTEA_P(result);
 }
 
@@ -153,7 +153,7 @@ pgsodium_crypto_generichash(PG_FUNCTION_ARGS)
 	if (!PG_ARGISNULL(1))
 	{
 		keyarg = PG_GETARG_BYTEA_P(1);
-		key = (unsigned char*)VARDATA(keyarg);
+		key = CHARDATA(keyarg);
 		keylen = VARSIZE_ANY_EXHDR(keyarg);
 	}
 
@@ -161,9 +161,9 @@ pgsodium_crypto_generichash(PG_FUNCTION_ARGS)
 	result = _pgsodium_zalloc_bytea(result_size);
 
 	crypto_generichash(
-		(unsigned char*)VARDATA(result),
+		CHARDATA(result),
 		crypto_generichash_BYTES,
-		(unsigned char*)VARDATA(data),
+		CHARDATA(data),
 		VARSIZE_ANY_EXHDR(data),
 		key,
 		keylen);
@@ -187,10 +187,10 @@ pgsodium_crypto_shorthash(PG_FUNCTION_ARGS)
 	result = _pgsodium_zalloc_bytea(result_size);
 
 	crypto_shorthash(
-		(unsigned char*)VARDATA(result),
-		(unsigned char*)VARDATA(data),
+		CHARDATA(result),
+		CHARDATA(data),
 		VARSIZE_ANY_EXHDR(data),
-		(unsigned char*)VARDATA(key));
+		CHARDATA(key));
 	PG_RETURN_BYTEA_P(result);
 }
 
@@ -218,8 +218,8 @@ pgsodium_crypto_box_keypair(PG_FUNCTION_ARGS)
 	secretkey = _pgsodium_zalloc_bytea(secret_size);
 
 	crypto_box_keypair(
-		(unsigned char*)VARDATA(publickey),
-		(unsigned char*)VARDATA(secretkey)
+		CHARDATA(publickey),
+		CHARDATA(secretkey)
 		);
 
 	values[0] = PointerGetDatum(publickey);
@@ -252,12 +252,12 @@ pgsodium_crypto_box(PG_FUNCTION_ARGS)
 	size_t message_size = crypto_box_MACBYTES + VARSIZE_ANY_EXHDR(message);
 	bytea *result = _pgsodium_zalloc_bytea(VARHDRSZ + message_size);
 	success = crypto_box_easy(
-		(unsigned char*)VARDATA(result),
-		(unsigned char*)VARDATA(message),
+		CHARDATA(result),
+		CHARDATA(message),
 		VARSIZE_ANY_EXHDR(message),
-		(unsigned char*)VARDATA(nonce),
-		(unsigned char*)VARDATA(publickey),
-		(unsigned char*)VARDATA(secretkey)
+		CHARDATA(nonce),
+		CHARDATA(publickey),
+		CHARDATA(secretkey)
 		);
 	if (success != 0)
 		ereport(
@@ -281,12 +281,12 @@ pgsodium_crypto_box_open(PG_FUNCTION_ARGS)
 	size_t message_size = VARSIZE_ANY_EXHDR(message) - crypto_box_MACBYTES;
 	bytea *result = _pgsodium_zalloc_bytea(VARHDRSZ + message_size);
 	success = crypto_box_open_easy(
-		(unsigned char*)VARDATA(result),
-		(unsigned char*)VARDATA(message),
+		CHARDATA(result),
+		CHARDATA(message),
 		VARSIZE_ANY_EXHDR(message),
-		(unsigned char*)VARDATA(nonce),
-		(unsigned char*)VARDATA(publickey),
-		(unsigned char*)VARDATA(secretkey));
+		CHARDATA(nonce),
+		CHARDATA(publickey),
+		CHARDATA(secretkey));
 	if (success != 0)
 		ereport(
 			ERROR,
@@ -318,8 +318,8 @@ pgsodium_crypto_sign_keypair(PG_FUNCTION_ARGS)
 	publickey = _pgsodium_zalloc_bytea(public_size);
 	secretkey = _pgsodium_zalloc_bytea(secret_size);
 	crypto_sign_keypair(
-		(unsigned char*)VARDATA(publickey),
-		(unsigned char*)VARDATA(secretkey)
+		CHARDATA(publickey),
+		CHARDATA(secretkey)
 		);
 
 	values[0] = PointerGetDatum(publickey);
@@ -342,11 +342,11 @@ pgsodium_crypto_sign(PG_FUNCTION_ARGS)
 	bytea *result = _pgsodium_zalloc_bytea(result_size);
 
 	success = crypto_sign(
-		(unsigned char*)VARDATA(result),
+		CHARDATA(result),
 		&signed_message_len,
-		(unsigned char*)VARDATA(message),
+		CHARDATA(message),
 		VARSIZE_ANY_EXHDR(message),
-		(unsigned char*)VARDATA(secretkey)
+		CHARDATA(secretkey)
 		);
 	if (success != 0)
 		ereport(
@@ -370,11 +370,11 @@ pgsodium_crypto_sign_open(PG_FUNCTION_ARGS)
 
 	SET_VARSIZE(result, result_size);
 	success = crypto_sign_open(
-		(unsigned char*)VARDATA(result),
+		CHARDATA(result),
 		&unsigned_message_len,
-		(unsigned char*)VARDATA(message),
+		CHARDATA(message),
 		VARSIZE_ANY_EXHDR(message),
-		(unsigned char*)VARDATA(publickey)
+		CHARDATA(publickey)
 		);
 	if (success != 0)
 		ereport(
@@ -396,11 +396,11 @@ pgsodium_crypto_sign_detached(PG_FUNCTION_ARGS)
 	bytea *result = _pgsodium_zalloc_bytea(result_size);
 
 	success = crypto_sign_detached(
-		(unsigned char*)VARDATA(result),
+		CHARDATA(result),
 		NULL,
-		(unsigned char*)VARDATA(message),
+		CHARDATA(message),
 		VARSIZE_ANY_EXHDR(message),
-		(unsigned char*)VARDATA(secretkey)
+		CHARDATA(secretkey)
 		);
 	if (success != 0)
 		ereport(
@@ -420,10 +420,10 @@ pgsodium_crypto_sign_verify_detached(PG_FUNCTION_ARGS)
 	bytea *publickey = PG_GETARG_BYTEA_P(2);
 
 	success = crypto_sign_verify_detached(
-	        (unsigned char*)VARDATA(sig),
-		(unsigned char*)VARDATA(message),
+	        CHARDATA(sig),
+		CHARDATA(message),
 		VARSIZE_ANY_EXHDR(message),
-		(unsigned char*)VARDATA(publickey)
+		CHARDATA(publickey)
 		);
 	if (success == 0)
 		PG_RETURN_BOOL(true);
@@ -460,11 +460,11 @@ pgsodium_crypto_pwhash(PG_FUNCTION_ARGS)
 	result = _pgsodium_zalloc_bytea(result_size);
 
 	success = crypto_pwhash(
-		(unsigned char*)VARDATA(result),
+		CHARDATA(result),
 		crypto_box_SEEDBYTES,
 		VARDATA(data),
 		VARSIZE_ANY_EXHDR(data),
-		(unsigned char*)VARDATA(salt),
+		CHARDATA(salt),
 		crypto_pwhash_OPSLIMIT_MODERATE,
 		crypto_pwhash_MEMLIMIT_MODERATE,
 		crypto_pwhash_ALG_DEFAULT
@@ -527,10 +527,10 @@ pgsodium_crypto_box_seal(PG_FUNCTION_ARGS)
 	bytea *result = _pgsodium_zalloc_bytea(result_size);
 
     crypto_box_seal(
-		(unsigned char*)VARDATA(result),
-		(unsigned char*)VARDATA(message),
+		CHARDATA(result),
+		CHARDATA(message),
 		VARSIZE_ANY_EXHDR(message),
-		(unsigned char*)VARDATA(public_key));
+		CHARDATA(public_key));
 	PG_RETURN_BYTEA_P(result);
 }
 
@@ -547,11 +547,11 @@ pgsodium_crypto_box_seal_open(PG_FUNCTION_ARGS)
 	bytea *result = _pgsodium_zalloc_bytea(result_size);
 
 	success = crypto_box_seal_open(
-		(unsigned char*)VARDATA(result),
-		(unsigned char*)VARDATA(ciphertext),
+		CHARDATA(result),
+		CHARDATA(ciphertext),
 		VARSIZE_ANY_EXHDR(ciphertext),
-		(unsigned char*)VARDATA(public_key),
-		(unsigned char*)VARDATA(secret_key)
+		CHARDATA(public_key),
+		CHARDATA(secret_key)
 		);
 	if (success != 0)
 		ereport(
@@ -567,7 +567,7 @@ pgsodium_crypto_kdf_keygen(PG_FUNCTION_ARGS)
 {
 	unsigned long long result_size = VARHDRSZ + crypto_kdf_KEYBYTES;
 	bytea *result = _pgsodium_zalloc_bytea(result_size);
-	crypto_kdf_keygen((unsigned char*)VARDATA(result));
+	crypto_kdf_keygen(CHARDATA(result));
 	PG_RETURN_BYTEA_P(result);
 }
 
@@ -595,7 +595,7 @@ pgsodium_crypto_kdf_derive_from_key(PG_FUNCTION_ARGS)
 			 errmsg("crypto_kdf_derive_from_key: context must be 8 bytes")));
 
     crypto_kdf_derive_from_key(
-		(unsigned char*)VARDATA(result),
+		CHARDATA(result),
 		subkey_size,
 		subkey_id,
 		(const char*)VARDATA(context),
