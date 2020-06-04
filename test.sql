@@ -13,7 +13,7 @@ CREATE EXTENSION pgtap;
 CREATE EXTENSION pgsodium;
 
 BEGIN;
-SELECT plan(26);
+SELECT plan(29);
 
 SELECT lives_ok($$SELECT randombytes_random()$$, 'randombytes_random');
 SELECT lives_ok($$SELECT randombytes_uniform(10)$$, 'randombytes_uniform');
@@ -111,16 +111,25 @@ SELECT is(crypto_box_open(:'box', :'boxnonce', :'alice_public',
 
 SELECT crypto_kdf_keygen() kdfkey \gset
 SELECT length(crypto_kdf_derive_from_key(64, 1, '__auth__', :'kdfkey')) kdfsubkeylen \gset
-SELECT is(:kdfsubkeylen, 64, '64 byte derived subkey');
+SELECT is(:kdfsubkeylen, 64, 'kdf byte derived subkey');
 
 SELECT length(crypto_kdf_derive_from_key(32, 1, '__auth__', :'kdfkey')) kdfsubkeylen \gset
-SELECT is(:kdfsubkeylen, 32, '32 byte derived subkey');
+SELECT is(:kdfsubkeylen, 32, 'kdf 32 byte derived subkey');
 
 SELECT is(crypto_kdf_derive_from_key(32, 2, '__auth__', :'kdfkey'),
-    crypto_kdf_derive_from_key(32, 2, '__auth__', :'kdfkey'), 'subkeys are deterministic.');
+    crypto_kdf_derive_from_key(32, 2, '__auth__', :'kdfkey'), 'kdf subkeys are deterministic.');
 
-SELECT throws_ok($$crypto_kdf_derive_from_key(32, 2, '__aut__', :'kdfkey')$$,
-    'kdf context not 8 bytes');
+SELECT throws_ok(format($$SELECT crypto_kdf_derive_from_key(32, 2, '__aut__', %L)$$, :'kdfkey'),
+    '22000', 'crypto_kdf_derive_from_key: context must be 8 bytes',
+    'kdf context must be 8 bytes.');
+
+SELECT throws_ok(format($$SELECT crypto_kdf_derive_from_key(15, 2, '__auth__', %L)$$, :'kdfkey'),
+    '22000', 'crypto_kdf_derive_from_key: invalid key size requested',
+    'kdf keysize must be >= 16');
+
+SELECT throws_ok(format($$SELECT crypto_kdf_derive_from_key(65, 2, '__auth__', %L)$$, :'kdfkey'),
+    '22000', 'crypto_kdf_derive_from_key: invalid key size requested',
+    'kdf keysize must be <= 64');
 
 -- test relocatable schema
 
@@ -131,7 +140,6 @@ CREATE EXTENSION pgsodium WITH SCHEMA pgsodium;
 SELECT lives_ok($$SELECT pgsodium.randombytes_random()$$, 'randombytes_random');
 SELECT lives_ok($$SELECT pgsodium.randombytes_uniform(10)$$, 'randombytes_uniform');
 SELECT lives_ok($$SELECT pgsodium.randombytes_buf(10)$$, 'randombytes_buf');
-
 
 SELECT * FROM finish();
 ROLLBACK;

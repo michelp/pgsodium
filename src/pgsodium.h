@@ -9,27 +9,37 @@
 #include "funcapi.h"
 #include "access/htup_details.h"
 
-typedef struct pgsodium_cb_data {
+typedef struct _pgsodium_cb {
   void* ptr;
   size_t size;
-} pgsodium_cb_data;
+} _pgsodium_cb;
 
 static void context_cb_zero_buff(void*);
 
-#define ZERO_BUFF_CB(_ptr, _size)                                       \
-  do {                                                                  \
-    MemoryContextCallback *ctxcb = (MemoryContextCallback*)              \
-    MemoryContextAlloc(                                                 \
-                       CurrentMemoryContext,                            \
-                       sizeof(MemoryContextCallback));                  \
-  pgsodium_cb_data* d = (pgsodium_cb_data*)palloc(sizeof(pgsodium_cb_data)); \
-  d->ptr = _ptr;                                                        \
-  d->size = _size;                                                      \
-  ctxcb->func = context_cb_zero_buff;                                   \
-  ctxcb->arg = d;                                                       \
-  MemoryContextRegisterResetCallback(CurrentMemoryContext, ctxcb);      \
-  } while(0);                                                           \
+static void
+context_cb_zero_buff(void* a) {
+  _pgsodium_cb *data = (_pgsodium_cb *) a;
+  sodium_memzero(data->ptr, data->size);
+}
 
+static inline bytea* _pgsodium_zalloc_bytea(size_t);
+
+static inline bytea* _pgsodium_zalloc_bytea(size_t allocation_size)
+{
+  bytea *result = (bytea*)palloc(allocation_size);
+  MemoryContextCallback *ctxcb = (MemoryContextCallback*)
+  MemoryContextAlloc(
+                     CurrentMemoryContext,
+                     sizeof(MemoryContextCallback));
+  _pgsodium_cb* d = (_pgsodium_cb*)palloc(sizeof(_pgsodium_cb));
+  d->ptr = result;
+  d->size = allocation_size;
+  ctxcb->func = context_cb_zero_buff;
+  ctxcb->arg = d;
+  MemoryContextRegisterResetCallback(CurrentMemoryContext, ctxcb);
+  SET_VARSIZE(result, allocation_size);
+  return result;
+}
 
 void _PG_init(void);
 
