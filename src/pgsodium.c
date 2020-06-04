@@ -29,7 +29,7 @@ pgsodium_randombytes_buf(PG_FUNCTION_ARGS)
 	size_t size = PG_GETARG_UINT32(0);
 	unsigned long long result_size = VARHDRSZ + size;
 	bytea *result = (bytea*)palloc(result_size);
-        ZERO_BUFF_CB(result, result_size);
+    ZERO_BUFF_CB(result, result_size);
 	SET_VARSIZE(result, result_size);
 	randombytes_buf(VARDATA(result), size);
 	PG_RETURN_BYTEA_P(result);
@@ -41,7 +41,7 @@ pgsodium_crypto_secretbox_keygen(PG_FUNCTION_ARGS)
 {
 	unsigned long long result_size = VARHDRSZ + crypto_secretbox_KEYBYTES;
 	bytea *result = (bytea*)palloc(result_size);
-        ZERO_BUFF_CB(result, result_size);
+    ZERO_BUFF_CB(result, result_size);
 	SET_VARSIZE(result, result_size);
 	crypto_secretbox_keygen((unsigned char*)VARDATA(result));
 	PG_RETURN_BYTEA_P(result);
@@ -53,7 +53,7 @@ pgsodium_crypto_secretbox_noncegen(PG_FUNCTION_ARGS)
 {
 	int result_size = VARHDRSZ + crypto_secretbox_NONCEBYTES;
 	bytea *result = (bytea*)palloc(result_size);
-        ZERO_BUFF_CB(result, result_size);
+    ZERO_BUFF_CB(result, result_size);
 	SET_VARSIZE(result, result_size);
 	randombytes_buf(VARDATA(result), crypto_secretbox_NONCEBYTES);
 	PG_RETURN_BYTEA_P(result);
@@ -69,7 +69,7 @@ pgsodium_crypto_secretbox(PG_FUNCTION_ARGS)
 	size_t message_size = crypto_secretbox_MACBYTES + VARSIZE_ANY_EXHDR(message);
 	unsigned long long result_size = VARHDRSZ + message_size;
 	bytea *result = (bytea*)palloc(result_size);
-        ZERO_BUFF_CB(result, result_size);
+    ZERO_BUFF_CB(result, result_size);
 	SET_VARSIZE(result, result_size);
 
 	crypto_secretbox_easy(
@@ -93,7 +93,7 @@ pgsodium_crypto_secretbox_open(PG_FUNCTION_ARGS)
 	size_t message_size = VARSIZE_ANY_EXHDR(message) - crypto_secretbox_MACBYTES;
 	unsigned long long result_size = VARHDRSZ + message_size;
 	bytea *result = (bytea *) palloc(result_size);
-        ZERO_BUFF_CB(result, result_size);
+    ZERO_BUFF_CB(result, result_size);
 	SET_VARSIZE(result, result_size);
 
 	success = crypto_secretbox_open_easy(
@@ -120,7 +120,7 @@ pgsodium_crypto_auth(PG_FUNCTION_ARGS)
 	bytea *key = PG_GETARG_BYTEA_P(1);
 	int result_size = VARHDRSZ + crypto_auth_BYTES;
 	bytea *result = (bytea*)palloc(result_size);
-        ZERO_BUFF_CB(result, result_size);
+    ZERO_BUFF_CB(result, result_size);
 	SET_VARSIZE(result, result_size);
 
 	crypto_auth(
@@ -154,7 +154,7 @@ pgsodium_crypto_auth_keygen(PG_FUNCTION_ARGS)
 {
 	unsigned long long result_size = VARHDRSZ + crypto_auth_KEYBYTES;
 	bytea *result = (bytea*)palloc(result_size);
-        ZERO_BUFF_CB(result, result_size);
+    ZERO_BUFF_CB(result, result_size);
 	SET_VARSIZE(result, result_size);
 	crypto_secretbox_keygen((unsigned char*)VARDATA(result));
 	PG_RETURN_BYTEA_P(result);
@@ -181,7 +181,7 @@ pgsodium_crypto_generichash(PG_FUNCTION_ARGS)
 
 	result_size = VARHDRSZ + crypto_generichash_BYTES;
 	result = (bytea*)palloc(result_size);
-        ZERO_BUFF_CB(result, result_size);
+    ZERO_BUFF_CB(result, result_size);
 	SET_VARSIZE(result, result_size);
 
 	crypto_generichash(
@@ -209,7 +209,7 @@ pgsodium_crypto_shorthash(PG_FUNCTION_ARGS)
 		PG_RETURN_NULL();
 
 	result = (bytea*)palloc(result_size);
-        ZERO_BUFF_CB(result, result_size);
+    ZERO_BUFF_CB(result, result_size);
 	SET_VARSIZE(result, result_size);
 
 	crypto_shorthash(
@@ -241,9 +241,9 @@ pgsodium_crypto_box_keypair(PG_FUNCTION_ARGS)
 						"that cannot accept type record")));
 
 	publickey = (bytea*)palloc(public_size);
-        ZERO_BUFF_CB(publickey, public_size);
+    ZERO_BUFF_CB(publickey, public_size);
 	secretkey = (bytea*)palloc(secret_size);
-        ZERO_BUFF_CB(secretkey, secret_size);
+    ZERO_BUFF_CB(secretkey, secret_size);
 	SET_VARSIZE(publickey, public_size);
 	SET_VARSIZE(secretkey, secret_size);
 
@@ -265,7 +265,7 @@ pgsodium_crypto_box_noncegen(PG_FUNCTION_ARGS)
 {
 	unsigned long long result_size = VARHDRSZ + crypto_box_NONCEBYTES;
 	bytea *result = (bytea*)palloc(result_size);
-        ZERO_BUFF_CB(result, result_size);
+    ZERO_BUFF_CB(result, result_size);
 	SET_VARSIZE(result, result_size);
 	randombytes_buf(VARDATA(result), crypto_box_NONCEBYTES);
 	PG_RETURN_BYTEA_P(result);
@@ -283,7 +283,7 @@ pgsodium_crypto_box(PG_FUNCTION_ARGS)
 
 	size_t message_size = crypto_box_MACBYTES + VARSIZE_ANY_EXHDR(message);
 	bytea *result = (bytea*)palloc(VARHDRSZ + message_size);
-        ZERO_BUFF_CB(result, VARHDRSZ + message_size);
+    ZERO_BUFF_CB(result, VARHDRSZ + message_size);
 	SET_VARSIZE(result, VARHDRSZ + message_size);
 	success = crypto_box_easy(
 		(unsigned char*)VARDATA(result),
@@ -314,7 +314,7 @@ pgsodium_crypto_box_open(PG_FUNCTION_ARGS)
 
 	size_t message_size = VARSIZE_ANY_EXHDR(message) - crypto_box_MACBYTES;
 	bytea *result = (bytea *) palloc(VARHDRSZ + message_size);
-        ZERO_BUFF_CB(result, VARHDRSZ + message_size);
+    ZERO_BUFF_CB(result, VARHDRSZ + message_size);
 	SET_VARSIZE(result, VARHDRSZ + message_size);
 	success = crypto_box_open_easy(
 		(unsigned char*)VARDATA(result),
@@ -352,9 +352,9 @@ pgsodium_crypto_sign_keypair(PG_FUNCTION_ARGS)
 						"that cannot accept type record")));
 
 	publickey = (bytea*)palloc(public_size);
-        ZERO_BUFF_CB(publickey, public_size);
+    ZERO_BUFF_CB(publickey, public_size);
 	secretkey = (bytea*)palloc(secret_size);
-        ZERO_BUFF_CB(secretkey, secret_size);
+    ZERO_BUFF_CB(secretkey, secret_size);
 	SET_VARSIZE(publickey, public_size);
 	SET_VARSIZE(secretkey, secret_size);
 
@@ -381,7 +381,7 @@ pgsodium_crypto_sign(PG_FUNCTION_ARGS)
 	size_t message_size = crypto_sign_BYTES + VARSIZE_ANY_EXHDR(message);
 	unsigned long long result_size = VARHDRSZ + message_size;
 	bytea *result = (bytea*)palloc(result_size);
-        ZERO_BUFF_CB(result, result_size);
+    ZERO_BUFF_CB(result, result_size);
 	SET_VARSIZE(result, result_size);
 
 	success = crypto_sign(
@@ -410,7 +410,7 @@ pgsodium_crypto_sign_open(PG_FUNCTION_ARGS)
 	size_t message_size = VARSIZE_ANY_EXHDR(message) - crypto_sign_BYTES;
 	unsigned long long result_size = VARHDRSZ + message_size;
 	bytea *result = (bytea *) palloc(result_size);
-        ZERO_BUFF_CB(result, result_size);
+    ZERO_BUFF_CB(result, result_size);
 
 	SET_VARSIZE(result, result_size);
 	success = crypto_sign_open(
@@ -438,7 +438,7 @@ pgsodium_crypto_sign_detached(PG_FUNCTION_ARGS)
 	size_t sig_size = crypto_sign_BYTES;
 	unsigned long long result_size = VARHDRSZ + sig_size;
 	bytea *result = (bytea*)palloc(result_size);
-        ZERO_BUFF_CB(result, result_size);
+    ZERO_BUFF_CB(result, result_size);
 	SET_VARSIZE(result, result_size);
 
 	success = crypto_sign_detached(
@@ -471,7 +471,7 @@ pgsodium_crypto_sign_verify_detached(PG_FUNCTION_ARGS)
 		VARSIZE_ANY_EXHDR(message),
 		(unsigned char*)VARDATA(publickey)
 		);
-	if (success == 0) 
+	if (success == 0)
 		PG_RETURN_BOOL(true);
 	else
 		PG_RETURN_BOOL(false);
@@ -484,7 +484,7 @@ pgsodium_crypto_pwhash_saltgen(PG_FUNCTION_ARGS)
 {
 	unsigned long long result_size = VARHDRSZ + crypto_pwhash_SALTBYTES;
 	bytea *result = (bytea*)palloc(result_size);
-        ZERO_BUFF_CB(result, result_size);
+    ZERO_BUFF_CB(result, result_size);
 	SET_VARSIZE(result, result_size);
 	randombytes_buf(VARDATA(result), crypto_pwhash_SALTBYTES);
 	PG_RETURN_BYTEA_P(result);
@@ -506,7 +506,7 @@ pgsodium_crypto_pwhash(PG_FUNCTION_ARGS)
 		PG_RETURN_NULL();
 
 	result = (bytea*)palloc(result_size);
-        ZERO_BUFF_CB(result, result_size);
+    ZERO_BUFF_CB(result, result_size);
 	SET_VARSIZE(result, result_size);
 
 	success = crypto_pwhash(
@@ -534,7 +534,7 @@ pgsodium_crypto_pwhash_str(PG_FUNCTION_ARGS)
 	int success;
 	bytea *password = PG_GETARG_BYTEA_P(0);
 	bytea *result = (bytea *)palloc(crypto_pwhash_STRBYTES);
-        ZERO_BUFF_CB(result, crypto_pwhash_STRBYTES);
+    ZERO_BUFF_CB(result, crypto_pwhash_STRBYTES);
 	SET_VARSIZE(result, crypto_pwhash_STRBYTES);
 
 	success = crypto_pwhash_str(
@@ -577,7 +577,7 @@ pgsodium_crypto_box_seal(PG_FUNCTION_ARGS)
     unsigned long long result_size = crypto_box_SEALBYTES + VARSIZE(message);
 
 	bytea *result = (bytea*)palloc(result_size);
-        ZERO_BUFF_CB(result, result_size);
+    ZERO_BUFF_CB(result, result_size);
 	SET_VARSIZE(result, result_size);
 
     crypto_box_seal(
@@ -599,7 +599,7 @@ pgsodium_crypto_box_seal_open(PG_FUNCTION_ARGS)
 
 	unsigned long long result_size = VARSIZE(ciphertext) - crypto_box_SEALBYTES;
 	bytea *result = (bytea *)palloc(result_size);
-        ZERO_BUFF_CB(result, result_size);
+    ZERO_BUFF_CB(result, result_size);
 	SET_VARSIZE(result, result_size);
 
 	success = crypto_box_seal_open(
@@ -614,6 +614,46 @@ pgsodium_crypto_box_seal_open(PG_FUNCTION_ARGS)
 			ERROR,
 			(errcode(ERRCODE_DATA_EXCEPTION),
 			 errmsg("crypto_box_seal_open: invalid message")));
+	PG_RETURN_BYTEA_P(result);
+}
+
+PG_FUNCTION_INFO_V1(pgsodium_crypto_kdf_keygen);
+Datum
+pgsodium_crypto_kdf_keygen(PG_FUNCTION_ARGS)
+{
+	unsigned long long result_size = VARHDRSZ + crypto_kdf_KEYBYTES;
+	bytea *result = (bytea*)palloc(result_size);
+    ZERO_BUFF_CB(result, result_size);
+	SET_VARSIZE(result, result_size);
+	crypto_kdf_keygen((unsigned char*)VARDATA(result));
+	PG_RETURN_BYTEA_P(result);
+}
+
+PG_FUNCTION_INFO_V1(pgsodium_crypto_kdf_derive_from_key);
+Datum
+pgsodium_crypto_kdf_derive_from_key(PG_FUNCTION_ARGS)
+{
+	size_t subkey_size = PG_GETARG_UINT32(0);
+    unsigned long long result_size = VARHDRSZ + subkey_size;
+    unsigned long long subkey_id = PG_GETARG_INT64(1);
+    bytea *context = PG_GETARG_BYTEA_P(2);
+    bytea *master_key = PG_GETARG_BYTEA_P(3);
+	bytea *result = (bytea*)palloc(result_size);
+	ZERO_BUFF_CB(result, result_size);
+
+	if (VARSIZE_ANY_EXHDR(context) != 8)
+		ereport(
+			ERROR,
+			(errcode(ERRCODE_DATA_EXCEPTION),
+			 errmsg("crypto_kdf_derive_from_key: context must be 8 bytes")));
+
+	SET_VARSIZE(result, result_size);
+    crypto_kdf_derive_from_key(
+		(unsigned char*)VARDATA(result),
+		subkey_size,
+		subkey_id,
+		(const char*)VARDATA(context),
+		(const unsigned char*)VARDATA(master_key));
 	PG_RETURN_BYTEA_P(result);
 }
 

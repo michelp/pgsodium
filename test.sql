@@ -13,7 +13,7 @@ CREATE EXTENSION pgtap;
 CREATE EXTENSION pgsodium;
 
 BEGIN;
-SELECT plan(23);
+SELECT plan(26);
 
 SELECT lives_ok($$SELECT randombytes_random()$$, 'randombytes_random');
 SELECT lives_ok($$SELECT randombytes_uniform(10)$$, 'randombytes_uniform');
@@ -108,6 +108,20 @@ SELECT crypto_box('bob is your uncle', :'boxnonce', :'bob_public',
 SELECT is(crypto_box_open(:'box', :'boxnonce', :'alice_public',
                           current_setting('app.bob_secret')::bytea),
                           'bob is your uncle', 'crypto_box_open');
+
+SELECT crypto_kdf_keygen() kdfkey \gset
+SELECT length(crypto_kdf_derive_from_key(64, 1, '__auth__', :'kdfkey')) kdfsubkeylen \gset
+SELECT is(:kdfsubkeylen, 64, '64 byte derived subkey');
+
+SELECT length(crypto_kdf_derive_from_key(32, 1, '__auth__', :'kdfkey')) kdfsubkeylen \gset
+SELECT is(:kdfsubkeylen, 32, '32 byte derived subkey');
+
+SELECT is(crypto_kdf_derive_from_key(32, 2, '__auth__', :'kdfkey'),
+    crypto_kdf_derive_from_key(32, 2, '__auth__', :'kdfkey'), 'subkeys are deterministic.');
+
+SELECT throws_ok($$crypto_kdf_derive_from_key(32, 2, '__aut__', :'kdfkey')$$,
+    'kdf context not 8 bytes');
+
 -- test relocatable schema
 
 CREATE SCHEMA pgsodium;
@@ -117,6 +131,7 @@ CREATE EXTENSION pgsodium WITH SCHEMA pgsodium;
 SELECT lives_ok($$SELECT pgsodium.randombytes_random()$$, 'randombytes_random');
 SELECT lives_ok($$SELECT pgsodium.randombytes_uniform(10)$$, 'randombytes_uniform');
 SELECT lives_ok($$SELECT pgsodium.randombytes_buf(10)$$, 'randombytes_buf');
+
 
 SELECT * FROM finish();
 ROLLBACK;

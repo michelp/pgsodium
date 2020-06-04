@@ -81,4 +81,9 @@ Datum pgsodium_crypto_sign_open(PG_FUNCTION_ARGS);
 Datum pgsodium_crypto_sign_detached(PG_FUNCTION_ARGS);
 Datum pgsodium_crypto_sign_verify_detached(PG_FUNCTION_ARGS);
 
+/* Key Derivation */
+
+Datum pgsodium_crypto_kdf_keygen(PG_FUNCTION_ARGS);
+Datum pgsodium_crypto_kdf_derive_from_key(PG_FUNCTION_ARGS);
+
 #endif /* PGSODIUM_H */
