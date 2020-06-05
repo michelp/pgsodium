@@ -6,18 +6,21 @@
 \pset pager
 
 \set ON_ERROR_ROLLBACK 1
--- \set ON_ERROR_STOP true
+\set ON_ERROR_STOP true
 \set QUIET 1
 
 CREATE EXTENSION pgtap;
 CREATE EXTENSION pgsodium;
 
 BEGIN;
-SELECT plan(33);
+SELECT plan(34);
 
 SELECT lives_ok($$SELECT randombytes_random()$$, 'randombytes_random');
 SELECT lives_ok($$SELECT randombytes_uniform(10)$$, 'randombytes_uniform');
 SELECT lives_ok($$SELECT randombytes_buf(10)$$, 'randombytes_buf');
+SELECT randombytes_new_seed() bufseed \gset
+SELECT lives_ok(format($$SELECT randombytes_buf_deterministic(10, %L)$$, :'bufseed'),
+        'randombytes_buf_deterministic');
 
 SELECT crypto_secretbox_keygen() boxkey \gset
 SELECT crypto_secretbox_noncegen() secretboxnonce \gset

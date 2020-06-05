@@ -52,3 +52,15 @@ CREATE FUNCTION crypto_auth_hmacsha512_verify(hash bytea, message bytea, secret 
 RETURNS bool
 AS '$libdir/pgsodium', 'pgsodium_crypto_auth_hmacsha512_verify'
 LANGUAGE C IMMUTABLE STRICT;
+
+CREATE OR REPLACE FUNCTION randombytes_new_seed()
+RETURNS bytea
+AS '$libdir/pgsodium', 'pgsodium_randombytes_new_seed'
+LANGUAGE C VOLATILE;
+
+CREATE FUNCTION randombytes_buf_deterministic(size integer, seed bytea)
+RETURNS bytea
+AS '$libdir/pgsodium', 'pgsodium_randombytes_buf_deterministic'
+LANGUAGE C IMMUTABLE STRICT;
+
+    

@@ -25,7 +25,7 @@ the tests against and download docker imags for four different major
 versions of postgresql, so it takes a while and requires a lot of
 network bandwidth the first time you run it.
 
-## Usage
+# Usage
 
 pgsodium arguments and return values for content and keys are of type
 `bytea`.  If you wish to use `text` or `varchar` values for general
@@ -62,7 +62,7 @@ commands (which begin with a backslash) to create keypairs and encrypt
 a message from Alice to Bob.
 
     -- Generate public and secret keypairs for bob and alice
-    -- \gset [prefix] is a psql command that will create local 
+    -- \gset [prefix] is a psql command that will create local
     -- script variables
 
     SELECT public, secret FROM crypto_box_new_keypair() \gset bob_
@@ -131,3 +131,90 @@ and then re-enable normal logging afterwards. as shown below:
                               current_setting('app.bob_secret')::bytea);
 
     COMMIT;
+
+# API Reference
+
+The reference below is adapted from and uses some of the same language
+found at the [libsodium C API
+Documentation](https://doc.libsodium.org/).  Refer to those documents
+for details on algorithms and other libsodium specific details.
+
+The libsodium documentation is Copyright (c) 2014-2018, Frank Denis
+<github@pureftpd.org> and released under [The ISC
+License](https://github.com/jedisct1/libsodium-doc/blob/master/LICENSE).
+
+## Generating Random Data
+
+The library provides a set of functions to generate unpredictable
+data, suitable for creating secret keys.
+
+    postgres=# select randombytes_random();
+     randombytes_random
+    --------------------
+             1229887405
+    (1 row)
+
+The `randombytes_random()` function returns an unpredictable value
+between 0 and 0xffffffff (included).
+
+    postgres=# select randombytes_uniform(42);
+     randombytes_uniform
+    ---------------------
+                      23
+    (1 row)
+
+The `randombytes_uniform()` function returns an unpredictable value
+between `0` and `upper_bound` (excluded). Unlike `randombytes_random() %
+upper_bound`, it guarantees a uniform distribution of the possible
+output values even when `upper_bound` is not a power of 2. Note that an
+`upper_bound < 2` leaves only a single element to be chosen, namely 0.
+
+    postgres=# select randombytes_buf(42);
+                                        randombytes_buf
+    ----------------------------------------------------------------------------------------
+     \x27cec8d2c3de16317074b57acba2109e43b5623e1fb7cae12e8806daa21a72f058430f22ec993986fcb2
+    (1 row)
+
+The `randombytes_buf()` function returns a `bytea` with an
+unpredictable sequence of bytes.
+
+    postgres=# select randombytes_new_seed() bufseed \gset
+    postgres=# select randombytes_buf_deterministic(42, :'bufseed');
+                                 randombytes_buf_deterministic
+    ----------------------------------------------------------------------------------------
+     \xa183e8d4acd68119ab2cacd9e46317ec3a00a6a8820b00339072f7c24554d496086209d7911c3744b110
+    (1 row)
+
+The `randombytes_buf_deterministic()` returns a `size` bytea
+containing bytes indistinguishable from random bytes without knowing
+the seed.  For a given seed, this function will always output the same
+sequence. size can be up to 2^38 (256 GB).
+
+[C API
+Documentation](https://doc.libsodium.org/generating_random_data)
+
+## Secret key cryptography
+
+### Authenticated encryption
+
+### Authentication
+
+## Public key cryptography
+
+### Authenticated encryption
+
+### Public key signatures
+
+### Sealed boxes
+
+## Hashing
+
+## Password hashing
+
+## Key Derivation
+
+## Key Exchange
+
+## Advanced
+
+### HMAC512

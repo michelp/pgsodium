@@ -50,6 +50,8 @@ void _PG_init(void);
 Datum pgsodium_randombytes_random(PG_FUNCTION_ARGS);
 Datum pgsodium_randombytes_uniform(PG_FUNCTION_ARGS);
 Datum pgsodium_randombytes_buf(PG_FUNCTION_ARGS);
+Datum pgsodium_randombytes_seed(PG_FUNCTION_ARGS);
+Datum pgsodium_randombytes_buf_deterministic(PG_FUNCTION_ARGS);
 
 /* Secret key authenticated encryption */
 
