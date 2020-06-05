@@ -98,4 +98,12 @@ Datum pgsodium_crypto_sign_verify_detached(PG_FUNCTION_ARGS);
 Datum pgsodium_crypto_kdf_keygen(PG_FUNCTION_ARGS);
 Datum pgsodium_crypto_kdf_derive_from_key(PG_FUNCTION_ARGS);
 
+/* Key Exchange */
+
+Datum pgsodium_crypto_kx_keypair(PG_FUNCTION_ARGS);
+Datum pgsodium_crypto_kx_seed_keypair(PG_FUNCTION_ARGS);
+Datum pgsodium_crypto_kx_new_seed(PG_FUNCTION_ARGS);
+Datum pgsodium_crypto_kx_client_session_keys(PG_FUNCTION_ARGS);
+Datum pgsodium_crypto_kx_server_session_keys(PG_FUNCTION_ARGS);
+
 #endif /* PGSODIUM_H */
