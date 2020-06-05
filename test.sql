@@ -9,11 +9,12 @@
 \set ON_ERROR_STOP true
 \set QUIET 1
 
+
+BEGIN;
 CREATE EXTENSION pgtap;
 CREATE EXTENSION pgsodium;
 
-BEGIN;
-SELECT plan(34);
+SELECT plan(38);
 
 SELECT lives_ok($$SELECT randombytes_random()$$, 'randombytes_random');
 SELECT lives_ok($$SELECT randombytes_uniform(10)$$, 'randombytes_uniform');
@@ -86,6 +87,76 @@ SELECT is(crypto_sign_verify_detached(:'detached', :'sealed', :'sign_public'),
 
 SELECT is(crypto_sign_verify_detached(:'detached', 'xyzzy', :'sign_public'),
           false, 'crypto_sign_detached/verify (incorrect message)');
+
+-- Check Multi-part messages
+WITH parts(msg) AS
+  (
+    VALUES ('Hello Alice'),
+    	   ('Hello Bob'),
+    	   ('Hello Carol')
+  ),
+tampered(msg) AS
+  (
+    VALUES ('Hello Alice'),
+    	   ('Hello Bob'),
+    	   ('Hello CaRol')
+  ),
+prep1 AS
+  (
+    -- First form of aggregate
+    SELECT crypto_sign_update_agg(p.msg::bytea) state
+      FROM parts p
+  ),
+prep2 AS
+  (
+    -- Second form of aggregate
+    SELECT crypto_sign_update_agg(crypto_sign_init(), p.msg::bytea) state
+      FROM parts p
+  ),
+prepv AS
+  (
+    -- Second form of aggregate from tampered parts
+    SELECT crypto_sign_update_agg(crypto_sign_init(), t.msg::bytea) state
+      FROM tampered t
+  ),
+sig AS
+  (
+    SELECT crypto_sign_final_create(p.state, :'sign_secret') as sig
+      FROM prep1 p
+  ),
+verify AS
+  (
+    SELECT crypto_sign_final_verify(p.state, s.sig, :'sign_public') as verify
+      FROM prep1 p
+     CROSS JOIN sig s
+  ),
+verify2 AS
+  (
+    SELECT crypto_sign_final_verify(p.state, s.sig, :'sign_public') as verify
+      FROM prep2 p
+     CROSS JOIN sig s
+  ),
+noverify AS
+  (
+    SELECT crypto_sign_final_verify(p.state, s.sig, :'sign_public') as verify
+      FROM prepv p
+     CROSS JOIN sig s
+  )
+SELECT ok(verify, 'Multi-part signature')
+  FROM verify
+UNION ALL
+SELECT ok(verify, 'Multi-part signature(2)')
+  FROM verify2
+UNION ALL
+-- Each time we generate state it will be different, even though sig
+-- can be verified.
+SELECT isnt(p1.state, p2.state, 'Multi-part states differ')
+  FROM prep1 p1 CROSS JOIN prep2 p2
+UNION ALL
+SELECT ok(not verify, 'Multi-part signature detects tampering')
+  FROM noverify;
+
+
 
 SELECT lives_ok($$SELECT crypto_pwhash_saltgen()$$, 'crypto_pwhash_saltgen');
 

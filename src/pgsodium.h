@@ -94,6 +94,14 @@ Datum pgsodium_crypto_sign(PG_FUNCTION_ARGS);
 Datum pgsodium_crypto_sign_open(PG_FUNCTION_ARGS);
 Datum pgsodium_crypto_sign_detached(PG_FUNCTION_ARGS);
 Datum pgsodium_crypto_sign_verify_detached(PG_FUNCTION_ARGS);
+Datum pgsodium_crypto_sign_init(PG_FUNCTION_ARGS);
+Datum pgsodium_crypto_sign_update(PG_FUNCTION_ARGS);
+Datum pgsodium_crypto_sign_final_create(PG_FUNCTION_ARGS);
+Datum pgsodium_crypto_sign_final_verify(PG_FUNCTION_ARGS);
+Datum pgsodium_crypto_sign_init(PG_FUNCTION_ARGS);
+Datum pgsodium_crypto_sign_update(PG_FUNCTION_ARGS);
+Datum pgsodium_crypto_sign_final_create(PG_FUNCTION_ARGS);
+Datum pgsodium_crypto_sign_final_verify(PG_FUNCTION_ARGS);
 
 /* Key Derivation */
 

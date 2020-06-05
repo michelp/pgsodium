@@ -436,6 +436,65 @@ pgsodium_crypto_sign_verify_detached(PG_FUNCTION_ARGS)
 		PG_RETURN_BOOL(false);
 }
 
+PG_FUNCTION_INFO_V1(pgsodium_crypto_sign_init);
+Datum pgsodium_crypto_sign_init(PG_FUNCTION_ARGS)
+{
+    bytea *result = _pgsodium_zalloc_bytea(VARHDRSZ +
+					   sizeof(crypto_sign_state));
+    SET_VARSIZE(result, sizeof(crypto_sign_state));
+    crypto_sign_init((crypto_sign_state *) VARDATA(result));
+    PG_RETURN_BYTEA_P(result);
+}
+
+PG_FUNCTION_INFO_V1(pgsodium_crypto_sign_update);
+Datum pgsodium_crypto_sign_update(PG_FUNCTION_ARGS)
+{
+    bytea *state = PG_GETARG_BYTEA_P(0);       // input state
+    bytea *msg_part = PG_GETARG_BYTEA_P(1);
+    bytea *result = DatumGetByteaPCopy(state); // output state
+    
+    crypto_sign_update((crypto_sign_state *) VARDATA(result),
+		       PGSODIUM_CHARDATA(msg_part),
+		       VARSIZE_ANY_EXHDR(msg_part));
+    PG_RETURN_BYTEA_P(result);
+}
+
+PG_FUNCTION_INFO_V1(pgsodium_crypto_sign_final_create);
+Datum pgsodium_crypto_sign_final_create(PG_FUNCTION_ARGS)
+{
+    int success;
+    bytea *state = PG_GETARG_BYTEA_P(0);
+    bytea *key = PG_GETARG_BYTEA_P(1);
+    size_t sig_size = crypto_sign_BYTES;
+    unsigned long long result_size = VARHDRSZ + sig_size;
+    bytea *result = _pgsodium_zalloc_bytea(result_size);
+	
+    success = crypto_sign_final_create((crypto_sign_state *) VARDATA(state),
+				       PGSODIUM_CHARDATA(result),
+				       NULL,
+				       PGSODIUM_CHARDATA(key));
+    if (success != 0)
+	ereport(
+	    ERROR,
+	    (errcode(ERRCODE_DATA_EXCEPTION),
+	     errmsg("unable to complete signature")));
+
+    PG_RETURN_BYTEA_P(result);
+}
+
+PG_FUNCTION_INFO_V1(pgsodium_crypto_sign_final_verify);
+Datum pgsodium_crypto_sign_final_verify(PG_FUNCTION_ARGS)
+{
+    int success;
+    bytea *state = PG_GETARG_BYTEA_P(0);
+    bytea *sig = PG_GETARG_BYTEA_P(1);
+    bytea *key = PG_GETARG_BYTEA_P(2);
+	
+    success = crypto_sign_final_verify((crypto_sign_state *) VARDATA(state),
+				       PGSODIUM_CHARDATA(sig),
+				       PGSODIUM_CHARDATA(key));
+    PG_RETURN_BOOL(success == 0);
+}
 
 PG_FUNCTION_INFO_V1(pgsodium_crypto_pwhash_saltgen);
 Datum
