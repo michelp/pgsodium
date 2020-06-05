@@ -454,7 +454,7 @@ Datum pgsodium_crypto_sign_update(PG_FUNCTION_ARGS)
     bytea *result = DatumGetByteaPCopy(state); // output state
     
     crypto_sign_update((crypto_sign_state *) VARDATA(result),
-		       (unsigned char *) VARDATA(msg_part),
+		       PGSODIUM_CHARDATA(msg_part),
 		       VARSIZE_ANY_EXHDR(msg_part));
     PG_RETURN_BYTEA_P(result);
 }
@@ -470,9 +470,9 @@ Datum pgsodium_crypto_sign_final_create(PG_FUNCTION_ARGS)
     bytea *result = _pgsodium_zalloc_bytea(result_size);
 	
     success = crypto_sign_final_create((crypto_sign_state *) VARDATA(state),
-				       (unsigned char*) VARDATA(result),
+				       PGSODIUM_CHARDATA(result),
 				       NULL,
-				       (unsigned char*) VARDATA(key));
+				       PGSODIUM_CHARDATA(key));
     if (success != 0)
 	ereport(
 	    ERROR,
@@ -491,12 +491,9 @@ Datum pgsodium_crypto_sign_final_verify(PG_FUNCTION_ARGS)
     bytea *key = PG_GETARG_BYTEA_P(2);
 	
     success = crypto_sign_final_verify((crypto_sign_state *) VARDATA(state),
-				       (unsigned char*) VARDATA(sig),
-				       (unsigned char*) VARDATA(key));
-    if (success == 0)
-	PG_RETURN_BOOL(true);
-    else
-	PG_RETURN_BOOL(false);	
+				       PGSODIUM_CHARDATA(sig),
+				       PGSODIUM_CHARDATA(key));
+    PG_RETURN_BOOL(success == 0);
 }
 
 PG_FUNCTION_INFO_V1(pgsodium_crypto_pwhash_saltgen);
