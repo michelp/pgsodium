@@ -9,7 +9,7 @@
 #include "funcapi.h"
 #include "access/htup_details.h"
 
-#define CHARDATA(_vlena) (unsigned char*)VARDATA(_vlena)
+#define SODIUM_CHARDATA(_vlena) (unsigned char*)VARDATA(_vlena)
 
 typedef struct _pgsodium_cb {
   void* ptr;
