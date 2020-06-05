@@ -14,7 +14,7 @@ BEGIN;
 CREATE EXTENSION pgtap;
 CREATE EXTENSION pgsodium;
 
-SELECT plan(37);
+SELECT plan(38);
 
 SELECT lives_ok($$SELECT randombytes_random()$$, 'randombytes_random');
 SELECT lives_ok($$SELECT randombytes_uniform(10)$$, 'randombytes_uniform');
@@ -127,6 +127,12 @@ sig AS
 verify AS
   (
     SELECT crypto_sign_final_verify(p.state, s.sig, :'sign_public') as verify
+      FROM prep1 p
+     CROSS JOIN sig s
+  ),
+verify2 AS
+  (
+    SELECT crypto_sign_final_verify(p.state, s.sig, :'sign_public') as verify
       FROM prep2 p
      CROSS JOIN sig s
   ),
@@ -138,6 +144,9 @@ noverify AS
   )
 SELECT ok(verify, 'Multi-part signature')
   FROM verify
+UNION ALL
+SELECT ok(verify, 'Multi-part signature(2)')
+  FROM verify2
 UNION ALL
 -- Each time we generate state it will be different, even though sig
 -- can be verified.
