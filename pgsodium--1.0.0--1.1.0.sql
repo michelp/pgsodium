@@ -117,7 +117,7 @@ COMMENT ON FUNCTION crypto_sign_update_agg2(bytea, bytea, bytea) IS
 initializes state to the state passed to the aggregate as a parameter,
 if it has not already been initialized.';
 
-CREATE OR REPLACE AGGREGATE crypto_sign_update_agg(message bytea)
+CREATE AGGREGATE crypto_sign_update_agg(message bytea)
   (
     SFUNC = crypto_sign_update_agg1,
     STYPE = bytea,
@@ -133,7 +133,7 @@ Note that when signing mutli-part messages using aggregates, the order
 in which message parts is processed is critical.  You *must* ensure
 that the order of messages passed to the aggregate is invariant.';
 
-CREATE OR REPLACE AGGREGATE crypto_sign_update_agg(state bytea, message bytea)
+CREATE AGGREGATE crypto_sign_update_agg(state bytea, message bytea)
   (
     SFUNC = crypto_sign_update_agg2,
     STYPE = bytea,
