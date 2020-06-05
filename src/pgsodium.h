@@ -9,7 +9,7 @@
 #include "funcapi.h"
 #include "access/htup_details.h"
 
-#define SODIUM_CHARDATA(_vlena) (unsigned char*)VARDATA(_vlena)
+#define PGSODIUM_CHARDATA(_vlena) (unsigned char*)VARDATA(_vlena)
 
 typedef struct _pgsodium_cb {
   void* ptr;
@@ -105,5 +105,11 @@ Datum pgsodium_crypto_kx_seed_keypair(PG_FUNCTION_ARGS);
 Datum pgsodium_crypto_kx_new_seed(PG_FUNCTION_ARGS);
 Datum pgsodium_crypto_kx_client_session_keys(PG_FUNCTION_ARGS);
 Datum pgsodium_crypto_kx_server_session_keys(PG_FUNCTION_ARGS);
+
+/* Advanced */
+
+Datum pgsodium_crypto_auth_hmacsha512_keygen(PG_FUNCTION_ARGS);
+Datum pgsodium_crypto_auth_hmacsha512(PG_FUNCTION_ARGS);
+Datum pgsodium_crypto_auth_hmacsha512_verify(PG_FUNCTION_ARGS);
 
 #endif /* PGSODIUM_H */

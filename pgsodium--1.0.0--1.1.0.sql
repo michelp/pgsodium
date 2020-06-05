@@ -37,3 +37,18 @@ CREATE OR REPLACE FUNCTION crypto_kx_server_session_keys(server_pk bytea, server
 RETURNS SETOF crypto_kx_session
 AS '$libdir/pgsodium', 'pgsodium_crypto_kx_server_session_keys'
 LANGUAGE C VOLATILE;
+
+CREATE FUNCTION crypto_auth_hmacsha512_keygen()
+RETURNS bytea
+AS '$libdir/pgsodium', 'pgsodium_crypto_auth_hmacsha512_keygen'
+LANGUAGE C VOLATILE;
+
+CREATE FUNCTION crypto_auth_hmacsha512(message bytea, secret bytea)
+RETURNS bytea
+AS '$libdir/pgsodium', 'pgsodium_crypto_auth_hmacsha512'
+LANGUAGE C IMMUTABLE STRICT;
+
+CREATE FUNCTION crypto_auth_hmacsha512_verify(hash bytea, message bytea, secret bytea)
+RETURNS bool
+AS '$libdir/pgsodium', 'pgsodium_crypto_auth_hmacsha512_verify'
+LANGUAGE C IMMUTABLE STRICT;

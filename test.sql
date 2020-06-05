@@ -13,7 +13,7 @@ CREATE EXTENSION pgtap;
 CREATE EXTENSION pgsodium;
 
 BEGIN;
-SELECT plan(31);
+SELECT plan(33);
 
 SELECT lives_ok($$SELECT randombytes_random()$$, 'randombytes_random');
 SELECT lives_ok($$SELECT randombytes_uniform(10)$$, 'randombytes_uniform');
@@ -158,6 +158,12 @@ SELECT crypto_secretbox('hello bob', :'secretboxnonce', :'session_alice_tx') ali
 
 SELECT is(crypto_secretbox_open(:'alice_to_bob', :'secretboxnonce', :'session_bob_rx'),
           'hello bob', 'secretbox_open session key');
+
+select crypto_auth_hmacsha512_keygen() hmac512key \gset
+select crypto_auth_hmacsha512('food', :'hmac512key') hmac512 \gset
+
+select is(crypto_auth_hmacsha512_verify(:'hmac512', 'food', :'hmac512key'), true, 'hmac512 verified');
+select is(crypto_auth_hmacsha512_verify(:'hmac512', 'fo0d', :'hmac512key'), false, 'hmac512 not verified');
 
 -- test relocatable schema
 
