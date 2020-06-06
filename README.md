@@ -266,7 +266,8 @@ message and key, the generated mac will always be the same.
 Note that this requires access to the secret
 key, which is not something that should normally be shared.  If
 many users need to verify message it is usually better to use
-[public-key-signature]s rather than sharing secret keys.
+[Public Key Signatures](#public-key-signatures) rather than sharing
+secret keys.
 
 `crypto_auth_verify()` verifies that the given mac (authentication
 tag) matches the supplied message and key.  This tells us that the
