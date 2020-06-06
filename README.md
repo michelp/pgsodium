@@ -274,8 +274,7 @@ tag) matches the supplied message and key.  This tells us that the
 original message has not been tampered with.
 
 [C API
-Documentation](https://doc.libsodium.org/secret-key_cryptography/secre-key_authentication)
-
+Documentation](https://doc.libsodium.org/secret-key_cryptography/secret-key_authentication)
 ## Public key cryptography
 
 [C API
