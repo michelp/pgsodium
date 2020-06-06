@@ -146,7 +146,7 @@ License](https://github.com/jedisct1/libsodium-doc/blob/master/LICENSE).
 ## Generating Random Data
 
 Functions:
-```.c
+```
     randombytes_random() -> integer
 
     randombytes_uniform(upper_bound integer) -> integer
@@ -212,7 +212,7 @@ Documentation](https://doc.libsodium.org/secret-key_cryptography)
 ### Authenticated encryption
 
 Functions:
-```.c
+```
     crypto_secretbox_keygen() -> bytea
 
     crypto_secretbox_noncegen() -> bytea
@@ -245,7 +245,7 @@ Documentation](https://doc.libsodium.org/secret-key_cryptography/secretbox)
 ### Authentication
 
 Functions:
-```.c
+```
     crypto_auth_keygen() -> bytea
 
     crypto_auth(message bytea, key bytea) -> bytea
@@ -283,7 +283,7 @@ Documentation](https://doc.libsodium.org/public-key_cryptography)
 ### Authenticated encryption
 
 Functions:
-```.c
+```
     crypto_box_new_keypair() -> crypto_box_keypair
 
     crypto_box_noncegen() -> bytea
@@ -323,7 +323,7 @@ Documentation](https://doc.libsodium.org/public-key_cryptography/authenticated_e
 
 
 Functions:
-```.c
+```
     crypto_sign_new_keypair() -> crypto_sign_keypair
 
   combined mode functions:
@@ -350,7 +350,7 @@ Functions:
 ```
 
 Aggregates:
-```.c
+```
     crypto_sign_update_agg(message bytea) -> bytea
 
     crypto_sign_update_agg(state, bytea message bytea) -> bytea
@@ -437,7 +437,6 @@ Expression) queries are particularly effective.  For example to sign a
 message consisting of a timestamp and several message_parts:
 
 ```.sql
-
 with init as
   (
     select crypto_sign_init() as state
@@ -463,7 +462,6 @@ select crypto_sign_final_create(r.state, k.secret_key) as sig
   from remaining_parts r
  cross join keys k
  where k.key_name = 'xyzzy';
-
 ```
 
 Note that storing secret keys in a table, as is done in the example
