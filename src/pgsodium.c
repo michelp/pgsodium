@@ -3,7 +3,6 @@
 PG_MODULE_MAGIC;
 
 /* GUC Variables */
-static char *public_key = NULL;
 static char *secret_key = NULL;
 
 const char *secret_noshow_hook (void) {
@@ -967,7 +966,9 @@ pgsodium_derive(PG_FUNCTION_ARGS)
 	unsigned long long result_size = VARHDRSZ + subkey_size;
 	bytea* context = PG_GETARG_BYTEA_P(2);
 	bytea* result = _pgsodium_zalloc_bytea(result_size);
-    hex_decode(GetConfigOption("pgsodium.secret_key", false, false), crypto_sign_SECRETKEYBYTES*2, VARDATA(master_key));
+    const char* key;
+    key = GetConfigOption("pgsodium.secret_key", false, false);
+    hex_decode(key, strlen(key), VARDATA(master_key));
 	if (subkey_size < crypto_kdf_BYTES_MIN || subkey_size > crypto_kdf_BYTES_MAX)
 		ereport(
 			ERROR,
@@ -990,12 +991,8 @@ pgsodium_derive(PG_FUNCTION_ARGS)
 void _PG_init(void)
 {
 	FILE *fp;
-    char *public_buf;
     char *secret_buf;
-    size_t public_len = 0;
     size_t secret_len = 0;
-    ssize_t public_read;
-    ssize_t secret_read;
     char *path;
 	char sharepath[MAXPGPATH];
 
@@ -1017,44 +1014,21 @@ void _PG_init(void)
             proc_exit(1);
         }
 
-        public_read = getline(&public_buf, &public_len, fp);
-        if (public_read != 65)
-            {
-                fprintf(stderr, "invalid public key\n");
-                proc_exit(1);
-            }
+        getline(&secret_buf, &secret_len, fp);
+        if (secret_buf[strlen(secret_buf) - 1] == '\n')
+            secret_buf[strlen(secret_buf) - 1] = '\0';
 
-        secret_read = getline(&secret_buf, &secret_len, fp);
-        if (secret_read != 129)
+        if (strlen(secret_buf) != 64)
             {
                 fprintf(stderr, "invalid secret key\n");
                 proc_exit(1);
             }
-
-        /* trim off trailing newline */
-        if (public_buf[strlen(public_buf) - 1] == '\n')
-            public_buf[strlen(public_buf) - 1] = '\0';
-
-        if (secret_buf[strlen(secret_buf) - 1] == '\n')
-            secret_buf[strlen(secret_buf) - 1] = '\0';
 
         if (pclose(fp) != 0)
         {
             fprintf(stderr, "%s: could not close shell command\n", PG_GETKEY_EXEC);
             proc_exit(1);
         }
-
-        /* Define custom GUC variables */
-        DefineCustomStringVariable("pgsodium.public_key",
-                                   "pgsodium public key",
-                                   NULL,
-                                   &public_key,
-                                   public_buf,
-                                   PGC_POSTMASTER,
-                                   0,
-                                   NULL,
-                                   NULL,
-                                   NULL);
 
         DefineCustomStringVariable("pgsodium.secret_key",
                                    "pgsodium secret key",

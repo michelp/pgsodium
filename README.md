@@ -68,27 +68,18 @@ provide your own key management.  Skip ahead to the API usage section
 if you choose not to use server managed keys.
 
 See the file `pgsodium_getkeypair.sample` for an example script that
-returns libsodium keys.  DO NOT USE THIS FILE WITHOUT SUBSTITUTING
-YOUR OWN KEYS.  Edit the file, remove the `.sample` suffix, and make
-the file executable (on unixen `chmod +x pgsodium_getkeypair`).
+returns a libsodium key.  The script must emit a hex encoded 32 byte
+(64 character) string on a single line.  DO NOT USE THIS FILE WITHOUT
+SUBSTITUTING YOUR OWN KEY.  Edit the file to add your own key and
+remove the `exit` line, remove the `.sample` suffix and make the file
+executable (on unixen `chmod +x pgsodium_getkeypair`).
 
 Next place `pgsodium` in your `shared_preload_libraries`.  For docker
 containers, you can append this after the run:
 
     docker run -e POSTGRES_HOST_AUTH_METHOD=trust -d --name "$DB_HOST" $TAG -c 'shared_preload_libraries=pgsodium'
 
-When the server starts, it will load the public and secret keys into
-memory.  The public key is accessible to sql, but the secret is not:
-
-    postgres=# show pgsodium.public_key ;
-                           pgsodium.public_key
-    ------------------------------------------------------------------
-     130cdceb74d7174fcbffbcb4a3397f3551b990fed92e452279ea3922cf715a0a
-
-    postgres=# select current_setting('pgsodium.public_key');
-                             current_setting
-    ------------------------------------------------------------------
-     130cdceb74d7174fcbffbcb4a3397f3551b990fed92e452279ea3922cf715a0a
+When the server starts, it will load the secret key into memory.
 
     postgres=# show pgsodium.secret_key ;
                            pgsodium.secret_key
@@ -100,16 +91,16 @@ memory.  The public key is accessible to sql, but the secret is not:
     ------------------------------------------------------------------
      ****************************************************************
 
-The secret key CANNOT BE ACCESSED FROM SQL, ever.  It is up to you to
-edit the script to get or generate the keys however you want.  Common
-patterns including prompting for the keys on boot, fetching them from
-an ssh server or managed cloud secret system, or using a command line
-tool to get them from a hardware security module.
+The secret key **cannot be accessed from sql**, ever.  It is up to you
+to edit the script to get or generate the key however you want.
+Common patterns including prompting for the keys on boot, fetching
+them from an ssh server or managed cloud secret system, or using a
+command line tool to get them from a hardware security module.
 
 # Server Key Derivation
 
 If you choose to use server managed keys described above, pgsodium
-provides function for deriving new keys from the server keys.  You
+provides function for deriving new keys from the server key.  You
 cannot access the server secret key directly, you must derive a key
 from it to use.  If you choose not to use server managed keys, skip
 ahead to the API section.
@@ -150,14 +141,14 @@ To derive a key, call:
     
     select pgsodium_derive(key_id bigint, 64);
     
-    select pgsodium_derive(key_id bigint, 64, decode('username', 'escape'));
+    select pgsodium_derive(key_id bigint, 64, 'username');
     
 The default keysize is `32` and the default context is
-`decode('pgsodium', 'escape')`.
+`'pgsodium'`.
 
 Derived keys can be used either directy in `crypto_secretbox_*`
 functions or as seeds for generating other keypairs using for example
-`crypto_box_seed_keypair()` and `crypto_sign_seed_keypair`.
+`crypto_box_seed_keypair()` and `crypto_sign_seed_keypair()`.
 
 # Simple public key encryption with `crypto_box()`
 
