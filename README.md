@@ -91,11 +91,13 @@ When the server starts, it will load the secret key into memory.
     ------------------------------------------------------------------
      ****************************************************************
 
-The secret key **cannot be accessed from sql**, ever.  It is up to you
-to edit the script to get or generate the key however you want.
-Common patterns including prompting for the keys on boot, fetching
-them from an ssh server or managed cloud secret system, or using a
-command line tool to get them from a hardware security module.
+The secret key **cannot be accessed from sql**, ever.  The only way to
+use the server secret key is to derive other keys from it shown in the
+next section. It is up to you to edit the script to get or generate
+the key however you want.  Common patterns including prompting for the
+keys on boot, fetching them from an ssh server or managed cloud secret
+system, or using a command line tool to get them from a hardware
+security module.
 
 # Server Key Derivation
 
@@ -108,11 +110,15 @@ ahead to the API section.
 pgsodium lets you derive new secret keys from the master server secret
 key by id and an optional context using the [libsodium Key Derivation
 Functions](https://doc.libsodium.org/key_derivation).  Key id are just
-`bigint` integers.  If you know the key id and the context, you can
-ask the system for the derived key.  You can now use this key to
-encrypt data.  If an attacker steals your database image, they cannot
-generate the key even if they know the key id and context without the
-server secret key.
+`bigint` integers.  If you know the key id, key length (default 32
+bytes) and the context (default 'pgsodium'), you can deterministicly
+generate the derived key.
+
+Derived keys can be used to encrypt data or as a seed for
+deterministicly generating keypairs using `crypto_sign_seed_keypair()`
+or `crypto_box_seed_keypair()`.  If an attacker steals your database
+image, they cannot generate the key even if they know the key id and
+context without the server secret key.
 
 The key id can be secret or not, if you store the key id then logged
 in users can generate the key if they know the key length and context.
@@ -123,28 +129,37 @@ encryption API.
 
 Key rotation can be as simple as incrementing the key id and
 re-encrypting from N to N+1.  Frequent rotation means even if an
-attacker acquires a ancestor key, it will not work to decrypt data
+attacker acquires an ancestor key, it will not work to decrypt data
 generated with a successor key.
 
-A context is an 8 byte `bytea`. The same key id in different contexts
-generate different keys.  The default context is the ascii encoded
-bytes `pgsodium`.  You are free to use any 8 bytes context to scope
-your keys, but remember it must be an 8 byte `bytea`, not an 8
-character text or varchar, see the [`encode() and decode()` and
+A derivation context is an 8 byte `bytea`. The same key id in
+different contexts generate different keys.  The default context is
+the ascii encoded bytes `pgsodium`.  You are free to use any 8 byte
+context to scope your keys, but remember it must be a valid 8 byte
+`bytea` which automatically cast correctly for simple ascii string.
+For encoding other characters, see the [`encode() and decode()` and
 `convert_to()/convert_from()`](https://www.postgresql.org/docs/12/functions-binarystring.html)
 binary string functions.  The derivable keyspace is huge given one
 `bigint` keyspace per context and 2^64 contexts.
 
 To derive a key, call:
 
-    select pgsodium_derive(key_id bigint);
-    
-    select pgsodium_derive(key_id bigint, 64);
-    
-    select pgsodium_derive(key_id bigint, 64, 'username');
-    
-The default keysize is `32` and the default context is
-`'pgsodium'`.
+    # select pgsodium_derive(key_id bigint);
+                              pgsodium_derive
+    --------------------------------------------------------------------
+     \x84fa0487750d27386ad6235fc0c4bf3a9aa2c3ccb0e32b405b66e69d5021247b
+
+    # select pgsodium_derive(1, 64);
+                                                              pgsodium_derive
+    ------------------------------------------------------------------------------------------------------------------------------------
+     \xc58cbe0522ac4875707722251e53c0f0cfd8e8b76b133f399e2c64c9999f01cb1216d2ccfe9448ed8c225c8ba5db9b093ff5c1beb2d1fd612a38f40e362073fb
+
+    # select pgsodium_derive(1, 32, 'mycontxt');
+                              pgsodium_derive
+    --------------------------------------------------------------------
+     \xa9aadb2331324f399fb58576c69f51727901c651c970f3ef6cff47066ea92e95
+
+The default keysize is `32` and the default context is `'pgsodium'`.
 
 Derived keys can be used either directy in `crypto_secretbox_*`
 functions or as seeds for generating other keypairs using for example
