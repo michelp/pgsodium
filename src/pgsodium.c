@@ -248,6 +248,16 @@ pgsodium_crypto_box_keypair(PG_FUNCTION_ARGS)
 	return result;
 }
 
+PG_FUNCTION_INFO_V1(pgsodium_crypto_box_new_seed);
+Datum
+pgsodium_crypto_box_new_seed(PG_FUNCTION_ARGS)
+{
+	unsigned long long result_size = VARHDRSZ + crypto_box_SEEDBYTES;
+	bytea* result = _pgsodium_zalloc_bytea(result_size);
+	randombytes_buf(VARDATA(result), crypto_box_SEEDBYTES);
+	PG_RETURN_BYTEA_P(result);
+}
+
 PG_FUNCTION_INFO_V1(pgsodium_crypto_box_seed_keypair);
 Datum
 pgsodium_crypto_box_seed_keypair(PG_FUNCTION_ARGS)
@@ -377,6 +387,16 @@ pgsodium_crypto_sign_keypair(PG_FUNCTION_ARGS)
 	tuple = heap_form_tuple(tupdesc, values, nulls);
 	result = HeapTupleGetDatum(tuple);
 	return result;
+}
+
+PG_FUNCTION_INFO_V1(pgsodium_crypto_sign_new_seed);
+Datum
+pgsodium_crypto_sign_new_seed(PG_FUNCTION_ARGS)
+{
+	unsigned long long result_size = VARHDRSZ + crypto_sign_SEEDBYTES;
+	bytea* result = _pgsodium_zalloc_bytea(result_size);
+	randombytes_buf(VARDATA(result), crypto_sign_SEEDBYTES);
+	PG_RETURN_BYTEA_P(result);
 }
 
 PG_FUNCTION_INFO_V1(pgsodium_crypto_sign_seed_keypair);
