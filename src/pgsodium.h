@@ -3,11 +3,22 @@
 
 #include <stdio.h>
 #include <sodium.h>
+#include <unistd.h>
+
 #include "postgres.h"
 #include "utils/builtins.h"
 #include "libpq/pqformat.h"
 #include "funcapi.h"
 #include "access/htup_details.h"
+
+#include "storage/ipc.h"
+#include "utils/guc.h"
+#include "port.h"
+#include "miscadmin.h"
+
+#define PG_GETKEY_EXEC	"pgsodium_getkeypair"
+
+const char *secret_noshow_hook (void);
 
 #define PGSODIUM_CHARDATA(_vlena) (unsigned char*)VARDATA(_vlena)
 

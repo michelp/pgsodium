@@ -1,0 +1,18 @@
+#!/bin/sh
+
+# YOU MUST EDIT THIS FILE!!!
+
+# after editing this file below WITH YOUR KEYS, remove this next line
+echo FAIL
+
+# YOU MUST EDIT THIS FILE!!!
+# DO NOT USE THESE KEYS THEY ARE CHECKED INTO GIT!!!
+
+# your public key goes here
+echo 130cdceb74d7174fcbffbcb4a3397f3551b990fed92e452279ea3922cf715a0a
+
+# your secret key goes here
+echo 8f5bc183948d482763f17eb76805e02f59b421f7da1ef7633288144af98340db8f5bc183948d482763f17eb76805e02f59b421f7da1ef7633288144af98340db
+
+# YOU MUST EDIT THIS FILE!!!
+# DO NOT USE THESE KEYS THEY ARE CHECKED INTO GIT!!!

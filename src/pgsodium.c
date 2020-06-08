@@ -2,6 +2,14 @@
 
 PG_MODULE_MAGIC;
 
+/* GUC Variables */
+static char *public_key = NULL;
+static char *secret_key = NULL;
+
+const char *secret_noshow_hook (void) {
+    return "****************************************************************";
+}
+
 PG_FUNCTION_INFO_V1(pgsodium_randombytes_random);
 Datum
 pgsodium_randombytes_random(PG_FUNCTION_ARGS)
@@ -452,7 +460,7 @@ Datum pgsodium_crypto_sign_update(PG_FUNCTION_ARGS)
     bytea *state = PG_GETARG_BYTEA_P(0);       // input state
     bytea *msg_part = PG_GETARG_BYTEA_P(1);
     bytea *result = DatumGetByteaPCopy(state); // output state
-    
+
     crypto_sign_update((crypto_sign_state *) VARDATA(result),
 		       PGSODIUM_CHARDATA(msg_part),
 		       VARSIZE_ANY_EXHDR(msg_part));
@@ -468,7 +476,7 @@ Datum pgsodium_crypto_sign_final_create(PG_FUNCTION_ARGS)
     size_t sig_size = crypto_sign_BYTES;
     unsigned long long result_size = VARHDRSZ + sig_size;
     bytea *result = _pgsodium_zalloc_bytea(result_size);
-	
+
     success = crypto_sign_final_create((crypto_sign_state *) VARDATA(state),
 				       PGSODIUM_CHARDATA(result),
 				       NULL,
@@ -489,7 +497,7 @@ Datum pgsodium_crypto_sign_final_verify(PG_FUNCTION_ARGS)
     bytea *state = PG_GETARG_BYTEA_P(0);
     bytea *sig = PG_GETARG_BYTEA_P(1);
     bytea *key = PG_GETARG_BYTEA_P(2);
-	
+
     success = crypto_sign_final_verify((crypto_sign_state *) VARDATA(state),
 				       PGSODIUM_CHARDATA(sig),
 				       PGSODIUM_CHARDATA(key));
@@ -862,9 +870,82 @@ pgsodium_crypto_auth_hmacsha512_verify(PG_FUNCTION_ARGS)
 
 void _PG_init(void)
 {
+	FILE *fp;
+    char *public_buf;
+    char *secret_buf;
+    size_t public_len = 0;
+    size_t secret_len = 0;
+    ssize_t public_read;
+    ssize_t secret_read;
+    char *path;
+	char sharepath[MAXPGPATH];
+
 	if (sodium_init() == -1)
 	{
 		elog(ERROR, "_PG_init: sodium_init() failed cannot initialize pgsodium");
 		return;
 	}
+
+	get_share_path(my_exec_path, sharepath);
+	path = (char *) palloc(MAXPGPATH);
+	snprintf(path, MAXPGPATH, "%s/extension/%s", sharepath, PG_GETKEY_EXEC);
+
+    if (access(path, F_OK) != -1) {
+
+        if ((fp = popen(path, "r")) == NULL)
+        {
+            fprintf(stderr, "%s: could not launch shell command from\n", path);
+            proc_exit(1);
+        }
+
+        public_read = getline(&public_buf, &public_len, fp);
+        if (public_read != 65)
+            {
+                fprintf(stderr, "invalid public key\n");
+                proc_exit(1);
+            }
+
+        secret_read = getline(&secret_buf, &secret_len, fp);
+        if (secret_read != 129)
+            {
+                fprintf(stderr, "invalid secret key\n");
+                proc_exit(1);
+            }
+
+        /* trim off trailing newline */
+        if (public_buf[strlen(public_buf) - 1] == '\n')
+            public_buf[strlen(public_buf) - 1] = '\0';
+
+        if (secret_buf[strlen(secret_buf) - 1] == '\n')
+            secret_buf[strlen(secret_buf) - 1] = '\0';
+
+        if (pclose(fp) != 0)
+        {
+            fprintf(stderr, "%s: could not close shell command\n", PG_GETKEY_EXEC);
+            proc_exit(1);
+        }
+
+        /* Define custom GUC variables */
+        DefineCustomStringVariable("pgsodium.public_key",
+                                   "pgsodium public key",
+                                   NULL,
+                                   &public_key,
+                                   public_buf,
+                                   PGC_POSTMASTER,
+                                   0,
+                                   NULL,
+                                   NULL,
+                                   NULL);
+
+        DefineCustomStringVariable("pgsodium.secret_key",
+                                   "pgsodium secret key",
+                                   NULL,
+                                   &secret_key,
+                                   secret_buf,
+                                   PGC_POSTMASTER,
+                                   GUC_NO_SHOW_ALL | GUC_NO_RESET_ALL | GUC_NOT_IN_SAMPLE | GUC_DISALLOW_IN_FILE,
+                                   NULL,
+                                   NULL,
+                                   &secret_noshow_hook);
+    }
 }
