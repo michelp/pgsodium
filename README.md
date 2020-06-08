@@ -95,7 +95,8 @@ available to the attacker.
 To disable logging of the key injections, `SET LOCAL` is also used to
 disable
 [`log_statements`](https://www.postgresql.org/docs/12/runtime-config-logging.html#RUNTIME-CONFIG-LOGGING-WHAT)
-and then re-enable normal logging afterwards. as shown below:
+and then re-enable normal logging afterwards. as shown below. Setting
+`log_statement` requires superuser privledges:
 
     -- SET LOCAL must be done in a transaction block
     BEGIN;
@@ -131,6 +132,31 @@ and then re-enable normal logging afterwards. as shown below:
                               current_setting('app.bob_secret')::bytea);
 
     COMMIT;
+
+For more paranoia you can use a function to check that the connection
+being used is secure or a unix domain socket.
+
+    CREATE FUNCTION is_ssl_or_domain_socket() RETURNS bool
+    LANGUAGE plpgsql AS $$
+    DECLARE
+        addr text;
+	    ssl text;
+    BEGIN
+        SELECT inet_client_addr() INTO addr;
+        SELECT current_setting('ssl', true) INTO ssl;
+        IF NOT FOUND OR ((ssl IS NULL OR ssl != 'on')
+            AND (addr IS NOT NULL OR length(addr) != 0))
+        THEN
+            RETURN false;
+        END IF;
+        RETURN true;
+    END;
+    $$;
+
+This doesn't guarantee the secret won't leak out in some way of
+course, but it can useful if you never store secrets and send them
+only through secure channels back to the client, for example using the
+`psql` client `\gset` command shown above.
 
 # API Reference
 
@@ -287,7 +313,7 @@ Functions:
     crypto_box_new_keypair() -> crypto_box_keypair
 
     crypto_box_noncegen() -> bytea
-    
+
     crypto_box(message bytea, nonce bytea,
                public bytea, secret bytea) -> bytea
 
@@ -374,7 +400,7 @@ using `crypto_sign_open()`.
 
 `crypto_sign_open()` takes a signed message created by
 `crypto_sign()`, checks its validity using the sender's public key and
-returns the original message if it is valid, otherwise raises a data 
+returns the original message if it is valid, otherwise raises a data
 exception.
 
 `crypto_sign_detached()` and `crypto_sign_verify_detached()` operate
@@ -454,7 +480,7 @@ remaining_parts as
       from timestamp_part t
      cross join (
        select message_part
-         from message_parts 
+         from message_parts
         where message_id = 42
         order by message_part_num) p
   )
