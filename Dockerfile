@@ -11,6 +11,6 @@ COPY . .
 RUN make && make install
 RUN ldconfig
 RUN cd `pg_config --sharedir`/extension/
-RUN cp pgsodium_getkeypair.sample `pg_config --sharedir`/extension/pgsodium_getkeypair
-RUN sed -i 's/exit//g' `pg_config --sharedir`/extension/pgsodium_getkeypair
-RUN chmod +x `pg_config --sharedir`/extension/pgsodium_getkeypair
+RUN cp pgsodium_getkey.sample `pg_config --sharedir`/extension/pgsodium_getkey
+RUN sed -i 's/exit//g' `pg_config --sharedir`/extension/pgsodium_getkey
+RUN chmod +x `pg_config --sharedir`/extension/pgsodium_getkey

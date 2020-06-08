@@ -16,7 +16,7 @@
 #include "port.h"
 #include "miscadmin.h"
 
-#define PG_GETKEY_EXEC	"pgsodium_getkeypair"
+#define PG_GETKEY_EXEC	"pgsodium_getkey"
 
 const char *secret_noshow_hook (void);
 
