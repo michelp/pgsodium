@@ -92,6 +92,7 @@ Datum pgsodium_crypto_pwhash_str_verify(PG_FUNCTION_ARGS);
 /* Public Key */
 
 Datum pgsodium_crypto_box_keypair(PG_FUNCTION_ARGS);
+Datum pgsodium_crypto_box_seed_keypair(PG_FUNCTION_ARGS);
 Datum pgsodium_crypto_box_noncegen(PG_FUNCTION_ARGS);
 
 Datum pgsodium_crypto_box(PG_FUNCTION_ARGS);
@@ -101,6 +102,7 @@ Datum pgsodium_crypto_box_seal(PG_FUNCTION_ARGS);
 Datum pgsodium_crypto_box_seal_open(PG_FUNCTION_ARGS);
 
 Datum pgsodium_crypto_sign_keypair(PG_FUNCTION_ARGS);
+Datum pgsodium_crypto_sign_seed_keypair(PG_FUNCTION_ARGS);
 Datum pgsodium_crypto_sign(PG_FUNCTION_ARGS);
 Datum pgsodium_crypto_sign_open(PG_FUNCTION_ARGS);
 Datum pgsodium_crypto_sign_detached(PG_FUNCTION_ARGS);
@@ -132,5 +134,9 @@ Datum pgsodium_crypto_kx_server_session_keys(PG_FUNCTION_ARGS);
 Datum pgsodium_crypto_auth_hmacsha512_keygen(PG_FUNCTION_ARGS);
 Datum pgsodium_crypto_auth_hmacsha512(PG_FUNCTION_ARGS);
 Datum pgsodium_crypto_auth_hmacsha512_verify(PG_FUNCTION_ARGS);
+
+/* Server Managed Keys */
+
+Datum pgsodium_derive(PG_FUNCTION_ARGS);
 
 #endif /* PGSODIUM_H */

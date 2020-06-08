@@ -164,3 +164,18 @@ CREATE FUNCTION crypto_sign_new_keypair()
 RETURNS crypto_sign_keypair
 AS '$libdir/pgsodium', 'pgsodium_crypto_sign_keypair'
 LANGUAGE C VOLATILE;
+
+CREATE OR REPLACE FUNCTION crypto_box_seed_new_keypair(seed bytea)
+RETURNS crypto_box_keypair
+AS '$libdir/pgsodium', 'pgsodium_crypto_box_seed_keypair'
+LANGUAGE C VOLATILE;
+
+CREATE OR REPLACE FUNCTION crypto_sign_seed_new_keypair(seed bytea)
+RETURNS crypto_sign_keypair
+AS '$libdir/pgsodium', 'pgsodium_crypto_sign_seed_keypair'
+LANGUAGE C VOLATILE;
+
+CREATE OR REPLACE FUNCTION pgsodium_derive(key_id bigint, key_len integer = 32, context bytea = decode('pgsodium', 'escape'))
+RETURNS bytea
+AS '$libdir/pgsodium', 'pgsodium_derive'
+LANGUAGE C VOLATILE;

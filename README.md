@@ -52,7 +52,112 @@ postgres=# SELECT * FROM crypto_box_new_keypair();
 pgsodium is careful to use memory cleanup callbacks to zero out all
 allocated memory used by the when freed.  In general it is a bad idea
 to store secrets in the database itself, although this can be done
-carefully it has a higher risk.
+carefully it has a higher risk.  To help with this problem, pgsodium
+has an optional Server Key Management function that can load a server
+key at boot.
+
+# Server Key Management
+
+If you add pgsodium to your `shared_preload_libraries` configuration
+and place a special script in your postgres shared extension
+directory, the server can preload a libsodium keypair on server start.
+
+This is completely optional, pgsodium can still be used without
+putting it in `shared_preload_libraries`, you will simply need to
+provide your own key management.  Skip ahead to the API usage section
+if you choose not to use server managed keys.
+
+See the file `pgsodium_getkeypair.sample` for an example script that
+returns libsodium keys.  DO NOT USE THIS FILE WITHOUT SUBSTITUTING
+YOUR OWN KEYS.  Edit the file, remove the `.sample` suffix, and make
+the file executable (on unixen `chmod +x pgsodium_getkeypair`).
+
+Next place `pgsodium` in your `shared_preload_libraries`.  For docker
+containers, you can append this after the run:
+
+    docker run -e POSTGRES_HOST_AUTH_METHOD=trust -d --name "$DB_HOST" $TAG -c 'shared_preload_libraries=pgsodium'
+
+When the server starts, it will load the public and secret keys into
+memory.  The public key is accessible to sql, but the secret is not:
+
+    postgres=# show pgsodium.public_key ;
+                           pgsodium.public_key
+    ------------------------------------------------------------------
+     130cdceb74d7174fcbffbcb4a3397f3551b990fed92e452279ea3922cf715a0a
+
+    postgres=# select current_setting('pgsodium.public_key');
+                             current_setting
+    ------------------------------------------------------------------
+     130cdceb74d7174fcbffbcb4a3397f3551b990fed92e452279ea3922cf715a0a
+
+    postgres=# show pgsodium.secret_key ;
+                           pgsodium.secret_key
+    ------------------------------------------------------------------
+     ****************************************************************
+
+    postgres=# select current_setting('pgsodium.secret_key');
+                             current_setting
+    ------------------------------------------------------------------
+     ****************************************************************
+
+The secret key CANNOT BE ACCESSED FROM SQL, ever.  It is up to you to
+edit the script to get or generate the keys however you want.  Common
+patterns including prompting for the keys on boot, fetching them from
+an ssh server or managed cloud secret system, or using a command line
+tool to get them from a hardware security module.
+
+# Server Key Derivation
+
+If you choose to use server managed keys described above, pgsodium
+provides function for deriving new keys from the server keys.  You
+cannot access the server secret key directly, you must derive a key
+from it to use.  If you choose not to use server managed keys, skip
+ahead to the API section.
+
+pgsodium lets you derive new secret keys from the master server secret
+key by id and an optional context using the [libsodium Key Derivation
+Functions](https://doc.libsodium.org/key_derivation).  Key id are just
+`bigint` integers.  If you know the key id and the context, you can
+ask the system for the derived key.  You can now use this key to
+encrypt data.  If an attacker steals your database image, they cannot
+generate the key even if they know the key id and context without the
+server secret key.
+
+The key id can be secret or not, if you store the key id then logged
+in users can generate the key if they know the key length and context.
+Keeping the key id secret to a client avoid this possibility and make
+sure to set your database security model correctly so that only the
+minimum permission possible is given to users that interact with the
+encryption API.
+
+Key rotation can be as simple as incrementing the key id and
+re-encrypting from N to N+1.  Frequent rotation means even if an
+attacker acquires a ancestor key, it will not work to decrypt data
+generated with a successor key.
+
+A context is an 8 byte `bytea`. The same key id in different contexts
+generate different keys.  The default context is the ascii encoded
+bytes `pgsodium`.  You are free to use any 8 bytes context to scope
+your keys, but remember it must be an 8 byte `bytea`, not an 8
+character text or varchar, see the [`encode() and decode()` and
+`convert_to()/convert_from()`](https://www.postgresql.org/docs/12/functions-binarystring.html)
+binary string functions.  The derivable keyspace is huge given one
+`bigint` keyspace per context and 2^64 contexts.
+
+To derive a key, call:
+
+    select pgsodium_derive(key_id bigint);
+    
+    select pgsodium_derive(key_id bigint, 64);
+    
+    select pgsodium_derive(key_id bigint, 64, decode('username', 'escape'));
+    
+The default keysize is `32` and the default context is
+`decode('pgsodium', 'escape')`.
+
+Derived keys can be used either directy in `crypto_secretbox_*`
+functions or as seeds for generating other keypairs using for example
+`crypto_box_seed_keypair()` and `crypto_sign_seed_keypair`.
 
 # Simple public key encryption with `crypto_box()`
 

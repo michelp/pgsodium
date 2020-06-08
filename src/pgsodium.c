@@ -248,6 +248,39 @@ pgsodium_crypto_box_keypair(PG_FUNCTION_ARGS)
 	return result;
 }
 
+PG_FUNCTION_INFO_V1(pgsodium_crypto_box_seed_keypair);
+Datum
+pgsodium_crypto_box_seed_keypair(PG_FUNCTION_ARGS)
+{
+	TupleDesc tupdesc;
+	Datum values[2];
+	bool nulls[2] = {false, false};
+	HeapTuple tuple;
+	Datum result;
+	bytea* publickey;
+	bytea* secretkey;
+	bytea* seed = PG_GETARG_BYTEA_P(0);
+	size_t public_size = crypto_box_PUBLICKEYBYTES + VARHDRSZ;
+	size_t secret_size = crypto_box_SECRETKEYBYTES + VARHDRSZ;
+	if (get_call_result_type(fcinfo, NULL, &tupdesc) != TYPEFUNC_COMPOSITE)
+		ereport(ERROR,
+				(errcode(ERRCODE_FEATURE_NOT_SUPPORTED),
+				 errmsg("function returning record called in context "
+						"that cannot accept type record")));
+	publickey = _pgsodium_zalloc_bytea(public_size);
+	secretkey = _pgsodium_zalloc_bytea(secret_size);
+	crypto_box_seed_keypair(
+		PGSODIUM_CHARDATA(publickey),
+		PGSODIUM_CHARDATA(secretkey),
+        PGSODIUM_CHARDATA(seed)
+		);
+	values[0] = PointerGetDatum(publickey);
+	values[1] = PointerGetDatum(secretkey);
+	tuple = heap_form_tuple(tupdesc, values, nulls);
+	result = HeapTupleGetDatum(tuple);
+	return result;
+}
+
 PG_FUNCTION_INFO_V1(pgsodium_crypto_box_noncegen);
 Datum
 pgsodium_crypto_box_noncegen(PG_FUNCTION_ARGS)
@@ -337,6 +370,42 @@ pgsodium_crypto_sign_keypair(PG_FUNCTION_ARGS)
 	crypto_sign_keypair(
 		PGSODIUM_CHARDATA(publickey),
 		PGSODIUM_CHARDATA(secretkey)
+		);
+
+	values[0] = PointerGetDatum(publickey);
+	values[1] = PointerGetDatum(secretkey);
+	tuple = heap_form_tuple(tupdesc, values, nulls);
+	result = HeapTupleGetDatum(tuple);
+	return result;
+}
+
+PG_FUNCTION_INFO_V1(pgsodium_crypto_sign_seed_keypair);
+Datum
+pgsodium_crypto_sign_seed_keypair(PG_FUNCTION_ARGS)
+{
+	TupleDesc tupdesc;
+	Datum values[2];
+	bool nulls[2] = {false, false};
+	HeapTuple tuple;
+	Datum result;
+	bytea* publickey;
+	bytea* secretkey;
+	bytea* seed = PG_GETARG_BYTEA_P(0);
+	size_t public_size = crypto_sign_PUBLICKEYBYTES + VARHDRSZ;
+	size_t secret_size = crypto_sign_SECRETKEYBYTES + VARHDRSZ;
+
+	if (get_call_result_type(fcinfo, NULL, &tupdesc) != TYPEFUNC_COMPOSITE)
+		ereport(ERROR,
+				(errcode(ERRCODE_FEATURE_NOT_SUPPORTED),
+				 errmsg("function returning record called in context "
+						"that cannot accept type record")));
+
+	publickey = _pgsodium_zalloc_bytea(public_size);
+	secretkey = _pgsodium_zalloc_bytea(secret_size);
+	crypto_sign_seed_keypair(
+		PGSODIUM_CHARDATA(publickey),
+		PGSODIUM_CHARDATA(secretkey),
+        PGSODIUM_CHARDATA(seed)
 		);
 
 	values[0] = PointerGetDatum(publickey);
@@ -866,6 +935,36 @@ pgsodium_crypto_auth_hmacsha512_verify(PG_FUNCTION_ARGS)
 			PGSODIUM_CHARDATA(key)
 			);
 	PG_RETURN_BOOL(success == 0);
+}
+
+PG_FUNCTION_INFO_V1(pgsodium_derive);
+Datum
+pgsodium_derive(PG_FUNCTION_ARGS)
+{
+	bytea *master_key = palloc(crypto_sign_SECRETKEYBYTES + VARHDRSZ);
+	unsigned long long subkey_id = PG_GETARG_INT64(0);
+	size_t subkey_size = PG_GETARG_UINT32(1);
+	unsigned long long result_size = VARHDRSZ + subkey_size;
+	bytea* context = PG_GETARG_BYTEA_P(2);
+	bytea* result = _pgsodium_zalloc_bytea(result_size);
+    hex_decode(GetConfigOption("pgsodium.secret_key", false, false), crypto_sign_SECRETKEYBYTES*2, VARDATA(master_key));
+	if (subkey_size < crypto_kdf_BYTES_MIN || subkey_size > crypto_kdf_BYTES_MAX)
+		ereport(
+			ERROR,
+			(errcode(ERRCODE_DATA_EXCEPTION),
+			 errmsg("crypto_kdf_derive_from_key: invalid key size requested")));
+	if (VARSIZE_ANY_EXHDR(context) != 8)
+		ereport(
+			ERROR,
+			(errcode(ERRCODE_DATA_EXCEPTION),
+			 errmsg("crypto_kdf_derive_from_key: context must be 8 bytes")));
+	crypto_kdf_derive_from_key(
+		PGSODIUM_CHARDATA(result),
+		subkey_size,
+		subkey_id,
+		(const char*)VARDATA(context),
+		(const unsigned char*)VARDATA(master_key));
+	PG_RETURN_BYTEA_P(result);
 }
 
 void _PG_init(void)
