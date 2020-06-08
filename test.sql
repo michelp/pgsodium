@@ -14,7 +14,7 @@ BEGIN;
 CREATE EXTENSION pgtap;
 CREATE EXTENSION pgsodium;
 
-SELECT plan(38);
+SELECT plan(43);
 
 SELECT lives_ok($$SELECT randombytes_random()$$, 'randombytes_random');
 SELECT lives_ok($$SELECT randombytes_uniform(10)$$, 'randombytes_uniform');
@@ -238,6 +238,18 @@ select crypto_auth_hmacsha512('food', :'hmac512key') hmac512 \gset
 
 select is(crypto_auth_hmacsha512_verify(:'hmac512', 'food', :'hmac512key'), true, 'hmac512 verified');
 select is(crypto_auth_hmacsha512_verify(:'hmac512', 'fo0d', :'hmac512key'), false, 'hmac512 not verified');
+
+
+select is(current_setting('pgsodium.secret_key'),
+    '****************************************************************', 'server managed secret not available.');
+
+select is(pgsodium_derive(1), pgsodium_derive(1), 'derived key are equal by id');
+
+select isnt(pgsodium_derive(1), pgsodium_derive(2), 'disequal derived key');
+
+select is(length(pgsodium_derive(2, 64)), 64, 'key len is 64 bytes');
+
+select isnt(pgsodium_derive(2, 32, 'foozball'), pgsodium_derive(2, 32), 'disequal context');
 
 -- test relocatable schema
 

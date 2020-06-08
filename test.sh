@@ -2,7 +2,9 @@
 
 set -e
 
-for version in 13 12 11 10
+versions=${1:-13 12 11 10}
+
+for version in $versions
 do
     DB_HOST="pgsodium-test-db-$version"
     DB_NAME="postgres"
