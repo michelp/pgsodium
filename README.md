@@ -91,7 +91,7 @@ When the server starts, it will load the secret key into memory.
     ------------------------------------------------------------------
      ****************************************************************
 
-The secret key **cannot be accessed from sql**, ever.  The only way to
+**The secret key cannot be accessed from SQL, ever**.  The only way to
 use the server secret key is to derive other keys from it shown in the
 next section. It is up to you to edit the script to get or generate
 the key however you want.  Common patterns including prompting for the
@@ -102,10 +102,11 @@ security module.
 # Server Key Derivation
 
 If you choose to use server managed keys described above, pgsodium
-provides function for deriving new keys from the server key.  You
-cannot access the server secret key directly, you must derive a key
-from it to use.  If you choose not to use server managed keys, skip
-ahead to the API section.
+provides function for deterministically deriving new keys from the
+server key using a key id and key context.  Again, you cannot access
+the server secret key directly from SQL, you must derive a key from it
+to use.  If you choose not to use server managed keys, skip ahead to
+the API section.
 
 pgsodium lets you derive new secret keys from the master server secret
 key by id and an optional context using the [libsodium Key Derivation
@@ -121,10 +122,11 @@ image, they cannot generate the key even if they know the key id and
 context without the server secret key.
 
 The key id can be secret or not, if you store the key id then logged
-in users can generate the key if they know the key length and context.
-Keeping the key id secret to a client avoid this possibility and make
-sure to set your database security model correctly so that only the
-minimum permission possible is given to users that interact with the
+in users can generate the key if they know the key length and context
+and have permission to call the `pgsodium_derive()` function.  Keeping
+the key id secret to a client avoid this possibility and make sure to
+set your database security model correctly so that only the minimum
+permission possible is given to users that interact with the
 encryption API.
 
 Key rotation can be as simple as incrementing the key id and
@@ -162,8 +164,9 @@ To derive a key, call:
 The default keysize is `32` and the default context is `'pgsodium'`.
 
 Derived keys can be used either directy in `crypto_secretbox_*`
-functions or as seeds for generating other keypairs using for example
-`crypto_box_seed_keypair()` and `crypto_sign_seed_keypair()`.
+functions for "symmetric" encryption or as seeds for generating other
+keypairs using for example `crypto_box_seed_keypair()` and
+`crypto_sign_seed_keypair()`.
 
 # Simple public key encryption with `crypto_box()`
 
@@ -267,7 +270,8 @@ being used is secure or a unix domain socket.
 This doesn't guarantee the secret won't leak out in some way of
 course, but it can useful if you never store secrets and send them
 only through secure channels back to the client, for example using the
-`psql` client `\gset` command shown above.
+`psql` client `\gset` command shown above, or by only storing a
+derived key id and context.
 
 # API Reference
 

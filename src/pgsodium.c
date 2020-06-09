@@ -5,10 +5,6 @@ PG_MODULE_MAGIC;
 /* GUC Variables */
 static char *secret_key = NULL;
 
-const char *secret_noshow_hook (void) {
-    return "****************************************************************";
-}
-
 PG_FUNCTION_INFO_V1(pgsodium_randombytes_random);
 Datum
 pgsodium_randombytes_random(PG_FUNCTION_ARGS)
@@ -956,6 +952,8 @@ pgsodium_crypto_auth_hmacsha512_verify(PG_FUNCTION_ARGS)
 	PG_RETURN_BOOL(success == 0);
 }
 
+/* Server key management */
+
 PG_FUNCTION_INFO_V1(pgsodium_derive);
 Datum
 pgsodium_derive(PG_FUNCTION_ARGS)
@@ -971,21 +969,25 @@ pgsodium_derive(PG_FUNCTION_ARGS)
     hex_decode(key, strlen(key), VARDATA(master_key));
 	if (subkey_size < crypto_kdf_BYTES_MIN || subkey_size > crypto_kdf_BYTES_MAX)
 		ereport(
-			ERROR,
-			(errcode(ERRCODE_DATA_EXCEPTION),
-			 errmsg("crypto_kdf_derive_from_key: invalid key size requested")));
+                ERROR,
+                (errcode(ERRCODE_DATA_EXCEPTION),
+                 errmsg("crypto_kdf_derive_from_key: invalid key size requested")));
 	if (VARSIZE_ANY_EXHDR(context) != 8)
 		ereport(
-			ERROR,
-			(errcode(ERRCODE_DATA_EXCEPTION),
-			 errmsg("crypto_kdf_derive_from_key: context must be 8 bytes")));
+                ERROR,
+                (errcode(ERRCODE_DATA_EXCEPTION),
+                 errmsg("crypto_kdf_derive_from_key: context must be 8 bytes")));
 	crypto_kdf_derive_from_key(
-		PGSODIUM_CHARDATA(result),
-		subkey_size,
-		subkey_id,
-		(const char*)VARDATA(context),
-		(const unsigned char*)VARDATA(master_key));
+                               PGSODIUM_CHARDATA(result),
+                               subkey_size,
+                               subkey_id,
+                               (const char*)VARDATA(context),
+                               (const unsigned char*)VARDATA(master_key));
 	PG_RETURN_BYTEA_P(result);
+}
+
+const char *secret_noshow_hook (void) {
+    return "****************************************************************";
 }
 
 void _PG_init(void)
@@ -997,48 +999,53 @@ void _PG_init(void)
 	char sharepath[MAXPGPATH];
 
 	if (sodium_init() == -1)
-	{
-		elog(ERROR, "_PG_init: sodium_init() failed cannot initialize pgsodium");
-		return;
-	}
+        {
+            elog(ERROR, "_PG_init: sodium_init() failed cannot initialize pgsodium");
+            return;
+        }
 
 	get_share_path(my_exec_path, sharepath);
 	path = (char *) palloc(MAXPGPATH);
 	snprintf(path, MAXPGPATH, "%s/extension/%s", sharepath, PG_GETKEY_EXEC);
 
-    if (access(path, F_OK) != -1) {
-
-        if ((fp = popen(path, "r")) == NULL)
+    if (access(path, F_OK) != -1)
         {
-            fprintf(stderr, "%s: could not launch shell command from\n", path);
-            proc_exit(1);
+
+            if ((fp = popen(path, "r")) == NULL)
+                {
+                    fprintf(stderr, "%s: could not launch shell command from\n", path);
+                    proc_exit(1);
+                }
+
+            getline(&secret_buf, &secret_len, fp);
+            if (secret_buf[strlen(secret_buf) - 1] == '\n')
+                secret_buf[strlen(secret_buf) - 1] = '\0';
+
+            if (strlen(secret_buf) != 64)
+                {
+                    fprintf(stderr, "invalid secret key\n");
+                    proc_exit(1);
+                }
+
+            if (pclose(fp) != 0)
+                {
+                    fprintf(stderr, "%s: could not close shell command\n", PG_GETKEY_EXEC);
+                    proc_exit(1);
+                }
+
+            DefineCustomStringVariable("pgsodium.secret_key",
+                                       "pgsodium secret key",
+                                       NULL,
+                                       &secret_key,
+                                       secret_buf,
+                                       PGC_POSTMASTER,
+                                       GUC_NO_SHOW_ALL | GUC_NO_RESET_ALL | GUC_NOT_IN_SAMPLE | GUC_DISALLOW_IN_FILE,
+                                       NULL,
+                                       NULL,
+                                       &secret_noshow_hook);
+
+            // prevent secret from being swapped to disk
+            sodium_mlock(secret_key, strlen(secret_buf));
         }
 
-        getline(&secret_buf, &secret_len, fp);
-        if (secret_buf[strlen(secret_buf) - 1] == '\n')
-            secret_buf[strlen(secret_buf) - 1] = '\0';
-
-        if (strlen(secret_buf) != 64)
-            {
-                fprintf(stderr, "invalid secret key\n");
-                proc_exit(1);
-            }
-
-        if (pclose(fp) != 0)
-        {
-            fprintf(stderr, "%s: could not close shell command\n", PG_GETKEY_EXEC);
-            proc_exit(1);
-        }
-
-        DefineCustomStringVariable("pgsodium.secret_key",
-                                   "pgsodium secret key",
-                                   NULL,
-                                   &secret_key,
-                                   secret_buf,
-                                   PGC_POSTMASTER,
-                                   GUC_NO_SHOW_ALL | GUC_NO_RESET_ALL | GUC_NOT_IN_SAMPLE | GUC_DISALLOW_IN_FILE,
-                                   NULL,
-                                   NULL,
-                                   &secret_noshow_hook);
-    }
 }
