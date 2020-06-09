@@ -6,7 +6,7 @@
     "maintainer": [
         "Michel Pelletier <pelletier.michel@gmail.com>"
     ],
-    "release_status": "alpha",
+    "release_status": "stable",
     "license": "postgresql",
     "provides": {
         "pgsodium": {
