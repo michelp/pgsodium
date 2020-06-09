@@ -144,7 +144,7 @@ binary string functions.  The derivable keyspace is huge given one
 
 To derive a key, call:
 
-    # select pgsodium_derive(key_id bigint);
+    # select pgsodium_derive(1);
                               pgsodium_derive
     --------------------------------------------------------------------
      \x84fa0487750d27386ad6235fc0c4bf3a9aa2c3ccb0e32b405b66e69d5021247b
