@@ -617,14 +617,27 @@ Documentation](https://doc.libsodium.org/public-key_cryptography/public-key_sign
 
 ### Sealed boxes
 
+[See libsodium docs](https://doc.libsodium.org/public-key_cryptography/sealed_boxes)
+
 ## Hashing
+
+[See libsodium docs](https://doc.libsodium.org/hashing)
 
 ## Password hashing
 
+[See libsodium docs](https://doc.libsodium.org/password_hashing)
+
 ## Key Derivation
+
+[See libsodium docs](https://doc.libsodium.org/key_derivation)
 
 ## Key Exchange
 
-## Advanced
+[See libsodium docs](https://doc.libsodium.org/key_exchange)
 
-### HMAC512
+## HMAC512
+
+[See libsodium docs](https://doc.libsodium.org/advanced/hmac-sha2)
+
+
+
