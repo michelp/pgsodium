@@ -5,7 +5,7 @@
 
 pgsodium is a [PostgreSQL](https://www.postgresql.org/) extension that
 exposes modern [libsodium](https://download.libsodium.org/doc/) based
-cryptographic functions to SQL.
+cryptography functions to SQL.
 
 ## Installation
 
@@ -13,7 +13,7 @@ cryptographic functions to SQL.
 the [official docker images](https://hub.docker.com/_/postgres) for
 PostgreSQL 13, 12, 11, and 10.  Requires libsodium >= 1.0.18.  In
 addition to the libsodium library and it's development headers, you
-may also need the postgres header files typically in the '-dev'
+may also need the PostgreSQL header files typically in the '-dev'
 packages to build the extension.
 
 Clone the repo and run 'sudo make install'.
@@ -21,8 +21,8 @@ Clone the repo and run 'sudo make install'.
 pgTAP tests can be run with 'sudo -u postgres pg_prove test.sql' or
 they can be run in a self-contained Docker image.  Run `./test.sh` if
 you have docker installed to run all tests.  Note that this will run
-the tests against and download docker imags for four different major
-versions of postgresql, so it takes a while and requires a lot of
+the tests against and download docker images for four different major
+versions of PostgreSQL, so it takes a while and requires a lot of
 network bandwidth the first time you run it.
 
 # Usage
@@ -118,21 +118,19 @@ attacker steals your database image, they cannot generate the key even
 if they know the key id, length and context because they will not have
 the server secret key.
 
-The key id can be secret or not, if you store the key id then logged
-in users can generate the key if they know the key length and context
-and have permission to call the `pgsodium_derive()` function.  Keeping
-the key id secret to a client avoid this possibility and make sure to
-set your [database security
+The key id, key length and context can be secret or not, if you store
+them then possibly logged in database users can generate the key if
+they have permission to call the `pgsodium_derive()` function.
+Keeping the key id and/or length context secret to a client avoid this
+possibility and make sure to set your [database security
 model](https://www.postgresql.org/docs/12/sql-grant.html) correctly so
 that only the minimum permission possible is given to users that
 interact with the encryption API.
 
 Key rotation is up to you, whatever strategy you want to go from one
-key to the next.  A simple strategy i incrementing the key id and
+key to the next.  A simple strategy is incrementing the key id and
 re-encrypting from N to N+1.  Newer keys will have increasing ids, you
-can always tell the order in which keys are superceded.  Frequent
-rotation means even if an attacker acquires an ancestor key, it will
-not work to decrypt data generated with a successor key.
+can always tell the order in which keys are superceded.
 
 A derivation context is an 8 byte `bytea`. The same key id in
 different contexts generate different keys.  The default context is
@@ -156,7 +154,7 @@ To derive a key:
     ------------------------------------------------------------------------------------------------------------------------------------
      \xc58cbe0522ac4875707722251e53c0f0cfd8e8b76b133f399e2c64c9999f01cb1216d2ccfe9448ed8c225c8ba5db9b093ff5c1beb2d1fd612a38f40e362073fb
 
-    # select pgsodium_derive(1, 32, 'mycontxt');
+    # select pgsodium_derive(1, 32, '__auth__');
                               pgsodium_derive
     --------------------------------------------------------------------
      \xa9aadb2331324f399fb58576c69f51727901c651c970f3ef6cff47066ea92e95
