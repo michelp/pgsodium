@@ -21,5 +21,4 @@ until
 do sleep 1;
 done
 
-echo running tests
 docker exec -it $DB_HOST psql -U "$SU"

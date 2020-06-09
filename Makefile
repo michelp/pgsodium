@@ -2,14 +2,14 @@
 
 EXTENSION = pgsodium
 PG_CONFIG ?= pg_config
-DATA = $(wildcard *--*.sql)
+DATA = $(wildcard sql/*--*.sql)
 PGXS := $(shell $(PG_CONFIG) --pgxs)
 MODULE_big = pgsodium
 OBJS = $(patsubst %.c,%.o,$(wildcard src/*.c))
 SHLIB_LINK = -lsodium
 PG_CPPFLAGS = -O0
 
-TESTS        = $(wildcard test/sql/*.sql)
-REGRESS      = $(patsubst test/sql/%.sql,%,$(TESTS))
-REGRESS_OPTS = --inputdir=test --load-language=plpgsql
+# TESTS        = $(wildcard test/*.sql)
+# REGRESS      = $(patsubst test/%.sql,%,$(TESTS))
+# REGRESS_OPTS = --inputdir=test --load-language=plpgsql
 include $(PGXS)
