@@ -7,6 +7,35 @@ pgsodium is a [PostgreSQL](https://www.postgresql.org/) extension that
 exposes modern [libsodium](https://download.libsodium.org/doc/) based
 cryptography functions to SQL.
 
+   * [pgsodium](#pgsodium)
+      * [Installation](#installation)
+   * [Usage](#usage)
+   * [Server Key Management](#server-key-management)
+   * [Server Key Derivation](#server-key-derivation)
+   * [select pgsodium_derive(1);](#select-pgsodium_derive1)
+      * [pgsodium_derive](#pgsodium_derive)
+   * [select pgsodium_derive(1, 64);](#select-pgsodium_derive1-64)
+      * [pgsodium_derive](#pgsodium_derive-1)
+   * [select pgsodium_derive(1, 32, '<strong>auth</strong>');](#select-pgsodium_derive1-32-auth)
+      * [pgsodium_derive](#pgsodium_derive-2)
+   * [select * from crypto_box_seed_new_keypair(pgsodium_derive(1));](#select--from-crypto_box_seed_new_keypairpgsodium_derive1)
+   * [Simple public key encryption with crypto_box()](#simple-public-key-encryption-with-crypto_box)
+   * [Avoid secret logging](#avoid-secret-logging)
+   * [API Reference](#api-reference)
+      * [Generating Random Data](#generating-random-data)
+      * [Secret key cryptography](#secret-key-cryptography)
+         * [Authenticated encryption](#authenticated-encryption)
+         * [Authentication](#authentication)
+      * [Public key cryptography](#public-key-cryptography)
+         * [Authenticated encryption](#authenticated-encryption-1)
+         * [Public key signatures](#public-key-signatures)
+         * [Sealed boxes](#sealed-boxes)
+      * [Hashing](#hashing)
+      * [Password hashing](#password-hashing)
+      * [Key Derivation](#key-derivation)
+      * [Key Exchange](#key-exchange)
+      * [HMAC512](#hmac512)
+
 ## Installation
 
 [Travis CI](https://travis-ci.com/github/michelp/pgsodium) tested with
@@ -99,7 +128,7 @@ the server secret key is to *derive* other keys from it using
 
 It is up to you to edit the script to get or generate the key however
 you want.  pgsodium can be used to generate a new random key with
-`select encode(randombytes_buf(32), 'hex')`.  Common patterns
+`select encode(randombytes_buf(32), 'hex')`.  Other common patterns
 including prompting for the key on boot, fetching it from an ssh
 server or managed cloud secret system, or using a command line tool to
 get it from a hardware security module.
