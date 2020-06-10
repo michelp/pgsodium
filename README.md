@@ -85,7 +85,9 @@ If you add pgsodium to your
 [`shared_preload_libraries`](https://www.postgresql.org/docs/12/runtime-config-client.html#RUNTIME-CONFIG-CLIENT-PRELOAD)
 configuration and place a special script in your postgres shared
 extension directory, the server can preload a libsodium key on server
-start.
+start. **The secret key cannot be accessed from SQL**.  The only way
+to use the server secret key is to *derive* other keys from it using
+`pgsodium_derive()` shown in the next section.
 
 This is completely optional, pgsodium can still be used without
 putting it in `shared_preload_libraries`, you will simply need to
@@ -115,10 +117,6 @@ When the server starts, it will load the secret key into memory.
                              current_setting
     ------------------------------------------------------------------
      ****************************************************************
-
-**The secret key cannot be accessed from SQL**.  The only way to use
-the server secret key is to *derive* other keys from it using
-`pgsodium_derive()` shown in the next section.
 
 It is up to you to edit the script to get or generate the key however
 you want.  pgsodium can be used to generate a new random key with
