@@ -94,12 +94,15 @@ When the server starts, it will load the secret key into memory.
      ****************************************************************
 
 **The secret key cannot be accessed from SQL**.  The only way to use
-the server secret key is to *derive* other keys from it shown in the
-next section. It is up to you to edit the script to get or generate
-the key however you want.  Common patterns including prompting for the
-key on boot, fetching it from an ssh server or managed cloud secret
-system, or using a command line tool to get it from a hardware
-security module.
+the server secret key is to *derive* other keys from it using
+`pgsodium_derive()` shown in the next section. 
+
+It is up to you to edit the script to get or generate the key however
+you want.  pgsodium can be used to generate a new random key with
+`select encode(randombytes_buf(32), 'hex')`.  Common patterns
+including prompting for the key on boot, fetching it from an ssh
+server or managed cloud secret system, or using a command line tool to
+get it from a hardware security module.
 
 # Server Key Derivation
 
