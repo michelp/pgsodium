@@ -12,6 +12,7 @@ cryptography functions to SQL.
    * [Usage](#usage)
    * [Server Key Management](#server-key-management)
    * [Server Key Derivation](#server-key-derivation)
+   * [Encrypting Columns](#encrypting-columns)
    * [Simple public key encryption with crypto_box()](#simple-public-key-encryption-with-crypto_box)
    * [Avoid secret logging](#avoid-secret-logging)
    * [API Reference](#api-reference)
