@@ -196,6 +196,66 @@ keypairs using for example `crypto_box_seed_new_keypair()` and
     --------------------------------------------------------------------+--------------------------------------------------------------------
      \x01d0e0ec4b1fa9cc8dede88e0b43083f7e9cd33be4f91f0b25aa54d70f562278 | \x066ec431741a9d39f38c909de4a143ed39b09834ca37b6dd2ba3d015206f14ca
 
+# Encrypting Columns
+
+Here's an example script that encrypts a column in a table and
+provides a view that does on the fly decryption.  Each row's serial
+primary key is used as a different derivation key id to encrypt every
+row and each row gets a unique nonce.
+
+    BEGIN;
+    CREATE SCHEMA pgsodium;
+    DROP EXTENSION IF EXISTS pgsodium;
+    CREATE EXTENSION pgsodium WITH SCHEMA pgsodium;
+
+    DROP TABLE IF EXISTS test CASCADE;
+
+    CREATE TABLE test (
+        id bigserial primary key,
+        nonce bytea,
+        data bytea
+        );
+
+    CREATE OR REPLACE VIEW test_view AS
+        SELECT id,
+        convert_from(pgsodium.crypto_secretbox_open(
+                 data,
+                 nonce,
+                 pgsodium.pgsodium_derive(id)),
+        'utf8') AS data FROM test;
+
+    CREATE OR REPLACE FUNCTION test_encrypt() RETURNS trigger
+        language plpgsql AS
+    $$
+    DECLARE
+        new_nonce bytea = pgsodium.crypto_secretbox_noncegen();
+        test_id bigint;
+    BEGIN
+
+        INSERT INTO test (nonce) VALUES (new_nonce) RETURNING id INTO test_id;
+        UPDATE test SET data = pgsodium.crypto_secretbox(
+            convert_to(new.data, 'utf8'),
+            new_nonce,
+            pgsodium.pgsodium_derive(test_id))
+        WHERE id = test_id;
+        RETURN new;
+    END;
+    $$;
+
+    CREATE TRIGGER test_encrypt_trigger
+        INSTEAD OF INSERT ON test_view
+        FOR EACH ROW
+        EXECUTE FUNCTION test_encrypt();
+
+    COMMIT;
+
+The trigger `test_encrypt_trigger` is fired `INSTEAD OF INSERT ON` the
+wrapper view, so new rows can be inserted and automatically encrypted.
+If an attacker acquires a dump of the table or database, they will not
+be able to derive the keys used encrypt the data since they will not
+have the root server managed key, which is never revealed to SQL See
+the [example file for more details](./example/encrypted_table.sql).
+
 # Simple public key encryption with `crypto_box()`
 
 Here's an example usage from the test.sql that uses command-line
@@ -228,9 +288,10 @@ possible they can show up in the database logs.
 
 # Avoid secret logging
 
-A more paranoid approach is to keep keys in an external storage and
-disables logging while injecting the keys into local variables with
-[`SET LOCAL`](https://www.postgresql.org/docs/12/sql-set.html). If the
+If you choose to work with your own keys a more paranoid approach is
+to keep keys in an external storage and disables logging while
+injecting the keys into local variables with [`SET
+LOCAL`](https://www.postgresql.org/docs/12/sql-set.html). If the
 images of database are hacked or stolen, the keys will not be
 available to the attacker.
 
