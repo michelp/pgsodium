@@ -118,7 +118,7 @@ When the server starts, it will load the secret key into memory.
 
 **The secret key cannot be accessed from SQL**.  The only way to use
 the server secret key is to *derive* other keys from it using
-`pgsodium_derive()` shown in the next section. 
+`pgsodium_derive()` shown in the next section.
 
 It is up to you to edit the script to get or generate the key however
 you want.  pgsodium can be used to generate a new random key with
@@ -204,12 +204,8 @@ provides a view that does on the fly decryption.  Each row's serial
 primary key is used as a different derivation key id to encrypt every
 row and each row gets a unique nonce.
 
-    BEGIN;
     CREATE SCHEMA pgsodium;
-    DROP EXTENSION IF EXISTS pgsodium;
     CREATE EXTENSION pgsodium WITH SCHEMA pgsodium;
-
-    DROP TABLE IF EXISTS test CASCADE;
 
     CREATE TABLE test (
         id bigserial primary key,
@@ -217,7 +213,7 @@ row and each row gets a unique nonce.
         data bytea
         );
 
-    CREATE OR REPLACE VIEW test_view AS
+    CREATE VIEW test_view AS
         SELECT id,
         convert_from(pgsodium.crypto_secretbox_open(
                  data,
@@ -225,7 +221,7 @@ row and each row gets a unique nonce.
                  pgsodium.pgsodium_derive(id)),
         'utf8') AS data FROM test;
 
-    CREATE OR REPLACE FUNCTION test_encrypt() RETURNS trigger
+    CREATE FUNCTION test_encrypt() RETURNS trigger
         language plpgsql AS
     $$
     DECLARE
@@ -248,7 +244,24 @@ row and each row gets a unique nonce.
         FOR EACH ROW
         EXECUTE FUNCTION test_encrypt();
 
-    COMMIT;
+Use the view as if it were a normal table, but the underying table is
+encrypted:
+
+    insert into test_view (data) values ('this is another test that''s a longer test test eest stet wer .');
+    insert into test_view (data) values ('this is another test that's a longer test dsf asdf asdf asd ftest eest stet wer .');
+
+    # select * from test;
+     id |                       nonce                        |                                                                                                 data
+    ----+----------------------------------------------------+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+      1 | \x5b944c95065667ec72ba2acc22ef5b4f9f3549e94387c32e | \x06ca3dab2d5be76ddd8e6a83146d8f3d74fb3bb6bc8082855971c87820479af26a800503f851db7f25260d1986f8c4f42ca792b963a621a6fc0223aecb4cbcdbef2bdde090f8f59a8c205799d4f4
+      2 | \x9ac9f2bc9d4f3c8b1c55a948c65d5cf7ebdfc9dede37de71 | \xba0c41c76a4531c73052a6e38ba4fbe65fc4df205b7ca0fc0913d02ac1384c4bca563acc4a8922d066e5cc0b8d21729ec99b9b0efce887da96e3dd4821df1b85741aadb63514a138bd716b9dc770d2c0b45f9fc9f2ba2b7faacefd340c75bdcb71
+    (2 rows)
+
+    # select * from test_view ;
+     id |                                       data
+    ----+-----------------------------------------------------------------------------------
+      1 | this is another test that's a longer test test eest stet wer .
+      2 | this is another test that's a longer test dsf asdf asdf asd ftest eest stet wer .
 
 The trigger `test_encrypt_trigger` is fired `INSTEAD OF INSERT ON` the
 wrapper view, so new rows can be inserted and automatically encrypted.
@@ -725,6 +738,3 @@ Documentation](https://doc.libsodium.org/public-key_cryptography/public-key_sign
 ## HMAC512
 
 [See libsodium docs](https://doc.libsodium.org/advanced/hmac-sha2)
-
-
-
