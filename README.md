@@ -245,7 +245,9 @@ row and each row gets a unique nonce.
         EXECUTE FUNCTION test_encrypt();
 
 Use the view as if it were a normal table, but the underying table is
-encrypted:
+encrypted.  Note how in the following example, there are *no keys*
+stored, exposed to SQL or able to be logged, only [derived
+keys](#server-key-management) based on a key id are used.
 
     insert into test_view (data) values ('this is another test that''s a longer test test eest stet wer .');
     insert into test_view (data) values ('this is another test that's a longer test dsf asdf asdf asd ftest eest stet wer .');
@@ -264,7 +266,9 @@ encrypted:
       2 | this is another test that's a longer test dsf asdf asdf asd ftest eest stet wer .
 
 The trigger `test_encrypt_trigger` is fired `INSTEAD OF INSERT ON` the
-wrapper view, so new rows can be inserted and automatically encrypted.
+wrapper `test_view`, newly inserted rows are encrypted with a key
+derived from the row's primary key.
+
 If an attacker acquires a dump of the table or database, they will not
 be able to derive the keys used encrypt the data since they will not
 have the root server managed key, which is never revealed to SQL See
@@ -297,8 +301,9 @@ a message from Alice to Bob.
     SELECT crypto_box_open(:'box', :'boxnonce', :'alice_public', :'bob_secret');
 
 Note in the above example, no secrets are *stored* in the db, but they
-are *interpolated* into the sql that is sent to the server, so it's
-possible they can show up in the database logs.
+are *interpolated* into the sql by the psql client that is sent to the
+server, so it's possible they can show up in the database logs.  You
+can avoid this by using derived keys.
 
 # Avoid secret logging
 
@@ -350,8 +355,8 @@ and then re-enable normal logging afterwards. as shown below. Setting
 
     COMMIT;
 
-For more paranoia you can use a function to check that the connection
-being used is secure or a unix domain socket.
+For additional paranoia you can use a function to check that the
+connection being used is secure or a unix domain socket.
 
     CREATE FUNCTION is_ssl_or_domain_socket() RETURNS bool
     LANGUAGE plpgsql AS $$
