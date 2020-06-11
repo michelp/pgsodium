@@ -247,6 +247,10 @@ encrypted.  Note how in the following example, there are *no keys*
 stored, exposed to SQL or able to be logged, only [derived
 keys](#server-key-management) based on a key id are used.
 
+The trigger `test_encrypt_trigger` is fired `INSTEAD OF INSERT ON` the
+wrapper `test_view`, newly inserted rows are encrypted with a key
+derived from the stored key_id which defaults to 1.
+
     # insert into test_view (data) values ('this is one'), ('this is two');
 
     # select * from test;
@@ -261,7 +265,8 @@ keys](#server-key-management) based on a key id are used.
       3 | this is one
       4 | this is two
 
-Key rotation can be done with a rotation function that will re-encrypt a row with a new key id:
+Key rotation can be done with a rotation function that will re-encrypt
+a row with a new key id:
 
     CREATE OR REPLACE FUNCTION rotate_key(test_id bigint, new_key bigint)
         RETURNS void LANGUAGE plpgsql AS $$
@@ -306,10 +311,6 @@ with the new derived key.
       4 | this is two
       3 | this is one
 
-
-The trigger `test_encrypt_trigger` is fired `INSTEAD OF INSERT ON` the
-wrapper `test_view`, newly inserted rows are encrypted with a key
-derived from the row's primary key.
 
 If an attacker acquires a dump of the table or database, they will not
 be able to derive the keys used encrypt the data since they will not
