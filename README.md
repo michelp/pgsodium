@@ -89,10 +89,10 @@ start. **The secret key cannot be accessed from SQL**.  The only way
 to use the server secret key is to *derive* other keys from it using
 `pgsodium_derive()` shown in the next section.
 
-This is completely optional, pgsodium can still be used without
-putting it in `shared_preload_libraries`, you will simply need to
-provide your own key management.  Skip ahead to the API usage section
-if you choose not to use server managed keys.
+Server managed keys are completely optional, pgsodium can still be
+used without putting it in `shared_preload_libraries`, you will simply
+need to provide your own key management.  Skip ahead to the API usage
+section if you choose not to use server managed keys.
 
 See the file [`pgsodium_getkey.sample`](./pgsodium_getkey.sample) for
 an example script that returns a libsodium key.  The script must emit
@@ -198,16 +198,16 @@ keypairs using for example `crypto_box_seed_new_keypair()` and
 # Encrypting Columns
 
 Here's an example script that encrypts a column in a table and
-provides a view that does on the fly decryption.  Each row's serial
-primary key is used as a different derivation key id to encrypt every
-row and each row gets a unique nonce.
+provides a view that does on the fly decryption.  Each row's stores
+the nonce and key id used to derive the encryption key.
 
     CREATE SCHEMA pgsodium;
     CREATE EXTENSION pgsodium WITH SCHEMA pgsodium;
 
     CREATE TABLE test (
         id bigserial primary key,
-        nonce bytea,
+        key_id bigint not null default 1,
+        nonce bytea not null,
         data bytea
         );
 
@@ -216,10 +216,10 @@ row and each row gets a unique nonce.
         convert_from(pgsodium.crypto_secretbox_open(
                  data,
                  nonce,
-                 pgsodium.pgsodium_derive(id)),
+                 pgsodium.pgsodium_derive(key_id)),
         'utf8') AS data FROM test;
 
-    CREATE FUNCTION test_encrypt() RETURNS trigger
+    CREATE OR REPLACE FUNCTION test_encrypt() RETURNS trigger
         language plpgsql AS
     $$
     DECLARE
@@ -227,12 +227,12 @@ row and each row gets a unique nonce.
         test_id bigint;
     BEGIN
 
-        INSERT INTO test (nonce) VALUES (new_nonce) RETURNING id INTO test_id;
-        UPDATE test SET data = pgsodium.crypto_secretbox(
+        insert into test (nonce) values (new_nonce) returning id into test_id;
+        update test set data = pgsodium.crypto_secretbox(
             convert_to(new.data, 'utf8'),
             new_nonce,
-            pgsodium.pgsodium_derive(test_id))
-        WHERE id = test_id;
+            pgsodium.pgsodium_derive(key_id))
+        where id = test_id;
         RETURN new;
     END;
     $$;
@@ -247,21 +247,65 @@ encrypted.  Note how in the following example, there are *no keys*
 stored, exposed to SQL or able to be logged, only [derived
 keys](#server-key-management) based on a key id are used.
 
-    insert into test_view (data) values ('this is another test that''s a longer test test eest stet wer .');
-    insert into test_view (data) values ('this is another test that's a longer test dsf asdf asdf asd ftest eest stet wer .');
+    # insert into test_view (data) values ('this is one'), ('this is two');
 
     # select * from test;
-     id |                       nonce                        |                                                                                                 data
-    ----+----------------------------------------------------+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-      1 | \x5b944c95065667ec72ba2acc22ef5b4f9f3549e94387c32e | \x06ca3dab2d5be76ddd8e6a83146d8f3d74fb3bb6bc8082855971c87820479af26a800503f851db7f25260d1986f8c4f42ca792b963a621a6fc0223aecb4cbcdbef2bdde090f8f59a8c205799d4f4
-      2 | \x9ac9f2bc9d4f3c8b1c55a948c65d5cf7ebdfc9dede37de71 | \xba0c41c76a4531c73052a6e38ba4fbe65fc4df205b7ca0fc0913d02ac1384c4bca563acc4a8922d066e5cc0b8d21729ec99b9b0efce887da96e3dd4821df1b85741aadb63514a138bd716b9dc770d2c0b45f9fc9f2ba2b7faacefd340c75bdcb71
-    (2 rows)
+     id | key_id |                       nonce                        |                           data
+    ----+--------+----------------------------------------------------+----------------------------------------------------------
+      3 |      1 | \xa6b9c4bfbfe194541faa21f2d31565babff1a250a010fa79 | \xb1d0432b173eb7fbef315ba5dd961454a4e2eef1332f9847eaef68
+      4 |      1 | \x0ad82e537d5422966c110ed65f60c6bada57c0be73476950 | \x8c29b12778b6bb5873c9f7fa123c4f105d6eb16e0c54dfae93da10
 
-    # select * from test_view ;
-     id |                                       data
-    ----+-----------------------------------------------------------------------------------
-      1 | this is another test that's a longer test test eest stet wer .
-      2 | this is another test that's a longer test dsf asdf asdf asd ftest eest stet wer .
+    # select * from test_view;
+     id |    data
+    ----+-------------
+      3 | this is one
+      4 | this is two
+
+Key rotation can be done with a rotation function that will re-encrypt a row with a new key id:
+
+    CREATE OR REPLACE FUNCTION rotate_key(test_id bigint, new_key bigint)
+        RETURNS void LANGUAGE plpgsql AS $$
+    DECLARE
+        new_nonce bytea;
+    BEGIN
+        new_nonce = pgsodium.crypto_secretbox_noncegen();
+        UPDATE test SET
+        nonce = new_nonce,
+        key_id = new_key,
+        data = pgsodium.crypto_secretbox(
+            pgsodium.crypto_secretbox_open(
+                 test.data,
+                 test.nonce,
+                 pgsodium.pgsodium_derive(test.key_id)),
+            new_nonce,
+            pgsodium.pgsodium_derive(new_key))
+        WHERE test.id = test_id;
+        RETURN;
+    END;
+    $$;
+
+
+Call the rotation function by passing a row id and a new key id.  The
+old row will be decrypted with the old derived key, then encrypted
+with the new derived key.
+
+    # select rotate_key(3, 2);
+     rotate_key
+    ------------
+
+
+    # select * from test;
+     id | key_id |                       nonce                        |                           data
+    ----+--------+----------------------------------------------------+----------------------------------------------------------
+      4 |      1 | \x0ad82e537d5422966c110ed65f60c6bada57c0be73476950 | \x8c29b12778b6bb5873c9f7fa123c4f105d6eb16e0c54dfae93da10
+      3 |      2 | \x775f6b2fb01195f8646656d7588e581856ea44353332068e | \x27da7b96f4eb611a0c8ad8e4cee0988714d14e830a9aaf8f282c2a
+
+    # select * from test_view;
+     id |    data
+    ----+-------------
+      4 | this is two
+      3 | this is one
+
 
 The trigger `test_encrypt_trigger` is fired `INSTEAD OF INSERT ON` the
 wrapper `test_view`, newly inserted rows are encrypted with a key
@@ -405,7 +449,7 @@ Functions:
 The library provides a set of functions to generate unpredictable
 data, suitable for creating secret keys.
 
-    postgres=# select randombytes_random();
+    # select randombytes_random();
      randombytes_random
     --------------------
              1229887405
@@ -414,7 +458,7 @@ data, suitable for creating secret keys.
 The `randombytes_random()` function returns an unpredictable value
 between 0 and 0xffffffff (included).
 
-    postgres=# select randombytes_uniform(42);
+    # select randombytes_uniform(42);
      randombytes_uniform
     ---------------------
                       23
@@ -426,7 +470,7 @@ upper_bound`, it guarantees a uniform distribution of the possible
 output values even when `upper_bound` is not a power of 2. Note that an
 `upper_bound < 2` leaves only a single element to be chosen, namely 0.
 
-    postgres=# select randombytes_buf(42);
+    # select randombytes_buf(42);
                                         randombytes_buf
     ----------------------------------------------------------------------------------------
      \x27cec8d2c3de16317074b57acba2109e43b5623e1fb7cae12e8806daa21a72f058430f22ec993986fcb2
@@ -435,8 +479,8 @@ output values even when `upper_bound` is not a power of 2. Note that an
 The `randombytes_buf()` function returns a `bytea` with an
 unpredictable sequence of bytes.
 
-    postgres=# select randombytes_new_seed() bufseed \gset
-    postgres=# select randombytes_buf_deterministic(42, :'bufseed');
+    # select randombytes_new_seed() bufseed \gset
+    # select randombytes_buf_deterministic(42, :'bufseed');
                                  randombytes_buf_deterministic
     ----------------------------------------------------------------------------------------
      \xa183e8d4acd68119ab2cacd9e46317ec3a00a6a8820b00339072f7c24554d496086209d7911c3744b110
@@ -720,24 +764,24 @@ Documentation](https://doc.libsodium.org/public-key_cryptography/public-key_sign
 
 ### Sealed boxes
 
-[See libsodium docs](https://doc.libsodium.org/public-key_cryptography/sealed_boxes)
+[C API Documentation](https://doc.libsodium.org/public-key_cryptography/sealed_boxes)
 
 ## Hashing
 
-[See libsodium docs](https://doc.libsodium.org/hashing)
+[C API Documentation](https://doc.libsodium.org/hashing)
 
 ## Password hashing
 
-[See libsodium docs](https://doc.libsodium.org/password_hashing)
+[C API Documentation](https://doc.libsodium.org/password_hashing)
 
 ## Key Derivation
 
-[See libsodium docs](https://doc.libsodium.org/key_derivation)
+[C API Documentation](https://doc.libsodium.org/key_derivation)
 
 ## Key Exchange
 
-[See libsodium docs](https://doc.libsodium.org/key_exchange)
+[C API Documentation](https://doc.libsodium.org/key_exchange)
 
 ## HMAC512
 
-[See libsodium docs](https://doc.libsodium.org/advanced/hmac-sha2)
+[C API Documentation](https://doc.libsodium.org/advanced/hmac-sha2)
