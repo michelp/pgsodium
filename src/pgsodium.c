@@ -952,6 +952,77 @@ pgsodium_crypto_auth_hmacsha512_verify(PG_FUNCTION_ARGS)
 	PG_RETURN_BOOL(success == 0);
 }
 
+PG_FUNCTION_INFO_V1(pgsodium_crypto_auth_hmacsha256_keygen);
+Datum
+pgsodium_crypto_auth_hmacsha256_keygen(PG_FUNCTION_ARGS)
+{
+	unsigned long long result_size = VARHDRSZ + crypto_auth_hmacsha256_KEYBYTES;
+	bytea* result = _pgsodium_zalloc_bytea(result_size);
+	crypto_auth_hmacsha256_keygen(PGSODIUM_CHARDATA(result));
+	PG_RETURN_BYTEA_P(result);
+}
+
+PG_FUNCTION_INFO_V1(pgsodium_crypto_auth_hmacsha256);
+Datum
+pgsodium_crypto_auth_hmacsha256(PG_FUNCTION_ARGS)
+{
+	bytea* message = PG_GETARG_BYTEA_P(0);
+	bytea* key = PG_GETARG_BYTEA_P(1);
+	unsigned long long result_size = VARHDRSZ + crypto_auth_hmacsha256_BYTES;
+	bytea* result = _pgsodium_zalloc_bytea(result_size);
+	crypto_auth_hmacsha256(
+			PGSODIUM_CHARDATA(result),
+			PGSODIUM_CHARDATA(message),
+			VARSIZE_ANY_EXHDR(message),
+			PGSODIUM_CHARDATA(key)
+			);
+	PG_RETURN_BYTEA_P(result);
+}
+
+PG_FUNCTION_INFO_V1(pgsodium_crypto_auth_hmacsha256_verify);
+Datum
+pgsodium_crypto_auth_hmacsha256_verify(PG_FUNCTION_ARGS)
+{
+	int success;
+	bytea* hash = PG_GETARG_BYTEA_P(0);
+	bytea* message = PG_GETARG_BYTEA_P(1);
+	bytea* key = PG_GETARG_BYTEA_P(2);
+	success = crypto_auth_hmacsha256_verify(
+			PGSODIUM_CHARDATA(hash),
+			PGSODIUM_CHARDATA(message),
+			VARSIZE_ANY_EXHDR(message),
+			PGSODIUM_CHARDATA(key)
+			);
+	PG_RETURN_BOOL(success == 0);
+}
+
+PG_FUNCTION_INFO_V1(pgsodium_crypto_hash_sha256);
+Datum
+pgsodium_crypto_hash_sha256(PG_FUNCTION_ARGS)
+{
+	unsigned long long result_size = VARHDRSZ + crypto_hash_sha256_BYTES;
+	bytea* message = PG_GETARG_BYTEA_P(0);
+	bytea* result = _pgsodium_zalloc_bytea(result_size);
+    crypto_hash_sha256(
+            PGSODIUM_CHARDATA(result),
+            PGSODIUM_CHARDATA(message),
+            VARSIZE_ANY_EXHDR(message));
+	PG_RETURN_BYTEA_P(result);
+}
+
+PG_FUNCTION_INFO_V1(pgsodium_crypto_hash_sha512);
+Datum
+pgsodium_crypto_hash_sha512(PG_FUNCTION_ARGS)
+{
+	unsigned long long result_size = VARHDRSZ + crypto_hash_sha512_BYTES;
+	bytea* message = PG_GETARG_BYTEA_P(0);
+	bytea* result = _pgsodium_zalloc_bytea(result_size);
+    crypto_hash_sha512(
+            PGSODIUM_CHARDATA(result),
+            PGSODIUM_CHARDATA(message),
+            VARSIZE_ANY_EXHDR(message));
+	PG_RETURN_BYTEA_P(result);
+}
 /* Server key management */
 
 PG_FUNCTION_INFO_V1(pgsodium_derive);

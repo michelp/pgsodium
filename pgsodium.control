@@ -1,5 +1,5 @@
 # pgsodium extension
 comment = 'Postgres extension for libsodium functions'
-default_version = '1.1.1'
+default_version = '1.2.0'
 relocatable = true
 requires = ''

@@ -14,7 +14,9 @@ BEGIN;
 CREATE EXTENSION pgtap;
 CREATE EXTENSION pgsodium;
 
-SELECT plan(43);
+SELECT plan(47);
+
+-- random
 
 SELECT lives_ok($$SELECT randombytes_random()$$, 'randombytes_random');
 SELECT lives_ok($$SELECT randombytes_uniform(10)$$, 'randombytes_uniform');
@@ -23,6 +25,8 @@ SELECT randombytes_new_seed() bufseed \gset
 SELECT lives_ok(format($$SELECT randombytes_buf_deterministic(10, %L)$$, :'bufseed'),
         'randombytes_buf_deterministic');
 
+-- secret key crypto
+
 SELECT crypto_secretbox_keygen() boxkey \gset
 SELECT crypto_secretbox_noncegen() secretboxnonce \gset
 
@@ -30,6 +34,8 @@ SELECT crypto_secretbox('bob is your uncle', :'secretboxnonce', :'boxkey') secre
 
 SELECT is(crypto_secretbox_open(:'secretbox', :'secretboxnonce', :'boxkey'),
           'bob is your uncle', 'secretbox_open');
+
+-- secret key auth
 
 SELECT crypto_auth_keygen() authkey \gset
 
@@ -41,6 +47,8 @@ SELECT ok(not crypto_auth_verify('bad mac', 'bob is your uncle', :'authkey'),
           'crypto_auth_verify bad mac');
 SELECT ok(not crypto_auth_verify(:'auth_mac', 'bob is your uncle', 'bad key'),
           'crypto_auth_verify bad key');
+
+-- hashing
 
 SELECT is(crypto_generichash('bob is your uncle'),
           '\x6c80c5f772572423c3910a9561710313e4b6e74abc0d65f577a8ac1583673657',
@@ -57,6 +65,8 @@ SELECT is(crypto_generichash('bob is your uncle', 'super sekret key'),
 SELECT is(crypto_shorthash('bob is your uncle', 'super sekret key'),
           '\xe080614efb824a15',
           'crypto_shorthash');
+
+-- public key crypto (box)
 
 SELECT crypto_box_noncegen() boxnonce \gset
 SELECT public, secret FROM crypto_box_new_keypair() \gset bob_
@@ -79,6 +89,7 @@ SELECT crypto_sign('bob is your uncle', :'sign_secret') signed \gset
 SELECT is(crypto_sign_open(:'signed', :'sign_public'),
           'bob is your uncle', 'crypto_sign/open');
 
+-- public key signatures
 -- We will sign our previously generated sealed box
 SELECT crypto_sign_detached(:'sealed', :'sign_secret') detached \gset
 
@@ -156,6 +167,8 @@ UNION ALL
 SELECT ok(not verify, 'Multi-part signature detects tampering')
   FROM noverify;
 
+-- pwhash
+
 SELECT lives_ok($$SELECT crypto_pwhash_saltgen()$$, 'crypto_pwhash_saltgen');
 
 SELECT is(crypto_pwhash('Correct Horse Battery Staple', '\xccfe2b51d426f88f6f8f18c24635616b'),
@@ -174,12 +187,16 @@ SET LOCAL app.bob_secret = :'bob_secret';
 SET LOCAL app.alice_secret = :'alice_secret';
 RESET log_statement;
 
+-- crypto box
+
 SELECT crypto_box('bob is your uncle', :'boxnonce', :'bob_public',
                   current_setting('app.alice_secret')::bytea) box \gset
 
 SELECT is(crypto_box_open(:'box', :'boxnonce', :'alice_public',
                           current_setting('app.bob_secret')::bytea),
                           'bob is your uncle', 'crypto_box_open');
+
+-- Key Derivation
 
 SELECT crypto_kdf_keygen() kdfkey \gset
 SELECT length(crypto_kdf_derive_from_key(64, 1, '__auth__', :'kdfkey')) kdfsubkeylen \gset
@@ -231,12 +248,29 @@ SELECT crypto_secretbox('hello bob', :'secretboxnonce', :'session_alice_tx') ali
 SELECT is(crypto_secretbox_open(:'alice_to_bob', :'secretboxnonce', :'session_bob_rx'),
           'hello bob', 'secretbox_open session key');
 
+-- sha2
+
+select is(crypto_hash_sha256('bob is your uncle'),
+    '\x5eff82dc2ca0cfbc0d0eaa95b13b7fbec11540e217b0fe2a6f3c7d12f657630d', 'sha256');
+select is(crypto_hash_sha512('bob is your uncle'),
+    '\xd8adbd01462f1aad1b91a4557d5c865b63dab1b9181cb02f2123f50d210b74a53754a18b09d9f75e38101ce6de04879b35eca91992fade0bb6842f4ea556e952',
+    'sha512');
+
+-- hmac
+
 select crypto_auth_hmacsha512_keygen() hmac512key \gset
 select crypto_auth_hmacsha512('food', :'hmac512key') hmac512 \gset
 
 select is(crypto_auth_hmacsha512_verify(:'hmac512', 'food', :'hmac512key'), true, 'hmac512 verified');
 select is(crypto_auth_hmacsha512_verify(:'hmac512', 'fo0d', :'hmac512key'), false, 'hmac512 not verified');
 
+select crypto_auth_hmacsha256_keygen() hmac256key \gset
+select crypto_auth_hmacsha256('food', :'hmac256key') hmac256 \gset
+
+select is(crypto_auth_hmacsha256_verify(:'hmac256', 'food', :'hmac256key'), true, 'hmac256 verified');
+select is(crypto_auth_hmacsha256_verify(:'hmac256', 'fo0d', :'hmac256key'), false, 'hmac256 not verified');
+
+-- Server Derived Keys
 
 select is(current_setting('pgsodium.secret_key'),
     '****************************************************************', 'server managed secret not available.');
