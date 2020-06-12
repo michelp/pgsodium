@@ -43,7 +43,8 @@ CREATE TRIGGER test_encrypt_trigger
     FOR EACH ROW
     EXECUTE FUNCTION test_encrypt();
 
-CREATE OR REPLACE FUNCTION rotate_key(test_id bigint, new_key bigint) RETURNS void LANGUAGE plpgsql AS $$
+CREATE OR REPLACE FUNCTION rotate_key(test_id bigint, new_key bigint)
+    RETURNS void LANGUAGE plpgsql AS $$
 DECLARE
     new_nonce bytea;
 BEGIN

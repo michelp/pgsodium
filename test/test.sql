@@ -156,8 +156,6 @@ UNION ALL
 SELECT ok(not verify, 'Multi-part signature detects tampering')
   FROM noverify;
 
-
-
 SELECT lives_ok($$SELECT crypto_pwhash_saltgen()$$, 'crypto_pwhash_saltgen');
 
 SELECT is(crypto_pwhash('Correct Horse Battery Staple', '\xccfe2b51d426f88f6f8f18c24635616b'),

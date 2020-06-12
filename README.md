@@ -289,7 +289,6 @@ a row with a new key id:
     END;
     $$;
 
-
 Call the rotation function by passing a row id and a new key id.  The
 old row will be decrypted with the old derived key, then encrypted
 with the new derived key.
@@ -765,24 +764,155 @@ Documentation](https://doc.libsodium.org/public-key_cryptography/public-key_sign
 
 ### Sealed boxes
 
+Sealed boxes are designed to anonymously send messages to a recipient
+given its public key.  Only the recipient can decrypt these messages,
+using its private key. While the recipient can verify the integrity of
+the message, it cannot verify the identity of the sender.
+
+    SELECT public, secret FROM crypto_box_new_keypair() \gset bob_
+
+    SELECT crypto_box_seal('bob is your uncle', :'bob_public') sealed \gset
+
+The `sealed` psql variable is now the encrypted sealed box.  To unseal
+it, bob needs his public and secret key:
+
+    SELECT is(crypto_box_seal_open(:'sealed', :'bob_public', :'bob_secret'),
+              'bob is your uncle', 'crypto_box_seal/open');
+
+
 [C API Documentation](https://doc.libsodium.org/public-key_cryptography/sealed_boxes)
 
 ## Hashing
+
+This API computes a fixed-length fingerprint for an arbitrary long message.
+Sample use cases:
+
+  - File integrity checking
+  - Creating unique identifiers to index arbitrary long data
+
+The `crypto_generichash` and `crypto_shorthash` functions can be used
+to generate hashes.  `crypto_generichash` takes an optional hash key
+argument which can be NULL. In this case, a message will always have
+the same fingerprint, similar to the MD5 or SHA-1 functions for which
+crypto_generichash() is a faster and more secure alternative.
+
+But a key can also be specified. A message will always have the same
+fingerprint for a given key, but different keys used to hash the same
+message are very likely to produce distinct fingerprints.  In
+particular, the key can be used to make sure that different
+applications generate different fingerprints even if they process the
+same data.
+
+    SELECT is(crypto_generichash('bob is your uncle'),
+              '\x6c80c5f772572423c3910a9561710313e4b6e74abc0d65f577a8ac1583673657',
+              'crypto_generichash');
+
+    SELECT is(crypto_generichash('bob is your uncle', NULL),
+              '\x6c80c5f772572423c3910a9561710313e4b6e74abc0d65f577a8ac1583673657',
+              'crypto_generichash NULL key');
+
+    SELECT is(crypto_generichash('bob is your uncle', 'super sekret key'),
+              '\xe8e9e180d918ea9afe0bf44d1945ec356b2b6845e9a4c31acc6c02d826036e41',
+              'crypto_generichash with key');
+
+Many applications and programming language implementations were
+recently found to be vulnerable to denial-of-service attacks when a
+hash function with weak security guarantees, such as Murmurhash 3, was
+used to construct a hash table .
+
+In order to address this, Sodium provides the crypto_shorthash()
+function, which outputs short but unpredictable (without knowing the
+secret key) values suitable for picking a list in a hash table for a
+given key.  This function is optimized for short inputs.  The output
+of this function is only 64 bits. Therefore, it should not be
+considered collision-resistant.
+
+Use cases:
+
+- Hash tables Probabilistic
+- data structures such as Bloom filters
+- Integrity checking in interactive protocols
+
+Example:
+
+    SELECT is(crypto_shorthash('bob is your uncle', 'super sekret key'),
+              '\xe080614efb824a15',
+              'crypto_shorthash');
+
 
 [C API Documentation](https://doc.libsodium.org/hashing)
 
 ## Password hashing
 
+    SELECT lives_ok($$SELECT crypto_pwhash_saltgen()$$, 'crypto_pwhash_saltgen');
+
+    SELECT is(crypto_pwhash('Correct Horse Battery Staple', '\xccfe2b51d426f88f6f8f18c24635616b'),
+            '\x77d029a9b3035c88f186ed0f69f58386ad0bd5252851b4e89f0d7057b5081342',
+            'crypto_pwhash');
+
+    SELECT ok(crypto_pwhash_str_verify(crypto_pwhash_str('Correct Horse Battery Staple'),
+              'Correct Horse Battery Staple'),
+              'crypto_pwhash_str_verify');
+
+
 [C API Documentation](https://doc.libsodium.org/password_hashing)
 
 ## Key Derivation
+
+Multiple secret subkeys can be derived from a single master key.
+Given the master key and a key identifier, a subkey can be
+deterministically computed. However, given a subkey, an attacker
+cannot compute the master key nor any other subkeys.
+
+    SELECT crypto_kdf_keygen() kdfkey \gset
+    SELECT length(crypto_kdf_derive_from_key(64, 1, '__auth__', :'kdfkey')) kdfsubkeylen \gset
+    SELECT is(:kdfsubkeylen, 64, 'kdf byte derived subkey');
+
+    SELECT length(crypto_kdf_derive_from_key(32, 1, '__auth__', :'kdfkey')) kdfsubkeylen \gset
+    SELECT is(:kdfsubkeylen, 32, 'kdf 32 byte derived subkey');
+
+    SELECT is(crypto_kdf_derive_from_key(32, 2, '__auth__', :'kdfkey'),
+        crypto_kdf_derive_from_key(32, 2, '__auth__', :'kdfkey'), 'kdf subkeys are deterministic.');
 
 [C API Documentation](https://doc.libsodium.org/key_derivation)
 
 ## Key Exchange
 
+Using the key exchange API, two parties can securely compute a set of
+shared keys using their peer's public key and their own secret key.
+
+    SELECT crypto_kx_new_seed() kxseed \gset
+
+    SELECT public, secret FROM crypto_kx_seed_new_keypair(:'kxseed') \gset seed_bob_
+    SELECT public, secret FROM crypto_kx_seed_new_keypair(:'kxseed') \gset seed_alice_
+
+    SELECT tx, rx FROM crypto_kx_client_session_keys(
+        :'seed_bob_public', :'seed_bob_secret',
+        :'seed_alice_public') \gset session_bob_
+
+    SELECT tx, rx FROM crypto_kx_server_session_keys(
+        :'seed_alice_public', :'seed_alice_secret',
+        :'seed_bob_public') \gset session_alice_
+
+    SELECT crypto_secretbox('hello alice', :'secretboxnonce', :'session_bob_tx') bob_to_alice \gset
+
+    SELECT is(crypto_secretbox_open(:'bob_to_alice', :'secretboxnonce', :'session_alice_rx'),
+              'hello alice', 'secretbox_open session key');
+
+    SELECT crypto_secretbox('hello bob', :'secretboxnonce', :'session_alice_tx') alice_to_bob \gset
+
+    SELECT is(crypto_secretbox_open(:'alice_to_bob', :'secretboxnonce', :'session_bob_rx'),
+              'hello bob', 'secretbox_open session key');
+
+
 [C API Documentation](https://doc.libsodium.org/key_exchange)
 
 ## HMAC512
+
+    select crypto_auth_hmacsha512_keygen() hmac512key \gset
+    select crypto_auth_hmacsha512('food', :'hmac512key') hmac512 \gset
+
+    select is(crypto_auth_hmacsha512_verify(:'hmac512', 'food', :'hmac512key'), true, 'hmac512 verified');
+    select is(crypto_auth_hmacsha512_verify(:'hmac512', 'fo0d', :'hmac512key'), false, 'hmac512 not verified');
 
 [C API Documentation](https://doc.libsodium.org/advanced/hmac-sha2)
