@@ -185,7 +185,7 @@ To derive a key:
 
 The default keysize is `32` and the default context is `'pgsodium'`.
 
-Derived keys can be used either directy in `crypto_secretbox_*`
+Derived keys can be used either directly in `crypto_secretbox_*`
 functions for "symmetric" encryption or as seeds for generating other
 keypairs using for example `crypto_box_seed_new_keypair()` and
 `crypto_sign_seed_new_keypair()`.
@@ -242,7 +242,7 @@ the nonce and key id used to derive the encryption key.
         FOR EACH ROW
         EXECUTE FUNCTION test_encrypt();
 
-Use the view as if it were a normal table, but the underying table is
+Use the view as if it were a normal table, but the underlying table is
 encrypted.  Note how in the following example, there are *no keys*
 stored, exposed to SQL or able to be logged, only [derived
 keys](#server-key-management) based on a key id are used.
@@ -360,7 +360,7 @@ To disable logging of the key injections, `SET LOCAL` is also used to
 disable
 [`log_statements`](https://www.postgresql.org/docs/12/runtime-config-logging.html#RUNTIME-CONFIG-LOGGING-WHAT)
 and then re-enable normal logging afterwards. as shown below. Setting
-`log_statement` requires superuser privledges:
+`log_statement` requires superuser privileges:
 
     -- SET LOCAL must be done in a transaction block
     BEGIN;
@@ -603,7 +603,7 @@ secret key.  The nonce must be sent along with the ciphertext.
 
 `crypto_box_open()` descrypts a ciphertext encrypted using
 `crypto_box()`.  It takes the ciphertext, nonce, the sender's public
-key and the recipeient's secret key as parameters, and returns the
+key and the recipient's secret key as parameters, and returns the
 original message.  Note that the recipient should ensure that the
 public key belongs to the sender.
 
@@ -692,7 +692,7 @@ multi-part messages.  To create or verify a signature for a multi-part
 message `crypto_sign_init()` is used to start the process, and then each
 message-part is passed to `crypto_sign_update()` or
 `crypto_sign_update_agg()`.  Finally the signature is generated using
-`crypto_sign_final_update()` or verfified using
+`crypto_sign_final_update()` or verified using
 `crypto_sign_final_verify()`.
 
 `crypto_sign_init()` creates an initial state value which will be
@@ -705,7 +705,7 @@ update the state for each part of the multi-part message.
 or `crypto_sign_update_agg()`.  `crypto_sign_update_agg()` has two
 variants: one takes a previous state value, allowing multiple
 aggregates to be processed sequentially, and one takes no state
-parameter, initiialising the state itself.  Note that the order in
+parameter, initialising the state itself.  Note that the order in
 which the parts of a multi-part message are processed is critical.
 They must be processed in the same order for signing and verifying.
 
