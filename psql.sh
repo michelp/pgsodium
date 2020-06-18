@@ -1,4 +1,5 @@
 version=$1
+shift
 
 DB_HOST="pgsodium-test-db-$version"
 DB_NAME="postgres"
@@ -21,4 +22,4 @@ until
 do sleep 1;
 done
 
-docker exec -it $DB_HOST psql -U "$SU"
+docker exec -it $DB_HOST psql -U "$SU" $@

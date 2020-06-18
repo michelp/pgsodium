@@ -3,7 +3,7 @@
 PG_MODULE_MAGIC;
 
 /* GUC Variables */
-static char *pgsodium_secret_key = NULL;
+static bytea* pgsodium_secret_key = NULL;
 
 PG_FUNCTION_INFO_V1(pgsodium_randombytes_random);
 Datum
@@ -1020,15 +1020,11 @@ PG_FUNCTION_INFO_V1(pgsodium_derive);
 Datum
 pgsodium_derive(PG_FUNCTION_ARGS)
 {
-	bytea *primary_key = palloc(crypto_sign_SECRETKEYBYTES + VARHDRSZ);
 	unsigned long long subkey_id = PG_GETARG_INT64(0);
 	size_t subkey_size = PG_GETARG_UINT32(1);
 	unsigned long long result_size = VARHDRSZ + subkey_size;
 	bytea* context = PG_GETARG_BYTEA_P(2);
 	bytea* result = _pgsodium_zalloc_bytea(result_size);
-        const char* key;
-        key = GetConfigOption("pgsodium.secret_key", false, false);
-        hex_decode(key, strlen(key), VARDATA(primary_key));
 	if (subkey_size < crypto_kdf_BYTES_MIN || subkey_size > crypto_kdf_BYTES_MAX)
 		ereport(
                         ERROR,
@@ -1044,7 +1040,7 @@ pgsodium_derive(PG_FUNCTION_ARGS)
                 subkey_size,
                 subkey_id,
                 (const char*)VARDATA(context),
-                (const unsigned char*)VARDATA(primary_key));
+                (const unsigned char*)VARDATA(pgsodium_secret_key));
 	PG_RETURN_BYTEA_P(result);
 }
 
@@ -1098,22 +1094,10 @@ void _PG_init(void)
                         fprintf(stderr, "%s: could not close shell command\n", PG_GETKEY_EXEC);
                         proc_exit(1);
                 }
-
-                DefineCustomStringVariable(
-                        "pgsodium.secret_key",
-                        "pgsodium secret key",
-                        NULL,
-                        &pgsodium_secret_key,
-                        secret_buf,
-                        PGC_POSTMASTER,
-                        GUC_NO_SHOW_ALL | GUC_NO_RESET_ALL | \
-                        GUC_NOT_IN_SAMPLE | GUC_DISALLOW_IN_FILE,
-                        NULL,
-                        NULL,
-                        &secret_noshow_hook);
-
-                // prevent secret from being swapped to disk
+                pgsodium_secret_key = palloc(crypto_sign_SECRETKEYBYTES + VARHDRSZ);
+                hex_decode(secret_buf, secret_len, VARDATA(pgsodium_secret_key));
                 sodium_mlock(pgsodium_secret_key, secret_len);
                 memset(secret_buf, 0, secret_len);
+                free(secret_buf);
         }
 }

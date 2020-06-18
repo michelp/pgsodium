@@ -14,7 +14,7 @@ BEGIN;
 CREATE EXTENSION pgtap;
 CREATE EXTENSION pgsodium;
 
-SELECT plan(47);
+SELECT plan(46);
 
 -- random
 
@@ -271,9 +271,6 @@ select is(crypto_auth_hmacsha256_verify(:'hmac256', 'food', :'hmac256key'), true
 select is(crypto_auth_hmacsha256_verify(:'hmac256', 'fo0d', :'hmac256key'), false, 'hmac256 not verified');
 
 -- Server Derived Keys
-
-select is(current_setting('pgsodium.secret_key'),
-    '****************************************************************', 'server managed secret not available.');
 
 select is(pgsodium_derive(1), pgsodium_derive(1), 'derived key are equal by id');
 
