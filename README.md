@@ -127,7 +127,7 @@ get it from a hardware security module.
 
 # Server Key Derivation
 
-New keys are derived from the master server secret key by id and an
+New keys are derived from the primary server secret key by id and an
 optional context using the [libsodium Key Derivation
 Functions](https://doc.libsodium.org/key_derivation).  Key id are just
 `bigint` integers.  If you know the key id, key length (default 32
@@ -859,10 +859,10 @@ Example:
 
 ## Key Derivation
 
-Multiple secret subkeys can be derived from a single master key.
-Given the master key and a key identifier, a subkey can be
+Multiple secret subkeys can be derived from a single primary key.
+Given the primary key and a key identifier, a subkey can be
 deterministically computed. However, given a subkey, an attacker
-cannot compute the master key nor any other subkeys.
+cannot compute the primary key nor any other subkeys.
 
     SELECT crypto_kdf_keygen() kdfkey \gset
     SELECT length(crypto_kdf_derive_from_key(64, 1, '__auth__', :'kdfkey')) kdfsubkeylen \gset
