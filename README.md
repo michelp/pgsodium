@@ -106,17 +106,10 @@ containers, you can append this after the run:
 
     docker run -e POSTGRES_HOST_AUTH_METHOD=trust -d --name "$DB_HOST" $TAG -c 'shared_preload_libraries=pgsodium'
 
-When the server starts, it will load the secret key into memory.
-
-    postgres=# show pgsodium.secret_key ;
-                           pgsodium.secret_key
-    ------------------------------------------------------------------
-     ****************************************************************
-
-    postgres=# select current_setting('pgsodium.secret_key');
-                             current_setting
-    ------------------------------------------------------------------
-     ****************************************************************
+When the server starts, it will load the secret key into memory but
+the key is not accessible to SQL.  It's possible that a sufficiently
+clever maliscious superuser can access the key by invoking external
+programs.
 
 It is up to you to edit the script to get or generate the key however
 you want.  pgsodium can be used to generate a new random key with
