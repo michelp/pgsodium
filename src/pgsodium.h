@@ -20,7 +20,7 @@
 
 const char *secret_noshow_hook (void);
 
-#define PGSODIUM_CHARDATA(_vlena) (unsigned char*)VARDATA(_vlena)
+#define PGSODIUM_UCHARDATA(_vlena) (unsigned char*)VARDATA(_vlena)
 
 typedef struct _pgsodium_cb {
   void* ptr;
