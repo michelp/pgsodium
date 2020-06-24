@@ -549,11 +549,16 @@ Datum pgsodium_crypto_sign_final_create(PG_FUNCTION_ARGS)
 	size_t result_size = VARHDRSZ + sig_size;
 	bytea* result = _pgsodium_zalloc_bytea(result_size);
 
+	// Make a copy of state so that we do not stomp over the
+	// user-facing datum.
+	bytea* local_state = DatumGetByteaPCopy(state); 
 	success = crypto_sign_final_create(
-		(crypto_sign_state*) VARDATA(state),
+		(crypto_sign_state*) VARDATA(local_state),
 		PGSODIUM_UCHARDATA(result),
 		NULL,
 		PGSODIUM_UCHARDATA(key));
+	pfree(local_state);
+	
 	if (success != 0)
 		ereport(
 			ERROR,
