@@ -10,11 +10,11 @@
 \set QUIET 1
 
 
-BEGIN;
 CREATE EXTENSION pgtap;
 CREATE EXTENSION pgsodium;
 
-SELECT plan(46);
+BEGIN;
+SELECT plan(39);
 
 -- random
 
@@ -270,17 +270,28 @@ select crypto_auth_hmacsha256('food', :'hmac256key') hmac256 \gset
 select is(crypto_auth_hmacsha256_verify(:'hmac256', 'food', :'hmac256key'), true, 'hmac256 verified');
 select is(crypto_auth_hmacsha256_verify(:'hmac256', 'fo0d', :'hmac256key'), false, 'hmac256 not verified');
 
+ROLLBACK;
+
+select exists (select * from pg_settings where name = 'shared_preload_libraries' and setting ilike '%pgsodium%') serverkeys \gset
+\if :serverkeys
+BEGIN;
+
 -- Server Derived Keys
 
+SELECT plan(4);
+
 select is(pgsodium_derive(1), pgsodium_derive(1), 'derived key are equal by id');
-
 select isnt(pgsodium_derive(1), pgsodium_derive(2), 'disequal derived key');
-
 select is(length(pgsodium_derive(2, 64)), 64, 'key len is 64 bytes');
-
 select isnt(pgsodium_derive(2, 32, 'foozball'), pgsodium_derive(2, 32), 'disequal context');
+SELECT * FROM finish();
+ROLLBACK;
+\endif
 
 -- test relocatable schema
+
+BEGIN;
+SELECT plan(3);
 
 CREATE SCHEMA pgsodium;
 DROP EXTENSION IF EXISTS pgsodium;
