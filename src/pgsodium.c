@@ -551,14 +551,14 @@ Datum pgsodium_crypto_sign_final_create(PG_FUNCTION_ARGS)
 
 	// Make a copy of state so that we do not stomp over the
 	// user-facing datum.
-	bytea* local_state = DatumGetByteaPCopy(state); 
+	bytea* local_state = DatumGetByteaPCopy(state);
 	success = crypto_sign_final_create(
 		(crypto_sign_state*) VARDATA(local_state),
 		PGSODIUM_UCHARDATA(result),
 		NULL,
 		PGSODIUM_UCHARDATA(key));
 	pfree(local_state);
-	
+
 	if (success != 0)
 		ereport(
 			ERROR,
@@ -1018,6 +1018,11 @@ pgsodium_derive(PG_FUNCTION_ARGS)
 	size_t result_size = VARHDRSZ + subkey_size;
 	bytea* context = PG_GETARG_BYTEA_P(2);
 	bytea* result = _pgsodium_zalloc_bytea(result_size);
+	if (pgsodium_secret_key == NULL)
+		ereport(
+			ERROR,
+			(errcode(ERRCODE_DATA_EXCEPTION),
+			 errmsg("pgsodium_derive: no server secret key defined.")));
 	if (subkey_size < crypto_kdf_BYTES_MIN || subkey_size > crypto_kdf_BYTES_MAX)
 		ereport(
 			ERROR,
@@ -1058,47 +1063,50 @@ void _PG_init(void)
 		return;
 	}
 
-	get_share_path(my_exec_path, sharepath);
-	path = (char*) palloc(MAXPGPATH);
-	snprintf(
-		path,
-		MAXPGPATH,
-		"%s/extension/%s",
-		sharepath,
-		PG_GETKEY_EXEC);
-
-	if (access(path, F_OK) == -1)
-		return;
-
-	if ((fp = popen(path, "r")) == NULL)
+	if (process_shared_preload_libraries_in_progress)
 	{
-		fprintf(stderr,
-				"%s: could not launch shell command from\n",
-				path);
-		proc_exit(1);
+		get_share_path(my_exec_path, sharepath);
+		path = (char*) palloc(MAXPGPATH);
+		snprintf(
+			path,
+			MAXPGPATH,
+			"%s/extension/%s",
+			sharepath,
+			PG_GETKEY_EXEC);
+
+		if (access(path, F_OK) == -1)
+			return;
+
+		if ((fp = popen(path, "r")) == NULL)
+		{
+			fprintf(stderr,
+					"%s: could not launch shell command from\n",
+					path);
+			proc_exit(1);
+		}
+
+		char_read = getline(&secret_buf, &secret_len, fp);
+		if (secret_buf[char_read-1] == '\n')
+			secret_buf[char_read-1] = '\0';
+
+		secret_len = strlen(secret_buf);
+
+		if (secret_len != 64)
+		{
+			fprintf(stderr, "invalid secret key\n");
+			proc_exit(1);
+		}
+
+		if (pclose(fp) != 0)
+		{
+			fprintf(stderr, "%s: could not close shell command\n",
+					PG_GETKEY_EXEC);
+			proc_exit(1);
+		}
+		pgsodium_secret_key = palloc(crypto_sign_SECRETKEYBYTES + VARHDRSZ);
+		hex_decode(secret_buf, secret_len, VARDATA(pgsodium_secret_key));
+		sodium_mlock(pgsodium_secret_key, crypto_sign_SECRETKEYBYTES + VARHDRSZ);
+		memset(secret_buf, 0, secret_len);
+		free(secret_buf);
 	}
-
-	char_read = getline(&secret_buf, &secret_len, fp);
-	if (secret_buf[char_read-1] == '\n')
-		secret_buf[char_read-1] = '\0';
-
-	secret_len = strlen(secret_buf);
-
-	if (secret_len != 64)
-	{
-		fprintf(stderr, "invalid secret key\n");
-		proc_exit(1);
-	}
-
-	if (pclose(fp) != 0)
-	{
-		fprintf(stderr, "%s: could not close shell command\n",
-				PG_GETKEY_EXEC);
-		proc_exit(1);
-	}
-	pgsodium_secret_key = palloc(crypto_sign_SECRETKEYBYTES + VARHDRSZ);
-	hex_decode(secret_buf, secret_len, VARDATA(pgsodium_secret_key));
-	sodium_mlock(pgsodium_secret_key, crypto_sign_SECRETKEYBYTES + VARHDRSZ);
-	memset(secret_buf, 0, secret_len);
-	free(secret_buf);
 }
