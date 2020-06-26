@@ -575,10 +575,14 @@ Datum pgsodium_crypto_sign_final_verify(PG_FUNCTION_ARGS)
 	bytea* sig = PG_GETARG_BYTEA_P(1);
 	bytea* key = PG_GETARG_BYTEA_P(2);
 
+	// Make a copy of state so that we do not stomp over the
+	// user-facing datum.
+	bytea* local_state = DatumGetByteaPCopy(state); 
 	success = crypto_sign_final_verify(
-		(crypto_sign_state*) VARDATA(state),
+		(crypto_sign_state*) VARDATA(local_state),
 		PGSODIUM_UCHARDATA(sig),
 		PGSODIUM_UCHARDATA(key));
+	pfree(local_state);
 	PG_RETURN_BOOL(success == 0);
 }
 
