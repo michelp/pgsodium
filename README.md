@@ -87,7 +87,7 @@ configuration and place a special script in your postgres shared
 extension directory, the server can preload a libsodium key on server
 start. **The secret key cannot be accessed from SQL**.  The only way
 to use the server secret key is to *derive* other keys from it using
-`pgsodium_derive()` shown in the next section.
+`derive_key()` shown in the next section.
 
 Server managed keys are completely optional, pgsodium can still be
 used without putting it in `shared_preload_libraries`, you will simply
@@ -137,7 +137,7 @@ the server secret key.
 
 The key id, key length and context can be secret or not, if you store
 them then possibly logged in database users can generate the key if
-they have permission to call the `pgsodium_derive()` function.
+they have permission to call the `derive_key()` function.
 Keeping the key id and/or length context secret to a client avoid this
 possibility and make sure to set your [database security
 model](https://www.postgresql.org/docs/12/sql-grant.html) correctly so
@@ -161,18 +161,18 @@ binary string functions.  The derivable keyspace is huge given one
 
 To derive a key:
 
-    # select pgsodium_derive(1);
-                              pgsodium_derive
+    # select derive_key(1);
+                              derive_key
     --------------------------------------------------------------------
      \x84fa0487750d27386ad6235fc0c4bf3a9aa2c3ccb0e32b405b66e69d5021247b
 
-    # select pgsodium_derive(1, 64);
-                                                              pgsodium_derive
+    # select derive_key(1, 64);
+                                                              derive_key
     ------------------------------------------------------------------------------------------------------------------------------------
      \xc58cbe0522ac4875707722251e53c0f0cfd8e8b76b133f399e2c64c9999f01cb1216d2ccfe9448ed8c225c8ba5db9b093ff5c1beb2d1fd612a38f40e362073fb
 
-    # select pgsodium_derive(1, 32, '__auth__');
-                              pgsodium_derive
+    # select derive_key(1, 32, '__auth__');
+                              derive_key
     --------------------------------------------------------------------
      \xa9aadb2331324f399fb58576c69f51727901c651c970f3ef6cff47066ea92e95
 
@@ -183,7 +183,7 @@ functions for "symmetric" encryption or as seeds for generating other
 keypairs using for example `crypto_box_seed_new_keypair()` and
 `crypto_sign_seed_new_keypair()`.
 
-    # select * from crypto_box_seed_new_keypair(pgsodium_derive(1));
+    # select * from crypto_box_seed_new_keypair(derive_key(1));
                                    public                               |                               secret
     --------------------------------------------------------------------+--------------------------------------------------------------------
      \x01d0e0ec4b1fa9cc8dede88e0b43083f7e9cd33be4f91f0b25aa54d70f562278 | \x066ec431741a9d39f38c909de4a143ed39b09834ca37b6dd2ba3d015206f14ca
@@ -209,7 +209,7 @@ the nonce and key id used to derive the encryption key.
         convert_from(pgsodium.crypto_secretbox_open(
                  data,
                  nonce,
-                 pgsodium.pgsodium_derive(key_id)),
+                 pgsodium.derive_key(key_id)),
         'utf8') AS data FROM test;
 
     CREATE OR REPLACE FUNCTION test_encrypt() RETURNS trigger
@@ -224,7 +224,7 @@ the nonce and key id used to derive the encryption key.
         update test set data = pgsodium.crypto_secretbox(
             convert_to(new.data, 'utf8'),
             new_nonce,
-            pgsodium.pgsodium_derive(key_id))
+            pgsodium.derive_key(key_id))
         where id = test_id;
         RETURN new;
     END;
@@ -274,9 +274,9 @@ a row with a new key id:
             pgsodium.crypto_secretbox_open(
                  test.data,
                  test.nonce,
-                 pgsodium.pgsodium_derive(test.key_id)),
+                 pgsodium.derive_key(test.key_id)),
             new_nonce,
-            pgsodium.pgsodium_derive(new_key))
+            pgsodium.derive_key(new_key))
         WHERE test.id = test_id;
         RETURN;
     END;

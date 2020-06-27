@@ -10,8 +10,8 @@
 \set QUIET 1
 
 
-CREATE EXTENSION pgtap;
-CREATE EXTENSION pgsodium;
+CREATE EXTENSION IF NOT EXISTS pgtap;
+CREATE EXTENSION IF NOT EXISTS pgsodium;
 
 BEGIN;
 SELECT plan(39);
@@ -280,10 +280,10 @@ BEGIN;
 
 SELECT plan(4);
 
-select is(pgsodium_derive(1), pgsodium_derive(1), 'derived key are equal by id');
-select isnt(pgsodium_derive(1), pgsodium_derive(2), 'disequal derived key');
-select is(length(pgsodium_derive(2, 64)), 64, 'key len is 64 bytes');
-select isnt(pgsodium_derive(2, 32, 'foozball'), pgsodium_derive(2, 32), 'disequal context');
+select is(derive_key(1), derive_key(1), 'derived key are equal by id');
+select isnt(derive_key(1), derive_key(2), 'disequal derived key');
+select is(length(derive_key(2, 64)), 64, 'key len is 64 bytes');
+select isnt(derive_key(2, 32, 'foozball'), derive_key(2, 32), 'disequal context');
 SELECT * FROM finish();
 ROLLBACK;
 \endif

@@ -29,3 +29,8 @@ CREATE FUNCTION crypto_kdf_derive_from_key(subkey_size bigint, subkey_id bigint,
 RETURNS bytea
 AS '$libdir/pgsodium', 'pgsodium_crypto_kdf_derive_from_key'
 LANGUAGE C IMMUTABLE STRICT;
+
+CREATE OR REPLACE FUNCTION derive_key(key_id bigint, key_len integer = 32, context bytea = 'pgsodium')
+RETURNS bytea
+AS '$libdir/pgsodium', 'pgsodium_derive'
+LANGUAGE C VOLATILE;
