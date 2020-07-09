@@ -103,21 +103,28 @@ pgsodium_crypto_secretbox_open(PG_FUNCTION_ARGS)
 	bytea* message = PG_GETARG_BYTEA_P(0);
 	bytea* nonce = PG_GETARG_BYTEA_P(1);
 	bytea* key = PG_GETARG_BYTEA_P(2);
-	size_t message_size = VARSIZE_ANY_EXHDR(message) - \
-		crypto_secretbox_MACBYTES;
-	size_t result_size = VARHDRSZ + message_size;
-	bytea* result = _pgsodium_zalloc_bytea(result_size);
+	size_t message_size;
+	size_t result_size;
+	bytea* result;
+
+	ERRORIF(VARSIZE_ANY_EXHDR(message) <= crypto_secretbox_MACBYTES,
+			"invalid message");
+	ERRORIF(VARSIZE_ANY_EXHDR(nonce) != crypto_secretbox_NONCEBYTES,
+			"invalid nonce");
+	ERRORIF(VARSIZE_ANY_EXHDR(key) != crypto_secretbox_KEYBYTES,
+			"invalid key");
+
+	message_size = VARSIZE_ANY_EXHDR(message) - crypto_secretbox_MACBYTES;
+	result_size = VARHDRSZ + message_size;
+	result = _pgsodium_zalloc_bytea(result_size);
+
 	success = crypto_secretbox_open_easy(
 		PGSODIUM_UCHARDATA(result),
 		PGSODIUM_UCHARDATA(message),
 		VARSIZE_ANY_EXHDR(message),
 		PGSODIUM_UCHARDATA(nonce),
 		PGSODIUM_UCHARDATA(key));
-	if (success != 0)
-		ereport(
-			ERROR,
-			(errcode(ERRCODE_DATA_EXCEPTION),
-			 errmsg("invalid message")));
+	ERRORIF(success != 0, "invalid message");
 	PG_RETURN_BYTEA_P(result);
 }
 
@@ -127,8 +134,11 @@ pgsodium_crypto_auth(PG_FUNCTION_ARGS)
 {
 	bytea* message = PG_GETARG_BYTEA_P(0);
 	bytea* key = PG_GETARG_BYTEA_P(1);
-	int result_size = VARHDRSZ + crypto_auth_BYTES;
-	bytea* result = _pgsodium_zalloc_bytea(result_size);
+	int result_size;
+	bytea* result;
+	ERRORIF(VARSIZE_ANY_EXHDR(key) != crypto_auth_KEYBYTES, "invalid key");
+	result_size = VARHDRSZ + crypto_auth_BYTES;
+	result = _pgsodium_zalloc_bytea(result_size);
 	crypto_auth(
 		PGSODIUM_UCHARDATA(result),
 		PGSODIUM_UCHARDATA(message),
@@ -145,6 +155,8 @@ pgsodium_crypto_auth_verify(PG_FUNCTION_ARGS)
 	bytea* mac = PG_GETARG_BYTEA_P(0);
 	bytea* message = PG_GETARG_BYTEA_P(1);
 	bytea* key = PG_GETARG_BYTEA_P(2);
+	ERRORIF(VARSIZE_ANY_EXHDR(mac) != crypto_auth_BYTES, "invalid mac");
+	ERRORIF(VARSIZE_ANY_EXHDR(key) != crypto_auth_KEYBYTES, "invalid key");
 	success = crypto_auth_verify(
 		PGSODIUM_UCHARDATA(mac),
 		PGSODIUM_UCHARDATA(message),
@@ -158,6 +170,16 @@ Datum
 pgsodium_crypto_auth_keygen(PG_FUNCTION_ARGS)
 {
 	size_t result_size = VARHDRSZ + crypto_auth_KEYBYTES;
+	bytea* result = _pgsodium_zalloc_bytea(result_size);
+	crypto_secretbox_keygen(PGSODIUM_UCHARDATA(result));
+	PG_RETURN_BYTEA_P(result);
+}
+
+PG_FUNCTION_INFO_V1(pgsodium_crypto_generichash_keygen);
+Datum
+pgsodium_crypto_generichash_keygen(PG_FUNCTION_ARGS)
+{
+	size_t result_size = VARHDRSZ + crypto_generichash_KEYBYTES;
 	bytea* result = _pgsodium_zalloc_bytea(result_size);
 	crypto_secretbox_keygen(PGSODIUM_UCHARDATA(result));
 	PG_RETURN_BYTEA_P(result);
@@ -179,6 +201,9 @@ pgsodium_crypto_generichash(PG_FUNCTION_ARGS)
 		keyarg = PG_GETARG_BYTEA_P(1);
 		key = PGSODIUM_UCHARDATA(keyarg);
 		keylen = VARSIZE_ANY_EXHDR(keyarg);
+		ERRORIF(keylen <= crypto_generichash_KEYBYTES_MIN ||
+				keylen >= crypto_generichash_KEYBYTES_MAX,
+				"invalid key");
 	}
 	result_size = VARHDRSZ + crypto_generichash_BYTES;
 	result = _pgsodium_zalloc_bytea(result_size);
@@ -192,6 +217,16 @@ pgsodium_crypto_generichash(PG_FUNCTION_ARGS)
 	PG_RETURN_BYTEA_P(result);
 }
 
+PG_FUNCTION_INFO_V1(pgsodium_crypto_shorthash_keygen);
+Datum
+pgsodium_crypto_shorthash_keygen(PG_FUNCTION_ARGS)
+{
+	size_t result_size = VARHDRSZ + crypto_shorthash_KEYBYTES;
+	bytea* result = _pgsodium_zalloc_bytea(result_size);
+	crypto_secretbox_keygen(PGSODIUM_UCHARDATA(result));
+	PG_RETURN_BYTEA_P(result);
+}
+
 PG_FUNCTION_INFO_V1(pgsodium_crypto_shorthash);
 Datum
 pgsodium_crypto_shorthash(PG_FUNCTION_ARGS)
@@ -202,8 +237,7 @@ pgsodium_crypto_shorthash(PG_FUNCTION_ARGS)
 	int result_size = VARHDRSZ + crypto_shorthash_BYTES;
 	data = PG_GETARG_BYTEA_P(0);
 	key = PG_GETARG_BYTEA_P(1);
-	if (VARSIZE_ANY_EXHDR(key) != crypto_shorthash_KEYBYTES)
-		PG_RETURN_NULL();
+	ERRORIF (VARSIZE_ANY_EXHDR(key) != crypto_shorthash_KEYBYTES, "invalid key");
 	result = _pgsodium_zalloc_bytea(result_size);
 	crypto_shorthash(
 		PGSODIUM_UCHARDATA(result),
@@ -267,6 +301,7 @@ pgsodium_crypto_box_seed_keypair(PG_FUNCTION_ARGS)
 	bytea* seed = PG_GETARG_BYTEA_P(0);
 	size_t public_size = crypto_box_PUBLICKEYBYTES + VARHDRSZ;
 	size_t secret_size = crypto_box_SECRETKEYBYTES + VARHDRSZ;
+	ERRORIF(VARSIZE_ANY_EXHDR(seed) != crypto_box_SEEDBYTES, "invalid seed");
 	if (get_call_result_type(fcinfo, NULL, &tupdesc) != TYPEFUNC_COMPOSITE)
 		ereport(ERROR,
 				(errcode(ERRCODE_FEATURE_NOT_SUPPORTED),
@@ -313,11 +348,7 @@ pgsodium_crypto_box(PG_FUNCTION_ARGS)
 		PGSODIUM_UCHARDATA(nonce),
 		PGSODIUM_UCHARDATA(publickey),
 		PGSODIUM_UCHARDATA(secretkey));
-	if (success != 0)
-		ereport(
-			ERROR,
-			(errcode(ERRCODE_DATA_EXCEPTION),
-			 errmsg("invalid message")));
+	ERRORIF(success != 0, "invalid message");
 	PG_RETURN_BYTEA_P(result);
 }
 
@@ -330,9 +361,16 @@ pgsodium_crypto_box_open(PG_FUNCTION_ARGS)
 	bytea* nonce = PG_GETARG_BYTEA_P(1);
 	bytea* publickey = PG_GETARG_BYTEA_P(2);
 	bytea* secretkey = PG_GETARG_BYTEA_P(3);
+	size_t message_size;
+	bytea* result;
 
-	size_t message_size = VARSIZE_ANY_EXHDR(message) - crypto_box_MACBYTES;
-	bytea* result = _pgsodium_zalloc_bytea(VARHDRSZ + message_size);
+	ERRORIF(VARSIZE_ANY_EXHDR(nonce) != crypto_box_NONCEBYTES, "invalid nonce");
+	ERRORIF(VARSIZE_ANY_EXHDR(publickey) != crypto_box_PUBLICKEYBYTES, "invalid public key");
+	ERRORIF(VARSIZE_ANY_EXHDR(secretkey) != crypto_box_SECRETKEYBYTES, "invalid secret key");
+	ERRORIF(VARSIZE_ANY_EXHDR(message) <= crypto_box_MACBYTES, "invalid message");
+
+	message_size = VARSIZE_ANY_EXHDR(message) - crypto_box_MACBYTES;
+	result = _pgsodium_zalloc_bytea(VARHDRSZ + message_size);
 	success = crypto_box_open_easy(
 		PGSODIUM_UCHARDATA(result),
 		PGSODIUM_UCHARDATA(message),
@@ -340,11 +378,7 @@ pgsodium_crypto_box_open(PG_FUNCTION_ARGS)
 		PGSODIUM_UCHARDATA(nonce),
 		PGSODIUM_UCHARDATA(publickey),
 		PGSODIUM_UCHARDATA(secretkey));
-	if (success != 0)
-		ereport(
-			ERROR,
-			(errcode(ERRCODE_DATA_EXCEPTION),
-			 errmsg("invalid message")));
+	ERRORIF(success != 0, "invalid message");
 	PG_RETURN_BYTEA_P(result);
 }
 
@@ -403,6 +437,7 @@ pgsodium_crypto_sign_seed_keypair(PG_FUNCTION_ARGS)
 	bytea* seed = PG_GETARG_BYTEA_P(0);
 	size_t public_size = crypto_sign_PUBLICKEYBYTES + VARHDRSZ;
 	size_t secret_size = crypto_sign_SECRETKEYBYTES + VARHDRSZ;
+	ERRORIF(VARSIZE_ANY_EXHDR(seed) != crypto_sign_SEEDBYTES, "invalid seed");
 
 	if (get_call_result_type(fcinfo, NULL, &tupdesc) != TYPEFUNC_COMPOSITE)
 		ereport(ERROR,
@@ -432,21 +467,20 @@ pgsodium_crypto_sign(PG_FUNCTION_ARGS)
 	bytea* message = PG_GETARG_BYTEA_P(0);
 	bytea* secretkey = PG_GETARG_BYTEA_P(1);
 	unsigned long long signed_message_len;
-	size_t message_size = crypto_sign_BYTES + VARSIZE_ANY_EXHDR(message);
-	size_t result_size = VARHDRSZ + message_size;
-	bytea* result = _pgsodium_zalloc_bytea(result_size);
-
+	size_t message_size;
+	size_t result_size;
+	bytea* result;
+	ERRORIF(VARSIZE_ANY_EXHDR(secretkey) != crypto_sign_SECRETKEYBYTES, "invalid secret key");
+	message_size = crypto_sign_BYTES + VARSIZE_ANY_EXHDR(message);
+	result_size = VARHDRSZ + message_size;
+	result = _pgsodium_zalloc_bytea(result_size);
 	success = crypto_sign(
 		PGSODIUM_UCHARDATA(result),
 		&signed_message_len,
 		PGSODIUM_UCHARDATA(message),
 		VARSIZE_ANY_EXHDR(message),
 		PGSODIUM_UCHARDATA(secretkey));
-	if (success != 0)
-		ereport(
-			ERROR,
-			(errcode(ERRCODE_DATA_EXCEPTION),
-			 errmsg("invalid message")));
+	ERRORIF(success != 0, "invalid message");
 	PG_RETURN_BYTEA_P(result);
 }
 
@@ -458,20 +492,23 @@ pgsodium_crypto_sign_open(PG_FUNCTION_ARGS)
 	unsigned long long unsigned_message_len;
 	bytea* message = PG_GETARG_BYTEA_P(0);
 	bytea* publickey = PG_GETARG_BYTEA_P(1);
-	size_t message_size = VARSIZE_ANY_EXHDR(message) - crypto_sign_BYTES;
-	size_t result_size = VARHDRSZ + message_size;
-	bytea* result = _pgsodium_zalloc_bytea(result_size);
+	size_t message_size;
+	size_t result_size;
+	bytea* result;
+
+	ERRORIF(VARSIZE_ANY_EXHDR(publickey) != crypto_sign_PUBLICKEYBYTES, "invalid public key");
+	ERRORIF(VARSIZE_ANY_EXHDR(message) <= crypto_sign_BYTES, "invalid message");
+
+	message_size = VARSIZE_ANY_EXHDR(message) - crypto_sign_BYTES;
+	result_size = VARHDRSZ + message_size;
+	result = _pgsodium_zalloc_bytea(result_size);
 	success = crypto_sign_open(
 		PGSODIUM_UCHARDATA(result),
 		&unsigned_message_len,
 		PGSODIUM_UCHARDATA(message),
 		VARSIZE_ANY_EXHDR(message),
 		PGSODIUM_UCHARDATA(publickey));
-	if (success != 0)
-		ereport(
-			ERROR,
-			(errcode(ERRCODE_DATA_EXCEPTION),
-			 errmsg("invalid message")));
+	ERRORIF(success != 0, "invalid message");
 	PG_RETURN_BYTEA_P(result);
 }
 
@@ -485,17 +522,14 @@ pgsodium_crypto_sign_detached(PG_FUNCTION_ARGS)
 	size_t sig_size = crypto_sign_BYTES;
 	size_t result_size = VARHDRSZ + sig_size;
 	bytea* result = _pgsodium_zalloc_bytea(result_size);
+	ERRORIF(VARSIZE_ANY_EXHDR(secretkey) != crypto_sign_SECRETKEYBYTES, "invalid secret key");
 	success = crypto_sign_detached(
 		PGSODIUM_UCHARDATA(result),
 		NULL,
 		PGSODIUM_UCHARDATA(message),
 		VARSIZE_ANY_EXHDR(message),
 		PGSODIUM_UCHARDATA(secretkey));
-	if (success != 0)
-		ereport(
-			ERROR,
-			(errcode(ERRCODE_DATA_EXCEPTION),
-			 errmsg("invalid message")));
+	ERRORIF(success != 0, "invalid message");
 	PG_RETURN_BYTEA_P(result);
 }
 
@@ -507,6 +541,7 @@ pgsodium_crypto_sign_verify_detached(PG_FUNCTION_ARGS)
 	bytea* sig = PG_GETARG_BYTEA_P(0);
 	bytea* message = PG_GETARG_BYTEA_P(1);
 	bytea* publickey = PG_GETARG_BYTEA_P(2);
+	ERRORIF(VARSIZE_ANY_EXHDR(publickey) != crypto_sign_PUBLICKEYBYTES, "invalid public key");
 	success = crypto_sign_verify_detached(
 		PGSODIUM_UCHARDATA(sig),
 		PGSODIUM_UCHARDATA(message),
@@ -559,11 +594,7 @@ Datum pgsodium_crypto_sign_final_create(PG_FUNCTION_ARGS)
 		PGSODIUM_UCHARDATA(key));
 	pfree(local_state);
 
-	if (success != 0)
-		ereport(
-			ERROR,
-			(errcode(ERRCODE_DATA_EXCEPTION),
-			 errmsg("unable to complete signature")));
+	ERRORIF(success != 0, "unable to complete signature");
 	PG_RETURN_BYTEA_P(result);
 }
 
@@ -577,7 +608,7 @@ Datum pgsodium_crypto_sign_final_verify(PG_FUNCTION_ARGS)
 
 	// Make a copy of state so that we do not stomp over the
 	// user-facing datum.
-	bytea* local_state = DatumGetByteaPCopy(state); 
+	bytea* local_state = DatumGetByteaPCopy(state);
 	success = crypto_sign_final_verify(
 		(crypto_sign_state*) VARDATA(local_state),
 		PGSODIUM_UCHARDATA(sig),
@@ -607,8 +638,7 @@ pgsodium_crypto_pwhash(PG_FUNCTION_ARGS)
 	int success;
 	data = PG_GETARG_BYTEA_P(0);
 	salt = PG_GETARG_BYTEA_P(1);
-	if (VARSIZE_ANY_EXHDR(salt) != crypto_pwhash_SALTBYTES)
-		PG_RETURN_NULL();
+	ERRORIF(VARSIZE_ANY_EXHDR(salt) != crypto_pwhash_SALTBYTES, "invalid salt");
 	result = _pgsodium_zalloc_bytea(result_size);
 	success = crypto_pwhash(
 		PGSODIUM_UCHARDATA(result),
@@ -619,11 +649,7 @@ pgsodium_crypto_pwhash(PG_FUNCTION_ARGS)
 		crypto_pwhash_OPSLIMIT_MODERATE,
 		crypto_pwhash_MEMLIMIT_MODERATE,
 		crypto_pwhash_ALG_DEFAULT);
-	if (success != 0)
-		ereport(
-			ERROR,
-			(errcode(ERRCODE_DATA_EXCEPTION),
-			 errmsg("invalid message")));
+	ERRORIF(success != 0, "invalid message");
 	PG_RETURN_BYTEA_P(result);
 }
 
@@ -640,11 +666,7 @@ pgsodium_crypto_pwhash_str(PG_FUNCTION_ARGS)
 		VARSIZE_ANY_EXHDR(password),
 		crypto_pwhash_OPSLIMIT_MODERATE,
 		crypto_pwhash_MEMLIMIT_MODERATE);
-	if (success != 0)
-		ereport(
-			ERROR,
-			(errcode(ERRCODE_DATA_EXCEPTION),
-			 errmsg("out of memory in pwhash_str")));
+	ERRORIF(success != 0, "out of memory in pwhash_str");
 	PG_RETURN_BYTEA_P(result);
 }
 
@@ -668,8 +690,11 @@ pgsodium_crypto_box_seal(PG_FUNCTION_ARGS)
 {
 	bytea* message = PG_GETARG_BYTEA_P(0);
 	bytea* public_key = PG_GETARG_BYTEA_P(1);
-	size_t result_size = crypto_box_SEALBYTES + VARSIZE(message);
-	bytea* result = _pgsodium_zalloc_bytea(result_size);
+	size_t result_size;
+	bytea* result;
+	ERRORIF(VARSIZE_ANY_EXHDR(public_key) != crypto_box_PUBLICKEYBYTES, "invalid public key");
+	result_size = crypto_box_SEALBYTES + VARSIZE(message);
+	result = _pgsodium_zalloc_bytea(result_size);
 	crypto_box_seal(
 		PGSODIUM_UCHARDATA(result),
 		PGSODIUM_UCHARDATA(message),
@@ -686,19 +711,21 @@ pgsodium_crypto_box_seal_open(PG_FUNCTION_ARGS)
 	bytea* ciphertext = PG_GETARG_BYTEA_P(0);
 	bytea* public_key = PG_GETARG_BYTEA_P(1);
 	bytea* secret_key = PG_GETARG_BYTEA_P(2);
-	size_t result_size = VARSIZE(ciphertext) - crypto_box_SEALBYTES;
-	bytea* result = _pgsodium_zalloc_bytea(result_size);
+	size_t result_size;
+	bytea* result;
+	ERRORIF(VARSIZE_ANY_EXHDR(public_key) != crypto_box_PUBLICKEYBYTES, "invalid public key");
+	ERRORIF(VARSIZE_ANY_EXHDR(secret_key) != crypto_box_SECRETKEYBYTES, "invalid secret key");
+	ERRORIF(VARSIZE_ANY_EXHDR(ciphertext) <= crypto_box_SEALBYTES, "invalid message");
+
+	result_size = VARSIZE(ciphertext) - crypto_box_SEALBYTES;
+	result = _pgsodium_zalloc_bytea(result_size);
 	success = crypto_box_seal_open(
 		PGSODIUM_UCHARDATA(result),
 		PGSODIUM_UCHARDATA(ciphertext),
 		VARSIZE_ANY_EXHDR(ciphertext),
 		PGSODIUM_UCHARDATA(public_key),
 		PGSODIUM_UCHARDATA(secret_key));
-	if (success != 0)
-		ereport(
-			ERROR,
-			(errcode(ERRCODE_DATA_EXCEPTION),
-			 errmsg("crypto_box_seal_open: invalid message")));
+	ERRORIF(success != 0, "invalid message");
 	PG_RETURN_BYTEA_P(result);
 }
 
@@ -721,17 +748,14 @@ pgsodium_crypto_kdf_derive_from_key(PG_FUNCTION_ARGS)
 	unsigned long long subkey_id = PG_GETARG_INT64(1);
 	bytea* context = PG_GETARG_BYTEA_P(2);
 	bytea* primary_key = PG_GETARG_BYTEA_P(3);
-	bytea* result = _pgsodium_zalloc_bytea(result_size);
-	if (subkey_size < crypto_kdf_BYTES_MIN || subkey_size > crypto_kdf_BYTES_MAX)
-		ereport(
-			ERROR,
-			(errcode(ERRCODE_DATA_EXCEPTION),
-			 errmsg("crypto_kdf_derive_from_key: invalid key size requested")));
-	if (VARSIZE_ANY_EXHDR(context) != 8)
-		ereport(
-			ERROR,
-			(errcode(ERRCODE_DATA_EXCEPTION),
-			 errmsg("crypto_kdf_derive_from_key: context must be 8 bytes")));
+	bytea* result;
+	ERRORIF(VARSIZE_ANY_EXHDR(primary_key) != crypto_kdf_KEYBYTES,
+			"invalid derivation key");
+	ERRORIF(subkey_size < crypto_kdf_BYTES_MIN || subkey_size > crypto_kdf_BYTES_MAX,
+			"crypto_kdf_derive_from_key: invalid key size requested");
+	ERRORIF(VARSIZE_ANY_EXHDR(context) != 8,
+			"crypto_kdf_derive_from_key: context must be 8 bytes");
+	result = _pgsodium_zalloc_bytea(result_size);
 	crypto_kdf_derive_from_key(
 		PGSODIUM_UCHARDATA(result),
 		subkey_size,
@@ -790,6 +814,7 @@ pgsodium_crypto_kx_seed_keypair(PG_FUNCTION_ARGS)
 				(errcode(ERRCODE_FEATURE_NOT_SUPPORTED),
 				 errmsg("function returning record called in context "
 						"that cannot accept type record")));
+	ERRORIF(VARSIZE_ANY_EXHDR(seed) != crypto_kx_SEEDBYTES, "invalid seed");
 	publickey = _pgsodium_zalloc_bytea(public_size);
 	secretkey = _pgsodium_zalloc_bytea(secret_size);
 	crypto_kx_seed_keypair(
@@ -835,6 +860,9 @@ pgsodium_crypto_kx_client_session_keys(PG_FUNCTION_ARGS)
 				(errcode(ERRCODE_FEATURE_NOT_SUPPORTED),
 				 errmsg("function returning record called in context "
 						"that cannot accept type record")));
+	ERRORIF(VARSIZE_ANY_EXHDR(client_pk) != crypto_kx_PUBLICKEYBYTES, "bad client public key");
+	ERRORIF(VARSIZE_ANY_EXHDR(client_sk) != crypto_kx_SECRETKEYBYTES, "bad client secret key");
+	ERRORIF(VARSIZE_ANY_EXHDR(server_pk) != crypto_kx_PUBLICKEYBYTES, "bad server public key");
 	rx = _pgsodium_zalloc_bytea(rx_size);
 	tx = _pgsodium_zalloc_bytea(tx_size);
 	success = crypto_kx_client_session_keys(
@@ -843,11 +871,7 @@ pgsodium_crypto_kx_client_session_keys(PG_FUNCTION_ARGS)
 		PGSODIUM_UCHARDATA(client_pk),
 		PGSODIUM_UCHARDATA(client_sk),
 		PGSODIUM_UCHARDATA(server_pk));
-	if (success != 0)
-		ereport(
-			ERROR,
-			(errcode(ERRCODE_DATA_EXCEPTION),
-			 errmsg("invalid message")));
+	ERRORIF(success != 0, "invalid message");
 	values[0] = PointerGetDatum(rx);
 	values[1] = PointerGetDatum(tx);
 	tuple = heap_form_tuple(tupdesc, values, nulls);
@@ -877,6 +901,9 @@ pgsodium_crypto_kx_server_session_keys(PG_FUNCTION_ARGS)
 				(errcode(ERRCODE_FEATURE_NOT_SUPPORTED),
 				 errmsg("function returning record called in context "
 						"that cannot accept type record")));
+	ERRORIF(VARSIZE_ANY_EXHDR(server_pk) != crypto_kx_PUBLICKEYBYTES, "bad server public key");
+	ERRORIF(VARSIZE_ANY_EXHDR(server_sk) != crypto_kx_SECRETKEYBYTES, "bad server secret key");
+	ERRORIF(VARSIZE_ANY_EXHDR(client_pk) != crypto_kx_PUBLICKEYBYTES, "bad client public key");
 	rx = _pgsodium_zalloc_bytea(rx_size);
 	tx = _pgsodium_zalloc_bytea(tx_size);
 	success = crypto_kx_server_session_keys(
@@ -885,11 +912,7 @@ pgsodium_crypto_kx_server_session_keys(PG_FUNCTION_ARGS)
 		PGSODIUM_UCHARDATA(server_pk),
 		PGSODIUM_UCHARDATA(server_sk),
 		PGSODIUM_UCHARDATA(client_pk));
-	if (success != 0)
-		ereport(
-			ERROR,
-			(errcode(ERRCODE_DATA_EXCEPTION),
-			 errmsg("invalid message")));
+	ERRORIF(success != 0, "invalid message");
 	values[0] = PointerGetDatum(rx);
 	values[1] = PointerGetDatum(tx);
 	tuple = heap_form_tuple(tupdesc, values, nulls);
@@ -916,7 +939,9 @@ pgsodium_crypto_auth_hmacsha512(PG_FUNCTION_ARGS)
 	bytea* message = PG_GETARG_BYTEA_P(0);
 	bytea* key = PG_GETARG_BYTEA_P(1);
 	size_t result_size = VARHDRSZ + crypto_auth_hmacsha512_BYTES;
-	bytea* result = _pgsodium_zalloc_bytea(result_size);
+	bytea* result;
+	ERRORIF(VARSIZE_ANY_EXHDR(key) != crypto_auth_hmacsha512_KEYBYTES, "invalid key");
+	result = _pgsodium_zalloc_bytea(result_size);
 	crypto_auth_hmacsha512(
 		PGSODIUM_UCHARDATA(result),
 		PGSODIUM_UCHARDATA(message),
@@ -933,6 +958,8 @@ pgsodium_crypto_auth_hmacsha512_verify(PG_FUNCTION_ARGS)
 	bytea* hash = PG_GETARG_BYTEA_P(0);
 	bytea* message = PG_GETARG_BYTEA_P(1);
 	bytea* key = PG_GETARG_BYTEA_P(2);
+	ERRORIF(VARSIZE_ANY_EXHDR(hash) != crypto_auth_hmacsha512_BYTES, "invalid hash");
+	ERRORIF(VARSIZE_ANY_EXHDR(key) != crypto_auth_hmacsha512_KEYBYTES, "invalid key");
 	success = crypto_auth_hmacsha512_verify(
 		PGSODIUM_UCHARDATA(hash),
 		PGSODIUM_UCHARDATA(message),
@@ -958,7 +985,9 @@ pgsodium_crypto_auth_hmacsha256(PG_FUNCTION_ARGS)
 	bytea* message = PG_GETARG_BYTEA_P(0);
 	bytea* key = PG_GETARG_BYTEA_P(1);
 	size_t result_size = VARHDRSZ + crypto_auth_hmacsha256_BYTES;
-	bytea* result = _pgsodium_zalloc_bytea(result_size);
+	bytea* result;
+	ERRORIF(VARSIZE_ANY_EXHDR(key) != crypto_auth_hmacsha256_KEYBYTES, "invalid key");
+	result = _pgsodium_zalloc_bytea(result_size);
 	crypto_auth_hmacsha256(
 		PGSODIUM_UCHARDATA(result),
 		PGSODIUM_UCHARDATA(message),
@@ -975,6 +1004,8 @@ pgsodium_crypto_auth_hmacsha256_verify(PG_FUNCTION_ARGS)
 	bytea* hash = PG_GETARG_BYTEA_P(0);
 	bytea* message = PG_GETARG_BYTEA_P(1);
 	bytea* key = PG_GETARG_BYTEA_P(2);
+	ERRORIF(VARSIZE_ANY_EXHDR(hash) != crypto_auth_hmacsha256_BYTES, "invalid hash");
+	ERRORIF(VARSIZE_ANY_EXHDR(key) != crypto_auth_hmacsha256_KEYBYTES, "invalid key");
 	success = crypto_auth_hmacsha256_verify(
 		PGSODIUM_UCHARDATA(hash),
 		PGSODIUM_UCHARDATA(message),
@@ -1022,28 +1053,18 @@ pgsodium_derive(PG_FUNCTION_ARGS)
 	size_t result_size = VARHDRSZ + subkey_size;
 	bytea* context = PG_GETARG_BYTEA_P(2);
 	bytea* result = _pgsodium_zalloc_bytea(result_size);
-	if (pgsodium_secret_key == NULL)
-		ereport(
-			ERROR,
-			(errcode(ERRCODE_DATA_EXCEPTION),
-			 errmsg("pgsodium_derive: no server secret key defined.")));
-	if (subkey_size < crypto_kdf_BYTES_MIN || subkey_size > crypto_kdf_BYTES_MAX)
-		ereport(
-			ERROR,
-			(errcode(ERRCODE_DATA_EXCEPTION),
-			 errmsg("crypto_kdf_derive_from_key: invalid key size requested")));
-	if (VARSIZE_ANY_EXHDR(context) != 8)
-		ereport(
-			ERROR,
-			(errcode(ERRCODE_DATA_EXCEPTION),
-			 errmsg("crypto_kdf_derive_from_key: context must be 8 bytes")));
+	ERRORIF(pgsodium_secret_key == NULL,
+			"pgsodium_derive: no server secret key defined.");
+	ERRORIF(subkey_size < crypto_kdf_BYTES_MIN || subkey_size > crypto_kdf_BYTES_MAX,
+			"crypto_kdf_derive_from_key: invalid key size requested");
+	ERRORIF(VARSIZE_ANY_EXHDR(context) != 8,
+			"crypto_kdf_derive_from_key: context must be 8 bytes");
 	crypto_kdf_derive_from_key(
 		PGSODIUM_UCHARDATA(result),
 		subkey_size,
 		subkey_id,
 		(const char*)VARDATA(context),
 		PGSODIUM_UCHARDATA(pgsodium_secret_key));
-
 	PG_RETURN_BYTEA_P(result);
 }
 

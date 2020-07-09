@@ -42,8 +42,8 @@ static inline bytea* _pgsodium_zalloc_bytea(size_t allocation_size)
   bytea *result = (bytea*)palloc(allocation_size);
   MemoryContextCallback *ctxcb = (MemoryContextCallback*)
   MemoryContextAlloc(
-                     CurrentMemoryContext,
-                     sizeof(MemoryContextCallback));
+					 CurrentMemoryContext,
+					 sizeof(MemoryContextCallback));
   _pgsodium_cb* d = (_pgsodium_cb*)palloc(sizeof(_pgsodium_cb));
   d->ptr = result;
   d->size = allocation_size;
@@ -53,6 +53,13 @@ static inline bytea* _pgsodium_zalloc_bytea(size_t allocation_size)
   SET_VARSIZE(result, allocation_size);
   return result;
 }
+
+#define ERRORIF(B, msg)							\
+  if ((B))										\
+	ereport(									\
+			ERROR,								\
+			(errcode(ERRCODE_DATA_EXCEPTION),	\
+			 errmsg(msg)))
 
 void _PG_init(void);
 
@@ -73,13 +80,15 @@ Datum pgsodium_crypto_secretbox_open(PG_FUNCTION_ARGS);
 
 /* Secret key authentication */
 
+Datum pgsodium_crypto_auth_keygen(PG_FUNCTION_ARGS);
 Datum pgsodium_crypto_auth(PG_FUNCTION_ARGS);
 Datum pgsodium_crypto_auth_verify(PG_FUNCTION_ARGS);
-Datum pgsodium_crypto_auth_keygen(PG_FUNCTION_ARGS);
 
 /* Hashing */
 
+Datum pgsodium_crypto_generichash_keygen(PG_FUNCTION_ARGS);
 Datum pgsodium_crypto_generichash(PG_FUNCTION_ARGS);
+Datum pgsodium_crypto_shorthash_keygen(PG_FUNCTION_ARGS);
 Datum pgsodium_crypto_shorthash(PG_FUNCTION_ARGS);
 
 /* password Hashing */

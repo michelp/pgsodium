@@ -34,3 +34,14 @@ CREATE OR REPLACE FUNCTION derive_key(key_id bigint, key_len integer = 32, conte
 RETURNS bytea
 AS '$libdir/pgsodium', 'pgsodium_derive'
 LANGUAGE C VOLATILE;
+
+CREATE FUNCTION crypto_shorthash_keygen()
+RETURNS bytea
+AS '$libdir/pgsodium', 'pgsodium_crypto_shorthash_keygen'
+LANGUAGE C VOLATILE;
+
+CREATE FUNCTION crypto_generichash_keygen()
+RETURNS bytea
+AS '$libdir/pgsodium', 'pgsodium_crypto_generichash_keygen'
+LANGUAGE C VOLATILE;
+

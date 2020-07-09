@@ -14,7 +14,7 @@ CREATE EXTENSION IF NOT EXISTS pgtap;
 CREATE EXTENSION IF NOT EXISTS pgsodium;
 
 BEGIN;
-SELECT plan(39);
+SELECT plan(58);
 
 -- random
 
@@ -35,20 +35,34 @@ SELECT crypto_secretbox('bob is your uncle', :'secretboxnonce', :'boxkey') secre
 SELECT is(crypto_secretbox_open(:'secretbox', :'secretboxnonce', :'boxkey'),
           'bob is your uncle', 'secretbox_open');
 
+SELECT throws_ok(format($$select crypto_secretbox_open(%L, 'bad nonce', %L)$$, :'secretbox', :'boxkey'),
+	   	         '22000', 'invalid nonce', 'crypto_secretbox_open invalid nonce');
+
+SELECT throws_ok(format($$select crypto_secretbox_open(%L, %L, 'bad_key')$$, :'secretbox', :'secretboxnonce'),
+	   	         '22000', 'invalid key', 'crypto_secretbox_open invalid key');
+
+SELECT throws_ok(format($$select crypto_secretbox_open('foo', %L, %L)$$, :'secretboxnonce', :'boxkey'),
+	   	         '22000', 'invalid message', 'crypto_secretbox_open invalid message');
+
 -- secret key auth
 
 SELECT crypto_auth_keygen() authkey \gset
 
 SELECT crypto_auth('bob is your uncle', :'authkey') auth_mac \gset
 
+SELECT throws_ok($$select crypto_auth('bob is your uncle', 'bad_key')$$,
+	             '22000', 'invalid key', 'crypto_auth invalid key');
+
 SELECT ok(crypto_auth_verify(:'auth_mac', 'bob is your uncle', :'authkey'),
           'crypto_auth_verify');
-SELECT ok(not crypto_auth_verify('bad mac', 'bob is your uncle', :'authkey'),
-          'crypto_auth_verify bad mac');
-SELECT ok(not crypto_auth_verify(:'auth_mac', 'bob is your uncle', 'bad key'),
-          'crypto_auth_verify bad key');
+SELECT throws_ok(format($$select crypto_auth_verify('bad mac', 'bob is your uncle', %L)$$, :'authkey'),
+	             '22000', 'invalid mac', 'crypto_auth_verify invalid mac');
+SELECT throws_ok(format($$select crypto_auth_verify(%L, 'bob is your uncle', 'bad_key')$$, :'auth_mac'),
+	             '22000', 'invalid key', 'crypto_auth_verify invalid key');
 
 -- hashing
+
+SELECT crypto_generichash_keygen() generickey \gset
 
 SELECT is(crypto_generichash('bob is your uncle'),
           '\x6c80c5f772572423c3910a9561710313e4b6e74abc0d65f577a8ac1583673657',
@@ -58,13 +72,15 @@ SELECT is(crypto_generichash('bob is your uncle', NULL),
           '\x6c80c5f772572423c3910a9561710313e4b6e74abc0d65f577a8ac1583673657',
           'crypto_generichash NULL key');
 
-SELECT is(crypto_generichash('bob is your uncle', 'super sekret key'),
-          '\xe8e9e180d918ea9afe0bf44d1945ec356b2b6845e9a4c31acc6c02d826036e41',
+SELECT lives_ok(format($$select crypto_generichash('bob is your uncle', %L)$$, :'generickey'),
           'crypto_generichash with key');
 
-SELECT is(crypto_shorthash('bob is your uncle', 'super sekret key'),
-          '\xe080614efb824a15',
-          'crypto_shorthash');
+SELECT crypto_shorthash_keygen() shortkey \gset
+
+SELECT lives_ok(format($$select crypto_shorthash('bob is your uncle', %L)$$, :'shortkey'), 'crypto_shorthash');
+
+SELECT throws_ok($$select crypto_shorthash('bob is your uncle', 's')$$,
+	   '22000', 'invalid key', 'crypto_shorthash invalid key');
 
 -- public key crypto (box)
 
@@ -77,20 +93,59 @@ SELECT crypto_box('bob is your uncle', :'boxnonce', :'bob_public', :'alice_secre
 SELECT is(crypto_box_open(:'box', :'boxnonce', :'alice_public', :'bob_secret'),
           'bob is your uncle', 'crypto_box_open');
 
+SELECT throws_ok(format($$select crypto_box_open(%L, 'bad nonce', %L, %L)$$, :'box', :'alice_public', :'bob_secret'),
+	   	         '22000', 'invalid nonce', 'crypto_box_open invalid nonce');
+
+SELECT throws_ok(format($$select crypto_box_open(%L, %L, 'bad_key', %L)$$, :'box', :'boxnonce', :'bob_secret'),
+	   	         '22000', 'invalid public key', 'crypto_box_open invalid public key');
+
+SELECT throws_ok(format($$select crypto_box_open(%L, %L, %L, 'bad_key')$$, :'box', :'boxnonce', :'alice_public'),
+	   	         '22000', 'invalid secret key', 'crypto_box_open invalid secret key');
+
+SELECT throws_ok(format($$select crypto_box_open('foo', %L, %L, %L)$$, :'boxnonce', :'alice_public', :'bob_secret'),
+	   	         '22000', 'invalid message', 'crypto_box_open invalid message');
+
 SELECT crypto_box_seal('bob is your uncle', :'bob_public') sealed \gset
 
 SELECT is(crypto_box_seal_open(:'sealed', :'bob_public', :'bob_secret'),
           'bob is your uncle', 'crypto_box_seal/open');
 
+SELECT throws_ok(format($$select crypto_box_seal_open(%L, 'bad_key', %L)$$, :'sealed', :'bob_secret'),
+	   	         '22000', 'invalid public key', 'crypto_secretbox_seal_open public key');
+
+SELECT throws_ok(format($$select crypto_box_seal_open(%L, %L, 'bad_key')$$, :'sealed', :'bob_public'),
+	   	         '22000', 'invalid secret key', 'crypto_secretbox_seal_open secret key');
+
+SELECT throws_ok(format($$select crypto_box_seal_open('foo', %L, %L)$$, :'bob_public', :'bob_secret'),
+	   	         '22000', 'invalid message', 'crypto_secretbox_seal_open invalid message');
+
+SELECT lives_ok($$select crypto_sign_seed_new_keypair(crypto_sign_new_seed())$$, 'crypto_sign_seed_new_keypair');
+SELECT throws_ok($$select crypto_sign_seed_new_keypair('bogus')$$, '22000', 'invalid seed', 'crypto_sign_seed_new_keypair invalid seed');
+
 SELECT public, secret FROM crypto_sign_new_keypair() \gset sign_
 
 SELECT crypto_sign('bob is your uncle', :'sign_secret') signed \gset
+SELECT throws_ok($$select crypto_sign('bob is your uncle', 's')$$,
+	   '22000', 'invalid secret key', 'crypto_sign invalid key');
 
 SELECT is(crypto_sign_open(:'signed', :'sign_public'),
-          'bob is your uncle', 'crypto_sign/open');
+          'bob is your uncle', 'crypto_sign_open');
+
+SELECT throws_ok(format($$select crypto_sign_open(%L, 'bad_key')$$, :'signed'),
+	   	         '22000', 'invalid public key', 'crypto_sign_open invalid public key');
+
+SELECT throws_ok(format($$select crypto_sign_open('foo', %L)$$, :'sign_public'),
+	   	         '22000', 'invalid message', 'crypto_sign_open invalid message');
 
 -- public key signatures
 -- We will sign our previously generated sealed box
+
+SELECT throws_ok($$select crypto_sign_detached('foo', 'bar')$$,
+	   	         '22000', 'invalid secret key', 'crypto_sign_detached invalid secret key');
+
+SELECT throws_ok($$select crypto_sign_verify_detached('foo', 'bar', 'bork')$$,
+	   	         '22000', 'invalid public key', 'crypto_sign_verify_detached invalid public key');
+
 SELECT crypto_sign_detached(:'sealed', :'sign_secret') detached \gset
 
 SELECT is(crypto_sign_verify_detached(:'detached', :'sealed', :'sign_public'),
@@ -270,6 +325,7 @@ select crypto_auth_hmacsha256('food', :'hmac256key') hmac256 \gset
 select is(crypto_auth_hmacsha256_verify(:'hmac256', 'food', :'hmac256key'), true, 'hmac256 verified');
 select is(crypto_auth_hmacsha256_verify(:'hmac256', 'fo0d', :'hmac256key'), false, 'hmac256 not verified');
 
+SELECT * FROM finish();
 ROLLBACK;
 
 select exists (select * from pg_settings where name = 'shared_preload_libraries' and setting ilike '%pgsodium%') serverkeys \gset
