@@ -201,8 +201,8 @@ pgsodium_crypto_generichash(PG_FUNCTION_ARGS)
 		keyarg = PG_GETARG_BYTEA_P(1);
 		key = PGSODIUM_UCHARDATA(keyarg);
 		keylen = VARSIZE_ANY_EXHDR(keyarg);
-		ERRORIF(keylen <= crypto_generichash_KEYBYTES_MIN ||
-				keylen >= crypto_generichash_KEYBYTES_MAX,
+		ERRORIF(keylen < crypto_generichash_KEYBYTES_MIN ||
+				keylen > crypto_generichash_KEYBYTES_MAX,
 				"invalid key");
 	}
 	result_size = VARHDRSZ + crypto_generichash_BYTES;
@@ -639,6 +639,9 @@ pgsodium_crypto_pwhash(PG_FUNCTION_ARGS)
 	data = PG_GETARG_BYTEA_P(0);
 	salt = PG_GETARG_BYTEA_P(1);
 	ERRORIF(VARSIZE_ANY_EXHDR(salt) != crypto_pwhash_SALTBYTES, "invalid salt");
+	ERRORIF(VARSIZE_ANY_EXHDR(data) < crypto_pwhash_PASSWD_MIN ||
+			VARSIZE_ANY_EXHDR(data) > crypto_pwhash_PASSWD_MAX,
+			"invalid password");
 	result = _pgsodium_zalloc_bytea(result_size);
 	success = crypto_pwhash(
 		PGSODIUM_UCHARDATA(result),
