@@ -18,8 +18,6 @@
 
 #define PG_GETKEY_EXEC	"pgsodium_getkey"
 
-const char *secret_noshow_hook (void);
-
 #define PGSODIUM_UCHARDATA(_vlena) (unsigned char*)VARDATA(_vlena)
 
 typedef struct _pgsodium_cb {
@@ -36,23 +34,7 @@ context_cb_zero_buff(void* a) {
 }
 
 static inline bytea* _pgsodium_zalloc_bytea(size_t);
-
-static inline bytea* _pgsodium_zalloc_bytea(size_t allocation_size)
-{
-  bytea *result = (bytea*)palloc(allocation_size);
-  MemoryContextCallback *ctxcb = (MemoryContextCallback*)
-  MemoryContextAlloc(
-					 CurrentMemoryContext,
-					 sizeof(MemoryContextCallback));
-  _pgsodium_cb* d = (_pgsodium_cb*)palloc(sizeof(_pgsodium_cb));
-  d->ptr = result;
-  d->size = allocation_size;
-  ctxcb->func = context_cb_zero_buff;
-  ctxcb->arg = d;
-  MemoryContextRegisterResetCallback(CurrentMemoryContext, ctxcb);
-  SET_VARSIZE(result, allocation_size);
-  return result;
-}
+static inline bytea* pgsodium_derive_helper(unsigned long long subkey_id, size_t subkey_size, bytea* context);
 
 #define ERRORIF(B, msg)							\
   if ((B))										\
@@ -77,6 +59,7 @@ Datum pgsodium_crypto_secretbox_keygen(PG_FUNCTION_ARGS);
 Datum pgsodium_crypto_secretbox_noncegen(PG_FUNCTION_ARGS);
 Datum pgsodium_crypto_secretbox(PG_FUNCTION_ARGS);
 Datum pgsodium_crypto_secretbox_open(PG_FUNCTION_ARGS);
+Datum pgsodium_crypto_secretbox_by_id(PG_FUNCTION_ARGS);
 
 /* Secret key authentication */
 

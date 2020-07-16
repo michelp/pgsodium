@@ -2,8 +2,49 @@
 
 PG_MODULE_MAGIC;
 
-/* GUC Variables */
 static bytea* pgsodium_secret_key = NULL;
+
+/* allocator attached zero-callback to clean up memory */
+static inline bytea* _pgsodium_zalloc_bytea(size_t allocation_size)
+{
+  bytea *result = (bytea*)palloc(allocation_size);
+  MemoryContextCallback *ctxcb = (MemoryContextCallback*)
+  MemoryContextAlloc(
+					 CurrentMemoryContext,
+					 sizeof(MemoryContextCallback));
+  _pgsodium_cb* d = (_pgsodium_cb*)palloc(sizeof(_pgsodium_cb));
+  d->ptr = result;
+  d->size = allocation_size;
+  ctxcb->func = context_cb_zero_buff;
+  ctxcb->arg = d;
+  MemoryContextRegisterResetCallback(CurrentMemoryContext, ctxcb);
+  SET_VARSIZE(result, allocation_size);
+  return result;
+}
+
+static inline bytea* pgsodium_derive_helper(
+	unsigned long long subkey_id,
+	size_t subkey_size,
+	bytea* context)
+{
+	size_t result_size;
+	bytea* result;
+	ERRORIF(pgsodium_secret_key == NULL,
+			"pgsodium_derive: no server secret key defined.");
+	ERRORIF(subkey_size < crypto_kdf_BYTES_MIN || subkey_size > crypto_kdf_BYTES_MAX,
+			"crypto_kdf_derive_from_key: invalid key size requested");
+	ERRORIF(VARSIZE_ANY_EXHDR(context) != 8,
+			"crypto_kdf_derive_from_key: context must be 8 bytes");
+	result_size = VARHDRSZ + subkey_size;
+	result = _pgsodium_zalloc_bytea(result_size);
+	crypto_kdf_derive_from_key(
+		PGSODIUM_UCHARDATA(result),
+		subkey_size,
+		subkey_id,
+		(const char*)VARDATA(context),
+		PGSODIUM_UCHARDATA(pgsodium_secret_key));
+	return result;
+}
 
 PG_FUNCTION_INFO_V1(pgsodium_randombytes_random);
 Datum
@@ -83,6 +124,28 @@ pgsodium_crypto_secretbox(PG_FUNCTION_ARGS)
 	bytea* message = PG_GETARG_BYTEA_P(0);
 	bytea* nonce = PG_GETARG_BYTEA_P(1);
 	bytea* key = PG_GETARG_BYTEA_P(2);
+	size_t message_size = crypto_secretbox_MACBYTES + VARSIZE_ANY_EXHDR(message);
+	size_t result_size = VARHDRSZ + message_size;
+	bytea* result = _pgsodium_zalloc_bytea(result_size);
+	crypto_secretbox_easy(
+		PGSODIUM_UCHARDATA(result),
+		PGSODIUM_UCHARDATA(message),
+		VARSIZE_ANY_EXHDR(message),
+		PGSODIUM_UCHARDATA(nonce),
+		PGSODIUM_UCHARDATA(key));
+	PG_RETURN_BYTEA_P(result);
+}
+
+PG_FUNCTION_INFO_V1(pgsodium_crypto_secretbox_by_id);
+Datum
+pgsodium_crypto_secretbox_by_id(PG_FUNCTION_ARGS)
+{
+	bytea* message = PG_GETARG_BYTEA_P(0);
+	bytea* nonce = PG_GETARG_BYTEA_P(1);
+	unsigned long long key_id = PG_GETARG_INT64(2);
+	bytea* context = PG_GETARG_BYTEA_P(3);
+	bytea* key = pgsodium_derive_helper(key_id, crypto_secretbox_KEYBYTES, context);
+	
 	size_t message_size = crypto_secretbox_MACBYTES + VARSIZE_ANY_EXHDR(message);
 	size_t result_size = VARHDRSZ + message_size;
 	bytea* result = _pgsodium_zalloc_bytea(result_size);
@@ -1053,26 +1116,8 @@ pgsodium_derive(PG_FUNCTION_ARGS)
 {
 	unsigned long long subkey_id = PG_GETARG_INT64(0);
 	size_t subkey_size = PG_GETARG_UINT32(1);
-	size_t result_size = VARHDRSZ + subkey_size;
 	bytea* context = PG_GETARG_BYTEA_P(2);
-	bytea* result = _pgsodium_zalloc_bytea(result_size);
-	ERRORIF(pgsodium_secret_key == NULL,
-			"pgsodium_derive: no server secret key defined.");
-	ERRORIF(subkey_size < crypto_kdf_BYTES_MIN || subkey_size > crypto_kdf_BYTES_MAX,
-			"crypto_kdf_derive_from_key: invalid key size requested");
-	ERRORIF(VARSIZE_ANY_EXHDR(context) != 8,
-			"crypto_kdf_derive_from_key: context must be 8 bytes");
-	crypto_kdf_derive_from_key(
-		PGSODIUM_UCHARDATA(result),
-		subkey_size,
-		subkey_id,
-		(const char*)VARDATA(context),
-		PGSODIUM_UCHARDATA(pgsodium_secret_key));
-	PG_RETURN_BYTEA_P(result);
-}
-
-const char* secret_noshow_hook (void) {
-	return "****************************************************************";
+	PG_RETURN_BYTEA_P(pgsodium_derive_helper(subkey_id, subkey_size, context));
 }
 
 void _PG_init(void)
