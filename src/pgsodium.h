@@ -20,6 +20,13 @@
 
 #define PGSODIUM_UCHARDATA(_vlena) (unsigned char*)VARDATA(_vlena)
 
+#define ERRORIF(B, msg)							\
+  if ((B))										\
+	ereport(									\
+			ERROR,								\
+			(errcode(ERRCODE_DATA_EXCEPTION),	\
+			 errmsg(msg)))
+
 typedef struct _pgsodium_cb {
   void* ptr;
   size_t size;
@@ -36,12 +43,49 @@ context_cb_zero_buff(void* a) {
 static inline bytea* _pgsodium_zalloc_bytea(size_t);
 static inline bytea* pgsodium_derive_helper(unsigned long long subkey_id, size_t subkey_size, bytea* context);
 
-#define ERRORIF(B, msg)							\
-  if ((B))										\
-	ereport(									\
-			ERROR,								\
-			(errcode(ERRCODE_DATA_EXCEPTION),	\
-			 errmsg(msg)))
+extern bytea* pgsodium_secret_key;
+
+/* allocator attached zero-callback to clean up memory */
+static inline bytea* _pgsodium_zalloc_bytea(size_t allocation_size)
+{
+  bytea *result = (bytea*)palloc(allocation_size);
+  MemoryContextCallback *ctxcb = (MemoryContextCallback*)
+  MemoryContextAlloc(
+					 CurrentMemoryContext,
+					 sizeof(MemoryContextCallback));
+  _pgsodium_cb* d = (_pgsodium_cb*)palloc(sizeof(_pgsodium_cb));
+  d->ptr = result;
+  d->size = allocation_size;
+  ctxcb->func = context_cb_zero_buff;
+  ctxcb->arg = d;
+  MemoryContextRegisterResetCallback(CurrentMemoryContext, ctxcb);
+  SET_VARSIZE(result, allocation_size);
+  return result;
+}
+
+static inline bytea* pgsodium_derive_helper(
+	unsigned long long subkey_id,
+	size_t subkey_size,
+	bytea* context)
+{
+	size_t result_size;
+	bytea* result;
+	ERRORIF(pgsodium_secret_key == NULL,
+			"pgsodium_derive: no server secret key defined.");
+	ERRORIF(subkey_size < crypto_kdf_BYTES_MIN || subkey_size > crypto_kdf_BYTES_MAX,
+			"crypto_kdf_derive_from_key: invalid key size requested");
+	ERRORIF(VARSIZE_ANY_EXHDR(context) != 8,
+			"crypto_kdf_derive_from_key: context must be 8 bytes");
+	result_size = VARHDRSZ + subkey_size;
+	result = _pgsodium_zalloc_bytea(result_size);
+	crypto_kdf_derive_from_key(
+		PGSODIUM_UCHARDATA(result),
+		subkey_size,
+		subkey_id,
+		(const char*)VARDATA(context),
+		PGSODIUM_UCHARDATA(pgsodium_secret_key));
+	return result;
+}
 
 void _PG_init(void);
 
@@ -60,12 +104,15 @@ Datum pgsodium_crypto_secretbox_noncegen(PG_FUNCTION_ARGS);
 Datum pgsodium_crypto_secretbox(PG_FUNCTION_ARGS);
 Datum pgsodium_crypto_secretbox_open(PG_FUNCTION_ARGS);
 Datum pgsodium_crypto_secretbox_by_id(PG_FUNCTION_ARGS);
+Datum pgsodium_crypto_secretbox_open_by_id(PG_FUNCTION_ARGS);
 
 /* Secret key authentication */
 
 Datum pgsodium_crypto_auth_keygen(PG_FUNCTION_ARGS);
 Datum pgsodium_crypto_auth(PG_FUNCTION_ARGS);
 Datum pgsodium_crypto_auth_verify(PG_FUNCTION_ARGS);
+Datum pgsodium_crypto_auth_by_id(PG_FUNCTION_ARGS);
+Datum pgsodium_crypto_auth_verify_by_id(PG_FUNCTION_ARGS);
 
 /* Hashing */
 

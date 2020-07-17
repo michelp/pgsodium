@@ -50,6 +50,21 @@ RETURNS bytea
 AS '$libdir/pgsodium', 'pgsodium_crypto_secretbox_by_id'
 LANGUAGE C IMMUTABLE STRICT;
 
+CREATE FUNCTION crypto_secretbox_open_by_id(message bytea, nonce bytea, key_id bigint, context bytea = 'pgsodium')
+RETURNS bytea
+AS '$libdir/pgsodium', 'pgsodium_crypto_secretbox_open_by_id'
+LANGUAGE C IMMUTABLE STRICT;
+
+CREATE FUNCTION crypto_auth_by_id(message bytea, key_id bigint, context bytea = 'pgsodium')
+RETURNS bytea
+AS '$libdir/pgsodium', 'pgsodium_crypto_auth_by_id'
+LANGUAGE C IMMUTABLE STRICT;
+
+CREATE FUNCTION crypto_auth_verify_by_id(mac bytea, message bytea, key_id bigint, context bytea = 'pgsodium')
+RETURNS boolean
+AS '$libdir/pgsodium', 'pgsodium_crypto_auth_verify_by_id'
+LANGUAGE C IMMUTABLE STRICT;
+
 COMMENT ON EXTENSION pgsodium is 'Pgsodium is a modern cryptography library for Postgres.';
 
 DO $$
@@ -162,7 +177,10 @@ DECLARE
 BEGIN
 	FOREACH func IN ARRAY
 	ARRAY[
-		'crypto_secretbox_by_id'
+		'crypto_secretbox_by_id',
+		'crypto_secretbox_open_by_id',
+		'crypto_auth_by_id',
+		'crypto_auth_verify_by_id'
 	]
 	LOOP
 		EXECUTE format($i$
