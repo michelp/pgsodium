@@ -12,6 +12,7 @@ cryptography functions to SQL.
    * [Usage](#usage)
    * [Server Key Management](#server-key-management)
    * [Server Key Derivation](#server-key-derivation)
+   * [Security Roles](#security-roles)
    * [Encrypting Columns](#encrypting-columns)
    * [Simple public key encryption with crypto_box()](#simple-public-key-encryption-with-crypto_box)
    * [Avoid secret logging](#avoid-secret-logging)
@@ -32,12 +33,14 @@ cryptography functions to SQL.
 
 ## Installation
 
-[Travis CI](https://travis-ci.com/github/michelp/pgsodium) tested with
-the [official docker images](https://hub.docker.com/_/postgres) for
-PostgreSQL 13, 12, 11, and 10.  Requires libsodium >= 1.0.18.  In
-addition to the libsodium library and it's development headers, you
-may also need the PostgreSQL header files typically in the '-dev'
-packages to build the extension.
+pgsodium requires libsodium >= 1.0.18.  In addition to the libsodium
+library and it's development headers, you may also need the PostgreSQL
+header files typically in the '-dev' packages to build the extension.
+
+[Travis CI](https://travis-ci.com/github/michelp/pgsodium) tests all
+changes with the [official docker
+images](https://hub.docker.com/_/postgres) for PostgreSQL 13, 12, 11,
+and 10.  PostgreSQL 9.x is not supported.
 
 Clone the repo and run 'sudo make install'.
 
@@ -188,11 +191,32 @@ keypairs using for example `crypto_box_seed_new_keypair()` and
     --------------------------------------------------------------------+--------------------------------------------------------------------
      \x01d0e0ec4b1fa9cc8dede88e0b43083f7e9cd33be4f91f0b25aa54d70f562278 | \x066ec431741a9d39f38c909de4a143ed39b09834ca37b6dd2ba3d015206f14ca
 
+# Security Roles
+
+pgsodium defines three layered security roles:
+
+  - `pgsodium_keyiduser` Is the least privledged role, it cannot
+    create or use raw `bytea` keys, it can only create
+    `crypto_secretkey` nonces and access the `crypto_secretkey` and
+    `crypto_auth` API functions that accept key ids.
+
+  - `pgsodium_keyholder` Is the next more privledged layer, it can do
+    everything `pgsodium_keyiduser` can do, but it can also use, but
+    not create, raw `bytea` encryption keys.  This role can use public
+    key APIs like `crypto_box` and `crypto_sign`, but it cannot create
+    keypairs.
+
+  - `pgsodium_keymaker` is the most privledged role, it can do
+    everything the previous roles can do, but it can also create keys,
+    keypairs and key seeds and derive keys.
+
 # Encrypting Columns
 
 Here's an example script that encrypts a column in a table and
 provides a view that does on the fly decryption.  Each row's stores
-the nonce and key id used to derive the encryption key.
+the nonce and key id used to encrypt the column.  Note how no keys are
+used in this example, only key ids, so this code can be run by the
+least privledged `pgsodium_keyiduser` role:
 
     CREATE SCHEMA pgsodium;
     CREATE EXTENSION pgsodium WITH SCHEMA pgsodium;
@@ -209,7 +233,7 @@ the nonce and key id used to derive the encryption key.
         convert_from(pgsodium.crypto_secretbox_open(
                  data,
                  nonce,
-                 pgsodium.derive_key(key_id)),
+                 key_id),
         'utf8') AS data FROM test;
 
     CREATE OR REPLACE FUNCTION test_encrypt() RETURNS trigger
@@ -224,7 +248,7 @@ the nonce and key id used to derive the encryption key.
         update test set data = pgsodium.crypto_secretbox(
             convert_to(new.data, 'utf8'),
             new_nonce,
-            pgsodium.derive_key(key_id))
+            key_id)
         where id = test_id;
         RETURN new;
     END;
@@ -236,9 +260,9 @@ the nonce and key id used to derive the encryption key.
         EXECUTE FUNCTION test_encrypt();
 
 Use the view as if it were a normal table, but the underlying table is
-encrypted.  Note how in the following example, there are *no keys*
-stored, exposed to SQL or able to be logged, only [derived
-keys](#server-key-management) based on a key id are used.
+encrypted.  Again, no keys are stored or even avilable to this code,
+only [derived keys](#server-key-management) based on a key id are
+used.
 
 The trigger `test_encrypt_trigger` is fired `INSTEAD OF INSERT ON` the
 wrapper `test_view`, newly inserted rows are encrypted with a key
@@ -259,7 +283,9 @@ derived from the stored key_id which defaults to 1.
       4 | this is two
 
 Key rotation can be done with a rotation function that will re-encrypt
-a row with a new key id:
+a row with a new key id.  This function also requires no access to
+keys, it works only by key id and thus can be run by the least
+privledged `pgsodium_keyiduser`:
 
     CREATE OR REPLACE FUNCTION rotate_key(test_id bigint, new_key bigint)
         RETURNS void LANGUAGE plpgsql AS $$
@@ -274,9 +300,9 @@ a row with a new key id:
             pgsodium.crypto_secretbox_open(
                  test.data,
                  test.nonce,
-                 pgsodium.derive_key(test.key_id)),
+                 test.key_id),
             new_nonce,
-            pgsodium.derive_key(new_key))
+            new_key)
         WHERE test.id = test_id;
         RETURN;
     END;
