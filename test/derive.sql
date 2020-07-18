@@ -1,7 +1,3 @@
-SELECT EXISTS (SELECT * FROM pg_settings
-	WHERE name = 'shared_preload_libraries'
-	AND setting ilike '%pgsodium%') serverkeys \gset
-	
 \if :serverkeys
 BEGIN;
 SELECT plan(4);

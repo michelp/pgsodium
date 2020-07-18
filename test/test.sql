@@ -9,9 +9,12 @@
 \set ON_ERROR_STOP true
 \set QUIET 1
 
-
 CREATE EXTENSION IF NOT EXISTS pgtap;
 CREATE EXTENSION IF NOT EXISTS pgsodium;
+
+SELECT EXISTS (SELECT * FROM pg_settings
+	WHERE name = 'shared_preload_libraries'
+	AND setting ilike '%pgsodium%') serverkeys \gset
 
 \ir random.sql
 \ir secretbox.sql

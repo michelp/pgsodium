@@ -17,14 +17,14 @@ SELECT tx, rx FROM crypto_kx_server_session_keys(
     :'seed_alice_public', :'seed_alice_secret',
     :'seed_bob_public') \gset session_alice_
 
-SELECT crypto_secretbox('hello alice', :'secretboxnonce', :'session_bob_tx') bob_to_alice \gset
+SELECT crypto_secretbox('hello alice', :'secretboxnonce', :'session_bob_tx'::bytea) bob_to_alice \gset
 
-SELECT is(crypto_secretbox_open(:'bob_to_alice', :'secretboxnonce', :'session_alice_rx'),
+SELECT is(crypto_secretbox_open(:'bob_to_alice', :'secretboxnonce', :'session_alice_rx'::bytea),
           'hello alice', 'secretbox_open session key');
 
-SELECT crypto_secretbox('hello bob', :'secretboxnonce', :'session_alice_tx') alice_to_bob \gset
+SELECT crypto_secretbox('hello bob', :'secretboxnonce', :'session_alice_tx'::bytea) alice_to_bob \gset
 
-SELECT is(crypto_secretbox_open(:'alice_to_bob', :'secretboxnonce', :'session_bob_rx'),
+SELECT is(crypto_secretbox_open(:'alice_to_bob', :'secretboxnonce', :'session_bob_rx'::bytea),
           'hello bob', 'secretbox_open session key');
 
 SELECT * FROM finish();

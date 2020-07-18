@@ -45,22 +45,22 @@ RETURNS bytea
 AS '$libdir/pgsodium', 'pgsodium_crypto_generichash_keygen'
 LANGUAGE C VOLATILE;
 
-CREATE FUNCTION crypto_secretbox_by_id(message bytea, nonce bytea, key_id bigint, context bytea = 'pgsodium')
+CREATE FUNCTION crypto_secretbox(message bytea, nonce bytea, key_id bigint, context bytea = 'pgsodium')
 RETURNS bytea
 AS '$libdir/pgsodium', 'pgsodium_crypto_secretbox_by_id'
 LANGUAGE C IMMUTABLE STRICT;
 
-CREATE FUNCTION crypto_secretbox_open_by_id(message bytea, nonce bytea, key_id bigint, context bytea = 'pgsodium')
+CREATE FUNCTION crypto_secretbox_open(message bytea, nonce bytea, key_id bigint, context bytea = 'pgsodium')
 RETURNS bytea
 AS '$libdir/pgsodium', 'pgsodium_crypto_secretbox_open_by_id'
 LANGUAGE C IMMUTABLE STRICT;
 
-CREATE FUNCTION crypto_auth_by_id(message bytea, key_id bigint, context bytea = 'pgsodium')
+CREATE FUNCTION crypto_auth(message bytea, key_id bigint, context bytea = 'pgsodium')
 RETURNS bytea
 AS '$libdir/pgsodium', 'pgsodium_crypto_auth_by_id'
 LANGUAGE C IMMUTABLE STRICT;
 
-CREATE FUNCTION crypto_auth_verify_by_id(mac bytea, message bytea, key_id bigint, context bytea = 'pgsodium')
+CREATE FUNCTION crypto_auth_verify(mac bytea, message bytea, key_id bigint, context bytea = 'pgsodium')
 RETURNS boolean
 AS '$libdir/pgsodium', 'pgsodium_crypto_auth_verify_by_id'
 LANGUAGE C IMMUTABLE STRICT;
@@ -122,8 +122,8 @@ BEGIN
 	]
 	LOOP
 		EXECUTE format($i$
-			REVOKE ALL ON FUNCTION %I FROM PUBLIC;
-			GRANT EXECUTE ON FUNCTION %I TO pgsodium_keymaker;
+			REVOKE ALL ON FUNCTION %s FROM PUBLIC;
+			GRANT EXECUTE ON FUNCTION %s TO pgsodium_keymaker;
 		$i$, func, func);
 	END LOOP;
 END
@@ -137,16 +137,10 @@ DECLARE
 BEGIN
 	FOREACH func IN ARRAY
 	ARRAY[
-		'randombytes_random',
-		'randombytes_uniform',
-		'randombytes_buf',
-		'randombytes_buf_deterministic',
-		'crypto_secretbox',
-		'crypto_secretbox_open',
-		'crypto_auth',
-		'crypto_auth_verify',
-		'crypto_generichash',
-		'crypto_shorthash',
+		'crypto_secretbox(bytea, bytea, bytea)',
+		'crypto_secretbox_open(bytea, bytea, bytea)',
+		'crypto_auth(bytea, bytea)',
+		'crypto_auth_verify(bytea, bytea, bytea)',
 		'crypto_box',
 		'crypto_box_open',
 		'crypto_auth_hmacsha256',
@@ -162,8 +156,8 @@ BEGIN
 	]
 	LOOP
 		EXECUTE format($i$
-			REVOKE ALL ON FUNCTION %I FROM PUBLIC;
-			GRANT EXECUTE ON FUNCTION %I TO pgsodium_keyholder;
+			REVOKE ALL ON FUNCTION %s FROM PUBLIC;
+			GRANT EXECUTE ON FUNCTION %s TO pgsodium_keyholder;
 		$i$, func, func);
 	END LOOP;
 END
@@ -177,15 +171,21 @@ DECLARE
 BEGIN
 	FOREACH func IN ARRAY
 	ARRAY[
-		'crypto_secretbox_by_id',
-		'crypto_secretbox_open_by_id',
-		'crypto_auth_by_id',
-		'crypto_auth_verify_by_id'
+		'randombytes_random',
+		'randombytes_uniform',
+		'randombytes_buf',
+		'randombytes_buf_deterministic',
+		'crypto_secretbox(bytea, bytea, bigint, bytea)',
+		'crypto_secretbox_open(bytea, bytea, bigint, bytea)',
+		'crypto_auth(bytea, bigint, bytea)',
+		'crypto_auth_verify(bytea, bytea, bigint, bytea)',
+		'crypto_generichash',
+		'crypto_shorthash'
 	]
 	LOOP
 		EXECUTE format($i$
-			REVOKE ALL ON FUNCTION %I FROM PUBLIC;
-			GRANT EXECUTE ON FUNCTION %I TO pgsodium_keyiduser;
+			REVOKE ALL ON FUNCTION %s FROM PUBLIC;
+			GRANT EXECUTE ON FUNCTION %s TO pgsodium_keyiduser;
 		$i$, func, func);
 	END LOOP;
 END
