@@ -116,6 +116,7 @@ BEGIN
 		'crypto_kx_seed_new_keypair',
 		'crypto_auth_hmacsha256_keygen',
 		'randombytes_buf_deterministic',
+		'crypto_box_seed_new_keypair',
 		'crypto_box_new_keypair',
 		'crypto_sign_new_keypair'
 	]

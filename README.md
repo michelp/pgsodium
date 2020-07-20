@@ -107,7 +107,7 @@ and make the file executable (on unixen `chmod +x pgsodium_getkey`).
 Next place `pgsodium` in your `shared_preload_libraries`.  For docker
 containers, you can append this after the run:
 
-    docker run -e POSTGRES_HOST_AUTH_METHOD=trust -d --name "$DB_HOST" $TAG -c 'shared_preload_libraries=pgsodium'
+    docker run -d --name "$DB_HOST" $TAG -c 'shared_preload_libraries=pgsodium'
 
 When the server starts, it will load the secret key into memory but
 the key is not accessible to SQL.  It's possible that a sufficiently
@@ -193,22 +193,37 @@ keypairs using for example `crypto_box_seed_new_keypair()` and
 
 # Security Roles
 
-pgsodium defines three layered security roles:
+The pgsodium API has three nested layers of security roles:
 
   - `pgsodium_keyiduser` Is the least privledged role, it cannot
     create or use raw `bytea` keys, it can only create
     `crypto_secretkey` nonces and access the `crypto_secretkey` and
-    `crypto_auth` API functions that accept key ids.
+    `crypto_auth` API functions that accept key ids only.  This role
+    can also access the `randombytes` API.  This is the role you would
+    typically give to a user facing application.
 
   - `pgsodium_keyholder` Is the next more privledged layer, it can do
     everything `pgsodium_keyiduser` can do, but it can also use, but
     not create, raw `bytea` encryption keys.  This role can use public
     key APIs like `crypto_box` and `crypto_sign`, but it cannot create
-    keypairs.
+    keypairs.  This role is useful for when keys come from external
+    sources and must be passed as `bytea` to API functions.
 
   - `pgsodium_keymaker` is the most privledged role, it can do
     everything the previous roles can do, but it can also create keys,
-    keypairs and key seeds and derive keys.
+    keypairs and key seeds and derive keys.  Be very how you grant
+    access to this role, as it can create valid secret keys derived
+    from the root key.
+
+Note that public key apis like `crypto_box` and `crypto_sign` do not
+have key id variants, because they work with a combination of four
+keys, two keypairs for each party.  Since the point of public key
+encryption is for each party to keep their secrets and for that secret
+to not be derivable.  You can certainly call something like `SELECT *
+FROM crypto_box_seed_new_keypair(derive_key(1))` and make
+deterministic keypairs, but then if an attacker steals your root key
+they can derive all keypair secrets, so this approach is not
+recommended.
 
 # Encrypting Columns
 
