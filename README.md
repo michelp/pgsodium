@@ -4,8 +4,10 @@
 # pgsodium
 
 pgsodium is a [PostgreSQL](https://www.postgresql.org/) extension that
-exposes modern [libsodium](https://download.libsodium.org/doc/) based
-cryptography functions to SQL.
+uses modern [libsodium](https://download.libsodium.org/doc/)-based
+cryptography functions.
+
+# Table of Contents
 
    * [pgsodium](#pgsodium)
       * [Installation](#installation)
@@ -58,7 +60,7 @@ pgsodium arguments and return values for content and keys are of type
 content, you must make sure they are encoded correctly.  The
 [`encode() and decode()` and
 `convert_to()/convert_from()`](https://www.postgresql.org/docs/12/functions-binarystring.html)
-binary string functions can convert from `text` to `bytea`.Simple
+binary string functions can convert from `text` to `bytea`.  Simple
 ascii `text` strings without escape or unicode characters will be cast
 by the database implicitly, and this is how it is done in the tests to
 save time, but you should really be explicitly converting your `text`
@@ -79,8 +81,8 @@ pgsodium is careful to use memory cleanup callbacks to zero out all
 allocated memory used by the when freed.  In general it is a bad idea
 to store secrets in the database itself, although this can be done
 carefully it has a higher risk.  To help with this problem, pgsodium
-has an optional Server Key Management function that can load a server
-key at boot.
+has an optional Server Key Management function that can load a hidden
+server key at boot that other keys are *derived* from.
 
 # Server Key Management
 
@@ -89,8 +91,9 @@ If you add pgsodium to your
 configuration and place a special script in your postgres shared
 extension directory, the server can preload a libsodium key on server
 start. **The secret key cannot be accessed from SQL**.  The only way
-to use the server secret key is to *derive* other keys from it using
-`derive_key()` shown in the next section.
+to use the server secret key is to derive other keys from it using
+`derive_key()` or use the key_id variants of the API that take key ids
+and contexts instead of raw `bytea` keys.
 
 Server managed keys are completely optional, pgsodium can still be
 used without putting it in `shared_preload_libraries`, you will simply
@@ -197,10 +200,10 @@ The pgsodium API has three nested layers of security roles:
 
   - `pgsodium_keyiduser` Is the least privledged role, it cannot
     create or use raw `bytea` keys, it can only create
-    `crypto_secretkey` nonces and access the `crypto_secretkey` and
-    `crypto_auth` API functions that accept key ids only.  This role
-    can also access the `randombytes` API.  This is the role you would
-    typically give to a user facing application.
+    `crypto_secretkey` nonces and access the `crypto_secretkey`,
+    `crypto_auth` and `crypto_aead` API functions that accept key ids
+    only.  This role can also access the `randombytes` API.  This is
+    the role you would typically give to a user facing application.
 
   - `pgsodium_keyholder` Is the next more privledged layer, it can do
     everything `pgsodium_keyiduser` can do, but it can also use, but
@@ -211,19 +214,18 @@ The pgsodium API has three nested layers of security roles:
 
   - `pgsodium_keymaker` is the most privledged role, it can do
     everything the previous roles can do, but it can also create keys,
-    keypairs and key seeds and derive keys.  Be very how you grant
-    access to this role, as it can create valid secret keys derived
-    from the root key.
+    keypairs and key seeds and derive keys from key ids.  Be very
+    careful how you grant access to this role, as it can create valid
+    secret keys derived from the root key.
 
 Note that public key apis like `crypto_box` and `crypto_sign` do not
-have key id variants, because they work with a combination of four
-keys, two keypairs for each party.  Since the point of public key
-encryption is for each party to keep their secrets and for that secret
-to not be derivable.  You can certainly call something like `SELECT *
-FROM crypto_box_seed_new_keypair(derive_key(1))` and make
-deterministic keypairs, but then if an attacker steals your root key
-they can derive all keypair secrets, so this approach is not
-recommended.
+have "key id" variants, because they work with a combination of four
+keys, two keypairs for each party.  The point of public key encryption
+is for each party to keep their secrets and for that secret to not be
+derivable.  You can certainly call something like `SELECT * FROM
+crypto_box_seed_new_keypair(derive_key(1))` and make deterministic
+keypairs, but then if an attacker steals your root key they can derive
+all keypair secrets, so this approach is not recommended.
 
 # Encrypting Columns
 
@@ -383,9 +385,10 @@ can avoid this by using derived keys.
 
 # Avoid secret logging
 
-If you choose to work with your own keys a more paranoid approach is
-to keep keys in an external storage and disables logging while
-injecting the keys into local variables with [`SET
+If you choose to work with your own keys and not restrict yourself to
+the `pgsodium_keyiduser` role, a useful approach is to keep keys in an
+external storage and disables logging while injecting the keys into
+local variables with [`SET
 LOCAL`](https://www.postgresql.org/docs/12/sql-set.html). If the
 images of database are hacked or stolen, the keys will not be
 available to the attacker.

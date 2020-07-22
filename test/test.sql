@@ -18,6 +18,7 @@ SELECT EXISTS (SELECT * FROM pg_settings
 
 \ir random.sql
 \ir secretbox.sql
+\ir aead.sql
 \ir auth.sql
 \ir hash.sql
 \ir box.sql

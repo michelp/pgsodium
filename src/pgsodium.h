@@ -114,6 +114,15 @@ Datum pgsodium_crypto_auth_verify(PG_FUNCTION_ARGS);
 Datum pgsodium_crypto_auth_by_id(PG_FUNCTION_ARGS);
 Datum pgsodium_crypto_auth_verify_by_id(PG_FUNCTION_ARGS);
 
+/* AEAD */
+
+Datum pgsodium_crypto_aead_ietf_keygen(PG_FUNCTION_ARGS);
+Datum pgsodium_crypto_aead_ietf_noncegen(PG_FUNCTION_ARGS);
+Datum pgsodium_crypto_aead_ietf_encrypt(PG_FUNCTION_ARGS);
+Datum pgsodium_crypto_aead_ietf_decrypt(PG_FUNCTION_ARGS);
+Datum pgsodium_crypto_aead_ietf_encrypt_by_id(PG_FUNCTION_ARGS);
+Datum pgsodium_crypto_aead_ietf_decrypt_by_id(PG_FUNCTION_ARGS);
+
 /* Hashing */
 
 Datum pgsodium_crypto_generichash_keygen(PG_FUNCTION_ARGS);
