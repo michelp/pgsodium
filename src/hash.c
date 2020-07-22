@@ -6,7 +6,7 @@ pgsodium_crypto_generichash_keygen(PG_FUNCTION_ARGS)
 {
 	size_t result_size = VARHDRSZ + crypto_generichash_KEYBYTES;
 	bytea* result = _pgsodium_zalloc_bytea(result_size);
-	crypto_secretbox_keygen(PGSODIUM_UCHARDATA(result));
+	randombytes_buf(VARDATA(result), result_size);
 	PG_RETURN_BYTEA_P(result);
 }
 
