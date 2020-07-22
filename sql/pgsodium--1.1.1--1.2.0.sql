@@ -65,6 +65,36 @@ RETURNS boolean
 AS '$libdir/pgsodium', 'pgsodium_crypto_auth_verify_by_id'
 LANGUAGE C IMMUTABLE STRICT;
 
+CREATE FUNCTION crypto_aead_ietf_keygen()
+RETURNS bytea
+AS '$libdir/pgsodium', 'pgsodium_crypto_aead_ietf_keygen'
+LANGUAGE C VOLATILE;
+
+CREATE FUNCTION crypto_aead_ietf_noncegen()
+RETURNS bytea
+AS '$libdir/pgsodium', 'pgsodium_crypto_aead_ietf_noncegen'
+LANGUAGE C VOLATILE;
+
+CREATE FUNCTION crypto_aead_ietf_encrypt(message bytea, additional bytea, nonce bytea, key bytea)
+RETURNS bytea
+AS '$libdir/pgsodium', 'pgsodium_crypto_aead_ietf_encrypt'
+LANGUAGE C IMMUTABLE STRICT;
+
+CREATE FUNCTION crypto_aead_ietf_decrypt(message bytea, additional bytea, nonce bytea, key bytea)
+RETURNS bytea
+AS '$libdir/pgsodium', 'pgsodium_crypto_aead_ietf_decrypt'
+LANGUAGE C IMMUTABLE STRICT;
+
+CREATE FUNCTION crypto_aead_ietf_encrypt(message bytea, additional bytea, nonce bytea, key_id bigint, context bytea = 'pgsodium')
+RETURNS bytea
+AS '$libdir/pgsodium', 'pgsodium_crypto_aead_ietf_encrypt_by_id'
+LANGUAGE C IMMUTABLE STRICT;
+
+CREATE FUNCTION crypto_aead_ietf_decrypt(message bytea, additional bytea, nonce bytea, key_id bigint, context bytea = 'pgsodium')
+RETURNS bytea
+AS '$libdir/pgsodium', 'pgsodium_crypto_aead_ietf_decrypt_by_id'
+LANGUAGE C IMMUTABLE STRICT;
+
 COMMENT ON EXTENSION pgsodium is 'Pgsodium is a modern cryptography library for Postgres.';
 
 DO $$
@@ -106,6 +136,7 @@ BEGIN
 		'crypto_secretbox_keygen',
 		'crypto_auth_keygen',
 		'crypto_box_noncegen',
+		'crypto_aead_ietf_keygen',
 		'crypto_auth_hmacsha256_keygen',
 		'crypto_kdf_derive_from_key',
 		'crypto_shorthash_keygen',
@@ -143,6 +174,8 @@ BEGIN
 		'crypto_auth_verify(bytea, bytea, bytea)',
 		'crypto_box',
 		'crypto_box_open',
+		'crypto_aead_ietf_encrypt(bytea, bytea, bytea, bytea)',
+		'crypto_aead_ietf_decrypt(bytea, bytea, bytea, bytea)',
 		'crypto_auth_hmacsha256',
 		'crypto_auth_hmacsha256_verify',
 		'crypto_auth_hmacsha512',
@@ -176,8 +209,11 @@ BEGIN
 		'randombytes_buf',
 		'randombytes_buf_deterministic',
 		'crypto_secretbox_noncegen',
+		'crypto_aead_ietf_noncegen',
 		'crypto_secretbox(bytea, bytea, bigint, bytea)',
 		'crypto_secretbox_open(bytea, bytea, bigint, bytea)',
+		'crypto_aead_ietf_encrypt(bytea, bytea, bytea, bigint, bytea)',
+		'crypto_aead_ietf_decrypt(bytea, bytea, bytea, bigint, bytea)',
 		'crypto_auth(bytea, bigint, bytea)',
 		'crypto_auth_verify(bytea, bytea, bigint, bytea)',
 		'crypto_generichash',
