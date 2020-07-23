@@ -92,8 +92,14 @@ pgsodium_crypto_box(PG_FUNCTION_ARGS)
 	bytea* publickey = PG_GETARG_BYTEA_P(2);
 	bytea* secretkey = PG_GETARG_BYTEA_P(3);
 	int success;
-	size_t message_size = crypto_box_MACBYTES + VARSIZE_ANY(message);
-	bytea* result = _pgsodium_zalloc_bytea(message_size);
+	size_t message_size;
+	bytea* result;
+	ERRORIF(VARSIZE_ANY_EXHDR(nonce) != crypto_box_NONCEBYTES, "invalid nonce");
+	ERRORIF(VARSIZE_ANY_EXHDR(publickey) != crypto_box_PUBLICKEYBYTES, "invalid public key");
+	ERRORIF(VARSIZE_ANY_EXHDR(secretkey) != crypto_box_SECRETKEYBYTES, "invalid secret key");
+
+	message_size = crypto_box_MACBYTES + VARSIZE_ANY(message);
+	result = _pgsodium_zalloc_bytea(message_size);
 	success = crypto_box_easy(
 		PGSODIUM_UCHARDATA(result),
 		PGSODIUM_UCHARDATA(message),
