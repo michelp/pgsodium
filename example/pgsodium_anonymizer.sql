@@ -1,26 +1,18 @@
-
--- Demo using pgsodium column encryption with the PostgreSQL
--- Anonymizer.
-
--- Database users with a restricted role can query encrypted tables,
--- and get anonymized results out.  Access control prevents them from
--- being able to see decrypted data or change the anonymization
--- policies.
-
--- This example requires pgsodium and the postgresql_anonymizer
--- extensions.  See the Dockerfile for build details
-
-CREATE SCHEMA IF NOT EXISTS pgsodium;
-CREATE EXTENSION IF NOT EXISTS pgsodium WITH SCHEMA pgsodium;
+DROP SCHEMA IF EXISTS pgsodium CASCADE;
+DROP SCHEMA IF EXISTS anon CASCADE;
+DROP EXTENSION IF EXISTS pgsodium CASCADE;
+DROP EXTENSION IF EXISTS anon CASCADE;
+	
+CREATE SCHEMA pgsodium;
+CREATE EXTENSION pgsodium WITH SCHEMA pgsodium;
 CREATE EXTENSION anon CASCADE;
 SELECT anon.load();
 
--- Let's create a user that will query the pseudononymous data.  It
--- must be granted access to pgsodium and anon.  The
--- `pgsodium_keyiduser` role is the least privledged pgsodium role,
--- and can only access encrpytion API functions that take key ids.
--- Keys are never exposed.
-
+DROP TABLE IF EXISTS encrypted_record CASCADE;
+DROP OWNED BY staff CASCADE;
+DROP OWNED BY crypter CASCADE;
+DROP ROLE IF EXISTS staff;
+DROP ROLE IF EXISTS crypter;
 CREATE ROLE staff;
 CREATE ROLE crypter;
 
@@ -28,25 +20,16 @@ GRANT pgsodium_keyiduser TO crypter;
 GRANT USAGE ON SCHEMA pgsodium to crypter;
 
 GRANT USAGE ON SCHEMA anon TO crypter;
-GRANT EXECUTE ON ALL FUNCTIONS IN SCHEMA anon TO crypter;
-GRANT SELECT ON ALL TABLES IN SCHEMA anon TO crypter;
-GRANT USAGE ON ALL SEQUENCES IN SCHEMA anon TO crypter;
+GRANT EXECUTE ON ALL FUNCTIONS IN SCHEMA anon TO crypter, staff;
+GRANT SELECT ON ALL TABLES IN SCHEMA anon TO crypter, staff;
+GRANT USAGE ON ALL SEQUENCES IN SCHEMA anon TO crypter, staff;
 
--- This table holds the encrypted  records.  each row has the
--- key id of the encryption key used , the nonce, and a binary blob of
--- encrypted json that is the secret data.
-
-DROP TABLE IF EXISTS encrypted_record CASCADE;
-
-CREATE TABLE IF NOT EXISTS encrypted_record (
+CREATE TABLE encrypted_record (
     id bigserial primary key,
     key_id bigint not null default 1,
 	nonce bytea,
 	encrypted_json bytea
     );
-
--- This trigger validates that any inserted rows can be decrypted and
--- are not bogus.
 
 CREATE OR REPLACE FUNCTION encrypted_record_check() RETURNS trigger
 	SECURITY DEFINER
@@ -62,15 +45,11 @@ END;
 $$;
 
 ALTER FUNCTION encrypted_record_check OWNER TO crypter;
--- GRANT EXECUTE ON FUNCTION encrypted_record_check TO crypter;
 
 CREATE TRIGGER encrypted_record_check_trigger
     BEFORE INSERT ON encrypted_record
     FOR EACH ROW
     EXECUTE FUNCTION encrypted_record_check();
-
--- The encrypted data should be locked down, only staff can access the
--- row ids, but not the key ids, nonces, or encrypted data..
 
 REVOKE ALL ON TABLE encrypted_record FROM PUBLIC;
 GRANT SELECT (id) ON TABLE encrypted_record TO staff;
@@ -83,7 +62,7 @@ CREATE OR REPLACE FUNCTION decrypt_record(bigint)
 		first_name text,
 		last_name text,
 	    age integer,
-	    city text,
+	    secret text,
 	    signup_date timestamptz)
     LANGUAGE sql
     SECURITY DEFINER
@@ -101,7 +80,7 @@ CREATE OR REPLACE FUNCTION decrypt_record(bigint)
 	x(first_name text,
 	  last_name text,
 	  age int,
-	  city text,
+	  secret text,
 	  signup_date timestamptz)) rec on true;
 	$$;
 
@@ -115,7 +94,7 @@ CREATE OR REPLACE FUNCTION pseudo_record(bigint)
 		first_name text,
 		last_name text,
 	    age_range int4range,
-	    city text,
+	    secret text,
 	    signup_month timestamptz)
     LANGUAGE sql
     SECURITY DEFINER
@@ -124,8 +103,8 @@ CREATE OR REPLACE FUNCTION pseudo_record(bigint)
 		anon.pseudo_first_name(rec.first_name) AS first_name,
 		anon.pseudo_last_name(rec.last_name) AS last_name,
 		anon.generalize_int4range(rec.age, 5) AS age,
-		rec.city,
-	    lower(anon.generalize_tstzrange(rec.signup_date, 'month')) AS city_month
+		anon.partial(rec.secret, 2, 'xxxxxxxxx', 2) as hidden_secret,
+	    lower(anon.generalize_tstzrange(rec.signup_date, 'month')) AS secret_month
 	 FROM (SELECT * FROM encrypted_record WHERE id = $1) e
 	LEFT JOIN LATERAL decrypt_record(e.id) rec on true;
 	$$;
@@ -136,7 +115,7 @@ CREATE OR REPLACE FUNCTION encrypt_record(
 		first_name text,
 		last_name text,
 		age int,
-		city text,
+		secret text,
 		signup_date timestamptz) RETURNS bigint
     LANGUAGE plpgsql
 	SECURITY DEFINER
@@ -152,7 +131,7 @@ BEGIN
 		'first_name', first_name,
 		'last_name', last_name,
 		'age', age,
-		'city', city,
+		'secret', secret,
 		'signup_date', signup_date);
 	
     INSERT INTO encrypted_record (nonce) VALUES (new_nonce)
@@ -172,7 +151,9 @@ ALTER FUNCTION encrypt_record OWNER TO crypter;
 
 
 CREATE OR REPLACE FUNCTION rotate_key(encrypted_record_id bigint, new_key bigint)
-    RETURNS void LANGUAGE plpgsql AS $$
+    RETURNS void
+	SECURITY DEFINER
+	LANGUAGE plpgsql AS $$
 DECLARE
     new_nonce bytea;
 BEGIN
@@ -192,21 +173,22 @@ BEGIN
 END;
 $$;
 
-CREATE OR REPLACE FUNCTION demo_data(num_records bigint)
-    RETURNS void LANGUAGE sql
-	SECURITY DEFINER AS $$
+ALTER FUNCTION rotate_key OWNER TO crypter;
+
+CREATE OR REPLACE FUNCTION demo_data(
+	num_records bigint,
+	start_date timestamptz = '2010-01-01',
+	end_date timestamptz = '2020-01-01')
+    RETURNS void
+	LANGUAGE sql
+	SECURITY DEFINER
+AS $$
 	SELECT encrypt_record(anon.fake_first_name(),
      anon.fake_last_name(),
 	 anon.random_int_between(0, 110),
 	 anon.random_city(),
-	 anon.random_date_between('2010-01-01', '2020-01-01'))
+	 anon.random_date_between(start_date, end_date))
 	FROM generate_series(1, num_records);
 $$;
 
 ALTER FUNCTION demo_data OWNER TO crypter;
-
-SET ROLE staff;
-\echo
-\echo Try inserting some data in record like:
-\echo "    postgres=> insert into record (id, first_name, last_name, age, city, signup_date) VALUES (1, 'Bob', 'Bobberson', 42, 'spots', '2020-08-01');"
-\echo Type RESET ROLE; to get back to previous user
