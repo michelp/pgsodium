@@ -1,4 +1,4 @@
-version=$1
+version=${1:-13}
 shift
 
 DB_HOST="pgsodium-example-db-$version"

@@ -560,9 +560,9 @@ add randomness to the message so that the same message encrypted
 multiple times with the same key will produce different ciphertexts.
 
 `crypto_secretbox()` encrypts a message using a previously generated
-nonce and secret key.  The encrypted message can be decrypted using
-`crypto_secretbox_open()`  Note that in order to decrypt the message,
-the original nonce will be needed.
+nonce and secret key or key id.  The encrypted message can be
+decrypted using `crypto_secretbox_open()` Note that in order to
+decrypt the message, the original nonce will be needed.
 
 `crypto_secretbox_open()` decrypts a message encrypted by
 `crypto_secretbox()`.
