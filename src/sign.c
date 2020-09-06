@@ -172,8 +172,7 @@ PG_FUNCTION_INFO_V1(pgsodium_crypto_sign_init);
 Datum pgsodium_crypto_sign_init(PG_FUNCTION_ARGS)
 {
 	bytea* result = _pgsodium_zalloc_bytea(
-		VARHDRSZ +sizeof(crypto_sign_state));
-	SET_VARSIZE(result, sizeof(crypto_sign_state));
+		VARHDRSZ + sizeof(crypto_sign_state));
 	crypto_sign_init((crypto_sign_state*) VARDATA(result));
 	PG_RETURN_BYTEA_P(result);
 }
