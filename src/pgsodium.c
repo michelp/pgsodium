@@ -83,9 +83,14 @@ pgsodium_crypto_secretbox(PG_FUNCTION_ARGS)
 	bytea* message = PG_GETARG_BYTEA_P(0);
 	bytea* nonce = PG_GETARG_BYTEA_P(1);
 	bytea* key = PG_GETARG_BYTEA_P(2);
-	size_t message_size = crypto_secretbox_MACBYTES + VARSIZE_ANY_EXHDR(message);
-	size_t result_size = VARHDRSZ + message_size;
-	bytea* result = _pgsodium_zalloc_bytea(result_size);
+	size_t message_size;
+	size_t result_size;
+	bytea* result;
+	ERRORIF(VARSIZE_ANY_EXHDR(nonce) != crypto_secretbox_NONCEBYTES, "invalid nonce");
+	ERRORIF(VARSIZE_ANY_EXHDR(key) != crypto_secretbox_KEYBYTES, "invalid key");
+	message_size = crypto_secretbox_MACBYTES + VARSIZE_ANY_EXHDR(message);
+	result_size = VARHDRSZ + message_size;
+	result = _pgsodium_zalloc_bytea(result_size);
 	crypto_secretbox_easy(
 		PGSODIUM_UCHARDATA(result),
 		PGSODIUM_UCHARDATA(message),
@@ -339,8 +344,13 @@ pgsodium_crypto_box(PG_FUNCTION_ARGS)
 	bytea* publickey = PG_GETARG_BYTEA_P(2);
 	bytea* secretkey = PG_GETARG_BYTEA_P(3);
 	int success;
-	size_t message_size = crypto_box_MACBYTES + VARSIZE_ANY_EXHDR(message);
-	bytea* result = _pgsodium_zalloc_bytea(VARHDRSZ + message_size);
+	size_t message_size;
+	bytea* result;
+	ERRORIF(VARSIZE_ANY_EXHDR(nonce) != crypto_box_NONCEBYTES, "invalid nonce");
+	ERRORIF(VARSIZE_ANY_EXHDR(publickey) != crypto_box_PUBLICKEYBYTES, "invalid public key");
+	ERRORIF(VARSIZE_ANY_EXHDR(secretkey) != crypto_box_SECRETKEYBYTES, "invalid secret key");
+	message_size = crypto_box_MACBYTES + VARSIZE_ANY_EXHDR(message);
+	result = _pgsodium_zalloc_bytea(VARHDRSZ + message_size);
 	success = crypto_box_easy(
 		PGSODIUM_UCHARDATA(result),
 		PGSODIUM_UCHARDATA(message),
