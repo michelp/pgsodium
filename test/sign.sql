@@ -29,9 +29,9 @@ SELECT throws_ok($$select crypto_sign_detached('foo', 'bar')$$,
 SELECT throws_ok($$select crypto_sign_verify_detached('foo', 'bar', 'bork')$$,
 	   	         '22000', 'invalid public key', 'crypto_sign_verify_detached invalid public key');
 
-SELECT crypto_sign_detached(:'sealed', :'sign_secret') detached \gset
+SELECT crypto_sign_detached('sealed message', :'sign_secret') detached \gset
 
-SELECT is(crypto_sign_verify_detached(:'detached', :'sealed', :'sign_public'),
+SELECT is(crypto_sign_verify_detached(:'detached', 'sealed message', :'sign_public'),
           true, 'crypto_sign_detached/verify');
 
 SELECT is(crypto_sign_verify_detached(:'detached', 'xyzzy', :'sign_public'),
