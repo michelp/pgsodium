@@ -4,14 +4,17 @@
 # pgsodium
 
 pgsodium is a [PostgreSQL](https://www.postgresql.org/) extension that
-exposes modern [libsodium](https://download.libsodium.org/doc/) based
-cryptography functions to SQL.
+uses modern [libsodium](https://download.libsodium.org/doc/)-based
+cryptography functions.
+
+# Table of Contents
 
    * [pgsodium](#pgsodium)
       * [Installation](#installation)
    * [Usage](#usage)
    * [Server Key Management](#server-key-management)
    * [Server Key Derivation](#server-key-derivation)
+   * [Security Roles](#security-roles)
    * [Encrypting Columns](#encrypting-columns)
    * [Simple public key encryption with crypto_box()](#simple-public-key-encryption-with-crypto_box)
    * [Avoid secret logging](#avoid-secret-logging)
@@ -32,12 +35,14 @@ cryptography functions to SQL.
 
 ## Installation
 
-[Travis CI](https://travis-ci.com/github/michelp/pgsodium) tested with
-the [official docker images](https://hub.docker.com/_/postgres) for
-PostgreSQL 13, 12, 11, and 10.  Requires libsodium >= 1.0.18.  In
-addition to the libsodium library and it's development headers, you
-may also need the PostgreSQL header files typically in the '-dev'
-packages to build the extension.
+pgsodium requires libsodium >= 1.0.18.  In addition to the libsodium
+library and it's development headers, you may also need the PostgreSQL
+header files typically in the '-dev' packages to build the extension.
+
+[Travis CI](https://travis-ci.com/github/michelp/pgsodium) tests all
+changes with the [official docker
+images](https://hub.docker.com/_/postgres) for PostgreSQL 13, 12, 11,
+and 10.  PostgreSQL 9.x is not supported.
 
 Clone the repo and run 'sudo make install'.
 
@@ -55,7 +60,7 @@ pgsodium arguments and return values for content and keys are of type
 content, you must make sure they are encoded correctly.  The
 [`encode() and decode()` and
 `convert_to()/convert_from()`](https://www.postgresql.org/docs/12/functions-binarystring.html)
-binary string functions can convert from `text` to `bytea`.Simple
+binary string functions can convert from `text` to `bytea`.  Simple
 ascii `text` strings without escape or unicode characters will be cast
 by the database implicitly, and this is how it is done in the tests to
 save time, but you should really be explicitly converting your `text`
@@ -76,8 +81,8 @@ pgsodium is careful to use memory cleanup callbacks to zero out all
 allocated memory used by the when freed.  In general it is a bad idea
 to store secrets in the database itself, although this can be done
 carefully it has a higher risk.  To help with this problem, pgsodium
-has an optional Server Key Management function that can load a server
-key at boot.
+has an optional Server Key Management function that can load a hidden
+server key at boot that other keys are *derived* from.
 
 # Server Key Management
 
@@ -86,8 +91,9 @@ If you add pgsodium to your
 configuration and place a special script in your postgres shared
 extension directory, the server can preload a libsodium key on server
 start. **The secret key cannot be accessed from SQL**.  The only way
-to use the server secret key is to *derive* other keys from it using
-`derive_key()` shown in the next section.
+to use the server secret key is to derive other keys from it using
+`derive_key()` or use the key_id variants of the API that take key ids
+and contexts instead of raw `bytea` keys.
 
 Server managed keys are completely optional, pgsodium can still be
 used without putting it in `shared_preload_libraries`, you will simply
@@ -104,7 +110,7 @@ and make the file executable (on unixen `chmod +x pgsodium_getkey`).
 Next place `pgsodium` in your `shared_preload_libraries`.  For docker
 containers, you can append this after the run:
 
-    docker run -e POSTGRES_HOST_AUTH_METHOD=trust -d --name "$DB_HOST" $TAG -c 'shared_preload_libraries=pgsodium'
+    docker run -d --name "$DB_HOST" $TAG -c 'shared_preload_libraries=pgsodium'
 
 When the server starts, it will load the secret key into memory but
 the key is not accessible to SQL.  It's possible that a sufficiently
@@ -188,11 +194,46 @@ keypairs using for example `crypto_box_seed_new_keypair()` and
     --------------------------------------------------------------------+--------------------------------------------------------------------
      \x01d0e0ec4b1fa9cc8dede88e0b43083f7e9cd33be4f91f0b25aa54d70f562278 | \x066ec431741a9d39f38c909de4a143ed39b09834ca37b6dd2ba3d015206f14ca
 
+# Security Roles
+
+The pgsodium API has three nested layers of security roles:
+
+  - `pgsodium_keyiduser` Is the least privledged role, it cannot
+    create or use raw `bytea` keys, it can only create
+    `crypto_secretkey` nonces and access the `crypto_secretkey`,
+    `crypto_auth` and `crypto_aead` API functions that accept key ids
+    only.  This role can also access the `randombytes` API.  This is
+    the role you would typically give to a user facing application.
+
+  - `pgsodium_keyholder` Is the next more privledged layer, it can do
+    everything `pgsodium_keyiduser` can do, but it can also use, but
+    not create, raw `bytea` encryption keys.  This role can use public
+    key APIs like `crypto_box` and `crypto_sign`, but it cannot create
+    keypairs.  This role is useful for when keys come from external
+    sources and must be passed as `bytea` to API functions.
+
+  - `pgsodium_keymaker` is the most privledged role, it can do
+    everything the previous roles can do, but it can also create keys,
+    keypairs and key seeds and derive keys from key ids.  Be very
+    careful how you grant access to this role, as it can create valid
+    secret keys derived from the root key.
+
+Note that public key apis like `crypto_box` and `crypto_sign` do not
+have "key id" variants, because they work with a combination of four
+keys, two keypairs for each party.  The point of public key encryption
+is for each party to keep their secrets and for that secret to not be
+derivable.  You can certainly call something like `SELECT * FROM
+crypto_box_seed_new_keypair(derive_key(1))` and make deterministic
+keypairs, but then if an attacker steals your root key they can derive
+all keypair secrets, so this approach is not recommended.
+
 # Encrypting Columns
 
 Here's an example script that encrypts a column in a table and
 provides a view that does on the fly decryption.  Each row's stores
-the nonce and key id used to derive the encryption key.
+the nonce and key id used to encrypt the column.  Note how no keys are
+used in this example, only key ids, so this code can be run by the
+least privledged `pgsodium_keyiduser` role:
 
     CREATE SCHEMA pgsodium;
     CREATE EXTENSION pgsodium WITH SCHEMA pgsodium;
@@ -209,7 +250,7 @@ the nonce and key id used to derive the encryption key.
         convert_from(pgsodium.crypto_secretbox_open(
                  data,
                  nonce,
-                 pgsodium.derive_key(key_id)),
+                 key_id),
         'utf8') AS data FROM test;
 
     CREATE OR REPLACE FUNCTION test_encrypt() RETURNS trigger
@@ -224,7 +265,7 @@ the nonce and key id used to derive the encryption key.
         update test set data = pgsodium.crypto_secretbox(
             convert_to(new.data, 'utf8'),
             new_nonce,
-            pgsodium.derive_key(key_id))
+            key_id)
         where id = test_id;
         RETURN new;
     END;
@@ -236,9 +277,9 @@ the nonce and key id used to derive the encryption key.
         EXECUTE FUNCTION test_encrypt();
 
 Use the view as if it were a normal table, but the underlying table is
-encrypted.  Note how in the following example, there are *no keys*
-stored, exposed to SQL or able to be logged, only [derived
-keys](#server-key-management) based on a key id are used.
+encrypted.  Again, no keys are stored or even avilable to this code,
+only [derived keys](#server-key-management) based on a key id are
+used.
 
 The trigger `test_encrypt_trigger` is fired `INSTEAD OF INSERT ON` the
 wrapper `test_view`, newly inserted rows are encrypted with a key
@@ -259,7 +300,9 @@ derived from the stored key_id which defaults to 1.
       4 | this is two
 
 Key rotation can be done with a rotation function that will re-encrypt
-a row with a new key id:
+a row with a new key id.  This function also requires no access to
+keys, it works only by key id and thus can be run by the least
+privledged `pgsodium_keyiduser`:
 
     CREATE OR REPLACE FUNCTION rotate_key(test_id bigint, new_key bigint)
         RETURNS void LANGUAGE plpgsql AS $$
@@ -274,9 +317,9 @@ a row with a new key id:
             pgsodium.crypto_secretbox_open(
                  test.data,
                  test.nonce,
-                 pgsodium.derive_key(test.key_id)),
+                 test.key_id),
             new_nonce,
-            pgsodium.derive_key(new_key))
+            new_key)
         WHERE test.id = test_id;
         RETURN;
     END;
@@ -342,9 +385,10 @@ can avoid this by using derived keys.
 
 # Avoid secret logging
 
-If you choose to work with your own keys a more paranoid approach is
-to keep keys in an external storage and disables logging while
-injecting the keys into local variables with [`SET
+If you choose to work with your own keys and not restrict yourself to
+the `pgsodium_keyiduser` role, a useful approach is to keep keys in an
+external storage and disables logging while injecting the keys into
+local variables with [`SET
 LOCAL`](https://www.postgresql.org/docs/12/sql-set.html). If the
 images of database are hacked or stolen, the keys will not be
 available to the attacker.
@@ -516,9 +560,9 @@ add randomness to the message so that the same message encrypted
 multiple times with the same key will produce different ciphertexts.
 
 `crypto_secretbox()` encrypts a message using a previously generated
-nonce and secret key.  The encrypted message can be decrypted using
-`crypto_secretbox_open()`  Note that in order to decrypt the message,
-the original nonce will be needed.
+nonce and secret key or key id.  The encrypted message can be
+decrypted using `crypto_secretbox_open()` Note that in order to
+decrypt the message, the original nonce will be needed.
 
 `crypto_secretbox_open()` decrypts a message encrypted by
 `crypto_secretbox()`.
