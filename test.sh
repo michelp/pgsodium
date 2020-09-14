@@ -6,7 +6,7 @@ versions=${1:-13 12 11 10}
 
 for version in $versions
 do
-	for config in '-c shared_preload_libraries=pgsodium' ''
+	for config in '-c shared_preload_libraries=pgsodium' '' '-c shared_preload_libraries=pgsodium -c pgsodium.getkey_script=/getkey'
 	do
 		DB_HOST="pgsodium-test-db-$version"
 		DB_NAME="postgres"
@@ -18,7 +18,7 @@ do
 		docker build . -t $TAG --build-arg "version=$version"
 
 		echo running test container
-		docker run -e POSTGRES_HOST_AUTH_METHOD=trust -d --name "$DB_HOST" $TAG $config
+		docker run --rm -e POSTGRES_HOST_AUTH_METHOD=trust -d --name "$DB_HOST" $TAG $config
 
 		echo waiting for database to accept connections
 		until

@@ -14,3 +14,4 @@ RUN cd `pg_config --sharedir`/extension/
 RUN cp pgsodium_getkey.sample `pg_config --sharedir`/extension/pgsodium_getkey
 RUN sed -i 's/exit//g' `pg_config --sharedir`/extension/pgsodium_getkey
 RUN chmod +x `pg_config --sharedir`/extension/pgsodium_getkey
+RUN cp `pg_config --sharedir`/extension/pgsodium_getkey /getkey
