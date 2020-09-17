@@ -32,3 +32,5 @@
 *.dSYM/
 *.su
 *~
+
+pgsodium_encrypted_root.key

@@ -7,7 +7,7 @@ ENCRYPTED_ROOT_KEY_FILE=${ENCRYPTED_ROOT_KEY_FILE:-$HERE/pgsodium_encrypted_root
 if [[ -f "$ENCRYPTED_ROOT_KEY_FILE" ]]; then
 	aws kms decrypt --ciphertext-blob fileb://$ENCRYPTED_ROOT_KEY_FILE --query Plaintext --output text | base64 --decode | hex
 else
-	aws kms generate-data-key --number-of-bytes=32 --key-id=$KEY_ID --query CiphertextBlob --output text | hex --decode > $ENCRYPTED_ROOT_KEY_FILE
+	aws kms generate-data-key --number-of-bytes=32 --key-id=$KEY_ID --query CiphertextBlob --output text | base64 --decode > $ENCRYPTED_ROOT_KEY_FILE
 	aws kms decrypt --ciphertext-blob fileb://$ENCRYPTED_ROOT_KEY_FILE --query Plaintext --output text | base64 --decode | hex
 fi
 
