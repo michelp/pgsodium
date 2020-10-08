@@ -100,12 +100,25 @@ used without putting it in `shared_preload_libraries`, you will simply
 need to provide your own key management.  Skip ahead to the API usage
 section if you choose not to use server managed keys.
 
-See the file [`pgsodium_getkey.sample`](./pgsodium_getkey.sample) for
-an example script that returns a libsodium key.  The script must emit
-a hex encoded 32 byte (64 character) string on a single line.  DO NOT
-USE THIS FILE WITHOUT SUBSTITUTING YOUR OWN KEY.  Edit the file to add
-your own key and remove the `exit` line, remove the `.sample` suffix
-and make the file executable (on unixen `chmod +x pgsodium_getkey`).
+See the file
+[`getkey_scripts/pgsodium_getkey.sample`](./pgsodium_getkey.sample)
+for an example script that returns a libsodium key.  The script must
+emit a hex encoded 32 byte (64 character) string on a single line.  DO
+NOT USE THIS FILE WITHOUT SUBSTITUTING YOUR OWN KEY.  Edit the file to
+add your own key and remove the `exit` line, remove the `.sample`
+suffix and make the file executable (on unixen `chmod +x
+pgsodium_getkey`).
+
+pgsodium also comes with example scripts for:
+
+  - [Amazon Web Service's Key Management
+    Service](getkey_scripts/pgsodium_getkey_aws.sh).
+
+  - [Google Cloud's Cloud Key
+    Management](getkey_scripts/pgsodium_getkey_gcp.sh).
+
+  - [Zymbit Zymkey 4i Hardware Security
+    Module]((getkey_scripts/pgsodium_getkey_zmk.sh).
 
 Next place `pgsodium` in your `shared_preload_libraries`.  For docker
 containers, you can append this after the run:
