@@ -21,6 +21,7 @@ do
 		docker run --rm -e POSTGRES_HOST_AUTH_METHOD=trust -d --name "$DB_HOST" $TAG $config
 
 		echo waiting for database to accept connections
+		sleep 1;
 		until
 			$EXEC \
 				psql -o /dev/null -t -q -U "$SU" \
