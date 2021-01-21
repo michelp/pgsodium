@@ -23,7 +23,7 @@ void _PG_init(void)
 
     if (process_shared_preload_libraries_in_progress)
     {
-        path = (char*) palloc(MAXPGPATH);
+        path = (char*) malloc(MAXPGPATH);
         get_share_path(my_exec_path, sharepath);
         snprintf(
                  path,
