@@ -23,7 +23,7 @@ void _PG_init(void)
 
     if (process_shared_preload_libraries_in_progress)
     {
-        path = (char*) palloc(MAXPGPATH);
+        path = (char*) malloc(MAXPGPATH);
         get_share_path(my_exec_path, sharepath);
         snprintf(
                  path,
@@ -77,7 +77,7 @@ void _PG_init(void)
                     PG_GETKEY_EXEC);
             proc_exit(1);
         }
-        pgsodium_secret_key = palloc(crypto_sign_SECRETKEYBYTES + VARHDRSZ);
+        pgsodium_secret_key = malloc(crypto_sign_SECRETKEYBYTES + VARHDRSZ);
         hex_decode(secret_buf, secret_len, VARDATA(pgsodium_secret_key));
         sodium_mlock(pgsodium_secret_key, crypto_sign_SECRETKEYBYTES + VARHDRSZ);
         memset(secret_buf, 0, secret_len);
