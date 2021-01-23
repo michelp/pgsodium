@@ -290,7 +290,7 @@ least privledged `pgsodium_keyiduser` role:
         EXECUTE FUNCTION test_encrypt();
 
 Use the view as if it were a normal table, but the underlying table is
-encrypted.  Again, no keys are stored or even avilable to this code,
+encrypted.  Again, no keys are stored or even available to this code,
 only [derived keys](#server-key-management) based on a key id are
 used.
 
@@ -651,7 +651,7 @@ recipient's public key and the sender's secret key.  The resulting
 ciphertext can only be decrypted by the intended recipient using their
 secret key.  The nonce must be sent along with the ciphertext.
 
-`crypto_box_open()` descrypts a ciphertext encrypted using
+`crypto_box_open()` decrypts a ciphertext encrypted using
 `crypto_box()`.  It takes the ciphertext, nonce, the sender's public
 key and the recipient's secret key as parameters, and returns the
 original message.  Note that the recipient should ensure that the
