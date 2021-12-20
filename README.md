@@ -101,13 +101,9 @@ need to provide your own key management.  Skip ahead to the API usage
 section if you choose not to use server managed keys.
 
 See the file
-[`getkey_scripts/pgsodium_getkey.sample`](./pgsodium_getkey.sample)
-for an example script that returns a libsodium key.  The script must
-emit a hex encoded 32 byte (64 character) string on a single line.  DO
-NOT USE THIS FILE WITHOUT SUBSTITUTING YOUR OWN KEY.  Edit the file to
-add your own key and remove the `exit` line, remove the `.sample`
-suffix and make the file executable (on unixen `chmod +x
-pgsodium_getkey`).
+[`getkey_scripts/pgsodium_getkey_urandom.sh`](./pgsodium_getkey_urandom.sh)
+for an example script that returns a libsodium key using the linux
+`/dev/urandom` CSPRNG.
 
 pgsodium also comes with example scripts for:
 

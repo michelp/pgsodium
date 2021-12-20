@@ -25,11 +25,27 @@ PG_FUNCTION_INFO_V1(pgsodium_crypto_stream_xchacha20);
 Datum
 pgsodium_crypto_stream_xchacha20(PG_FUNCTION_ARGS)
 {
+	size_t size = PG_GETARG_UINT32(0);
+	bytea* nonce = PG_GETARG_BYTEA_P(1);
+	bytea* key = PG_GETARG_BYTEA_P(2);
+	int result_size = VARHDRSZ + size;
+	bytea* result = _pgsodium_zalloc_bytea(result_size);
+    
+	crypto_stream_xchacha20(PGSODIUM_UCHARDATA(result),
+                            result_size,
+                            PGSODIUM_UCHARDATA(nonce),
+                            PGSODIUM_UCHARDATA(key));
+	PG_RETURN_BYTEA_P(result);
 }
 
-PG_FUNCTION_INFO_V1_xor(pgsodium_crypto_stream_xchacha20);
+PG_FUNCTION_INFO_V1(pgsodium_crypto_stream_xchacha20_xor);
 Datum
 pgsodium_crypto_stream_xchacha20_xor(PG_FUNCTION_ARGS)
 {
+    bytea* data = PG_GETARG_BYTEA_P(0);
+	bytea* nonce = PG_GETARG_BYTEA_P(1);
+	bytea* key = PG_GETARG_BYTEA_P(2);
+	int result_size = VARSIZE_ANY(data);
+	bytea* result = _pgsodium_zalloc_bytea(result_size);
+	PG_RETURN_BYTEA_P(result);
 }
-

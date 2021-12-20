@@ -1,8 +1,0 @@
-#!/bin/bash
-
-FILE=$(PGDATA)/pgsodium_root.key
-
-if [ ! -f "$FILE" ]; then
-    head -c 32 /dev/urandom | hex > $FILE
-fi
-echo cat $FILE
