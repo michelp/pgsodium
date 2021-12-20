@@ -1,17 +1,8 @@
-#!/bin/sh
+#!/bin/bash
 
-# YOU MUST EDIT THIS FILE!!!
+FILE=$(PGDATA)/pgsodium_root.key
 
-# after editing this file below WITH YOUR KEY, remove the exit on the
-# next line
-exit
-
-# YOU MUST EDIT THIS FILE!!!
-# DO NOT USE THIS TEST KEY CHECKED INTO GIT!!!
-
-# your secret key goes here
-echo 130cdceb74d7174fcbffbcb4a3397f3551b990fed92e452279ea3922cf715a0a
-
-# YOU MUST EDIT THIS FILE!!!
-# DO NOT USE THIS TEST KEY CHECKED INTO GIT!!!
-
+if [ ! -f "$FILE" ]; then
+    head -c 32 /dev/urandom | hex > $FILE
+fi
+echo cat $FILE

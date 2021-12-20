@@ -114,6 +114,10 @@ Datum pgsodium_crypto_auth_verify(PG_FUNCTION_ARGS);
 Datum pgsodium_crypto_auth_by_id(PG_FUNCTION_ARGS);
 Datum pgsodium_crypto_auth_verify_by_id(PG_FUNCTION_ARGS);
 
+/* Secret streams */
+
+Datum pgsodium_crypto_secretstream_xchacha20poly1305_keygen(PG_FUNCTION_ARGS);
+
 /* AEAD */
 
 Datum pgsodium_crypto_aead_ietf_keygen(PG_FUNCTION_ARGS);
@@ -193,5 +197,12 @@ Datum pgsodium_crypto_hash_sha512(PG_FUNCTION_ARGS);
 /* Server Managed Keys */
 
 Datum pgsodium_derive(PG_FUNCTION_ARGS);
+
+/* Streaming */
+
+Datum pgsodium_crypto_stream_xchacha20_keygen(PG_FUNCTION_ARGS);
+Datum pgsodium_crypto_stream_xchacha20_noncegen(PG_FUNCTION_ARGS);
+Datum pgsodium_crypto_stream_xchacha20(PG_FUNCTION_ARGS);
+Datum pgsodium_crypto_stream_xchacha20_xor(PG_FUNCTION_ARGS);
 
 #endif /* PGSODIUM_H */
