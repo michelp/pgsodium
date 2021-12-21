@@ -18,7 +18,7 @@ RETURNS bytea
 AS '$libdir/pgsodium', 'pgsodium_crypto_stream_xchacha20_noncegen'
 LANGUAGE C VOLATILE;
 
-CREATE FUNCTION crypto_stream_xchacha20(integer, bytea, bytea)
+CREATE FUNCTION crypto_stream_xchacha20(bigint, bytea, bytea)
 RETURNS bytea
 AS '$libdir/pgsodium', 'pgsodium_crypto_stream_xchacha20'
 LANGUAGE C VOLATILE;
@@ -26,5 +26,10 @@ LANGUAGE C VOLATILE;
 CREATE FUNCTION crypto_stream_xchacha20_xor(bytea, bytea, bytea)
 RETURNS bytea
 AS '$libdir/pgsodium', 'pgsodium_crypto_stream_xchacha20_xor'
+LANGUAGE C VOLATILE;
+
+CREATE FUNCTION crypto_stream_xchacha20_xor_ic(bytea, bytea, bigint, bytea)
+RETURNS bytea
+AS '$libdir/pgsodium', 'pgsodium_crypto_stream_xchacha20_xor_ic'
 LANGUAGE C VOLATILE;
 

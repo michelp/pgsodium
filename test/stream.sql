@@ -9,10 +9,21 @@ select crypto_stream_xchacha20_xor('bob is your uncle', :'secretnonce', :'secret
 SELECT throws_ok(format($$select crypto_stream_xchacha20_xor(%L, 'bad nonce', %L::bytea)$$, :'secret', :'secretkey'),
 	   	         '22000', 'invalid nonce', 'crypto_stream invalid nonce');
 
-SELECT throws_ok(format($$select crypto_secretbox(%L, %L, 'bad_key'::bytea)$$, :'secret', :'secretnonce'),
+SELECT throws_ok(format($$select crypto_stream_xchacha20_xor(%L, %L, 'bad_key'::bytea)$$, :'secret', :'secretnonce'),
 	   	         '22000', 'invalid key', 'crypto_stream invalid key');
 
 SELECT is(crypto_stream_xchacha20_xor(:'secret', :'secretnonce', :'secretkey'::bytea),
+          'bob is your uncle', 'crypto_stream xor decryption');
+
+select crypto_stream_xchacha20_xor_ic('bob is your uncle', :'secretnonce', 42, :'secretkey') secret \gset
+    
+SELECT throws_ok(format($$select crypto_stream_xchacha20_xor_ic(%L, 'bad nonce', %L::bytea)$$, :'secret', :'secretkey'),
+	   	         '22000', 'invalid nonce', 'crypto_stream invalid nonce');
+
+SELECT throws_ok(format($$select crypto_stream_xchacha20_xor_ic(%L, %L, 'bad_key'::bytea)$$, :'secret', :'secretnonce'),
+	   	         '22000', 'invalid key', 'crypto_stream invalid key');
+
+SELECT is(crypto_stream_xchacha20_xor_ic(:'secret', :'secretnonce', 42, :'secretkey'::bytea),
           'bob is your uncle', 'crypto_stream xor decryption');
 
 SELECT * FROM finish();
