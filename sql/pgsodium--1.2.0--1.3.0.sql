@@ -33,3 +33,18 @@ RETURNS bytea
 AS '$libdir/pgsodium', 'pgsodium_crypto_stream_xchacha20_xor_ic'
 LANGUAGE C VOLATILE;
 
+CREATE FUNCTION crypto_cmp(text, text)
+RETURNS bool
+AS '$libdir/pgsodium', 'pgsodium_cmp'
+LANGUAGE C VOLATILE;
+
+CREATE FUNCTION crypto_generichash(message bytea, key bigint, context bytea = 'pgsodium')
+RETURNS bytea
+AS '$libdir/pgsodium', 'pgsodium_crypto_generichash_by_id'
+LANGUAGE C VOLATILE;
+
+CREATE FUNCTION crypto_shorthash(message bytea, key bigint, context bytea = 'pgsodium')
+RETURNS bytea
+AS '$libdir/pgsodium', 'pgsodium_crypto_shorthash_by_id'
+LANGUAGE C VOLATILE;
+

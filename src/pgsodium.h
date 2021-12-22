@@ -4,6 +4,8 @@
 #include <stdio.h>
 #include <sodium.h>
 #include <unistd.h>
+#include <stdbool.h>
+#include <stdlib.h>
 
 #include "postgres.h"
 #include "utils/builtins.h"
@@ -123,8 +125,10 @@ Datum pgsodium_crypto_aead_ietf_decrypt_by_id(PG_FUNCTION_ARGS);
 
 Datum pgsodium_crypto_generichash_keygen(PG_FUNCTION_ARGS);
 Datum pgsodium_crypto_generichash(PG_FUNCTION_ARGS);
+Datum pgsodium_crypto_generichash_by_id(PG_FUNCTION_ARGS);
 Datum pgsodium_crypto_shorthash_keygen(PG_FUNCTION_ARGS);
 Datum pgsodium_crypto_shorthash(PG_FUNCTION_ARGS);
+Datum pgsodium_crypto_shorthash_by_id(PG_FUNCTION_ARGS);
 
 /* password Hashing */
 
@@ -197,5 +201,10 @@ Datum pgsodium_crypto_stream_xchacha20_noncegen(PG_FUNCTION_ARGS);
 Datum pgsodium_crypto_stream_xchacha20(PG_FUNCTION_ARGS);
 Datum pgsodium_crypto_stream_xchacha20_xor(PG_FUNCTION_ARGS);
 Datum pgsodium_crypto_stream_xchacha20_xor_ic(PG_FUNCTION_ARGS);
+
+/* Helpers */
+
+Datum pgsodium_cmp(PG_FUNCTION_ARGS);
+
 
 #endif /* PGSODIUM_H */
