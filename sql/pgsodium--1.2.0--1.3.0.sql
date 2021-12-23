@@ -33,6 +33,21 @@ RETURNS bytea
 AS '$libdir/pgsodium', 'pgsodium_crypto_stream_xchacha20_xor_ic'
 LANGUAGE C IMMUTABLE STRICT;
 
+CREATE FUNCTION crypto_stream_xchacha20(bigint, bytea, bigint, context bytea = 'pgsodium')
+RETURNS bytea
+AS '$libdir/pgsodium', 'pgsodium_crypto_stream_xchacha20_by_id'
+LANGUAGE C IMMUTABLE STRICT;
+
+CREATE FUNCTION crypto_stream_xchacha20_xor(bytea, bytea, bigint, context bytea = 'pgosdium')
+RETURNS bytea
+AS '$libdir/pgsodium', 'pgsodium_crypto_stream_xchacha20_xor_by_id'
+LANGUAGE C IMMUTABLE STRICT;
+
+CREATE FUNCTION crypto_stream_xchacha20_xor_ic(bytea, bytea, bigint, bigint, context bytea = 'pgsodium')
+RETURNS bytea
+AS '$libdir/pgsodium', 'pgsodium_crypto_stream_xchacha20_xor_ic_by_id'
+LANGUAGE C IMMUTABLE STRICT;
+
 CREATE FUNCTION crypto_cmp(text, text)
 RETURNS bool
 AS '$libdir/pgsodium', 'pgsodium_cmp'

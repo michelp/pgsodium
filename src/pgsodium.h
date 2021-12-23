@@ -205,6 +205,9 @@ Datum pgsodium_crypto_stream_xchacha20_noncegen(PG_FUNCTION_ARGS);
 Datum pgsodium_crypto_stream_xchacha20(PG_FUNCTION_ARGS);
 Datum pgsodium_crypto_stream_xchacha20_xor(PG_FUNCTION_ARGS);
 Datum pgsodium_crypto_stream_xchacha20_xor_ic(PG_FUNCTION_ARGS);
+Datum pgsodium_crypto_stream_xchacha20_by_id(PG_FUNCTION_ARGS);
+Datum pgsodium_crypto_stream_xchacha20_xor_by_id(PG_FUNCTION_ARGS);
+Datum pgsodium_crypto_stream_xchacha20_xor_ic_by_id(PG_FUNCTION_ARGS);
 
 /* Helpers */
 
