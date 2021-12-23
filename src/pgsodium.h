@@ -182,10 +182,14 @@ Datum pgsodium_crypto_kx_server_session_keys(PG_FUNCTION_ARGS);
 Datum pgsodium_crypto_auth_hmacsha512_keygen(PG_FUNCTION_ARGS);
 Datum pgsodium_crypto_auth_hmacsha512(PG_FUNCTION_ARGS);
 Datum pgsodium_crypto_auth_hmacsha512_verify(PG_FUNCTION_ARGS);
+Datum pgsodium_crypto_auth_hmacsha512_by_id(PG_FUNCTION_ARGS);
+Datum pgsodium_crypto_auth_hmacsha512_verify_by_id(PG_FUNCTION_ARGS);
 
 Datum pgsodium_crypto_auth_hmacsha256_keygen(PG_FUNCTION_ARGS);
 Datum pgsodium_crypto_auth_hmacsha256(PG_FUNCTION_ARGS);
+Datum pgsodium_crypto_auth_hmacsha256_by_id(PG_FUNCTION_ARGS);
 Datum pgsodium_crypto_auth_hmacsha256_verify(PG_FUNCTION_ARGS);
+Datum pgsodium_crypto_auth_hmacsha256_verify_by_id(PG_FUNCTION_ARGS);
 
 Datum pgsodium_crypto_hash_sha256(PG_FUNCTION_ARGS);
 Datum pgsodium_crypto_hash_sha512(PG_FUNCTION_ARGS);

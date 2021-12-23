@@ -54,12 +54,12 @@ LANGUAGE C VOLATILE;
 CREATE FUNCTION crypto_generichash(message bytea, key bytea DEFAULT NULL)
 RETURNS bytea
 AS '$libdir/pgsodium', 'pgsodium_crypto_generichash'
-LANGUAGE C VOLATILE;
+LANGUAGE C IMMUTABLE;
 
 CREATE FUNCTION crypto_shorthash(message bytea, key bytea)
 RETURNS bytea
 AS '$libdir/pgsodium', 'pgsodium_crypto_shorthash'
-LANGUAGE C VOLATILE STRICT;
+LANGUAGE C IMMUTABLE STRICT;
 
 CREATE TYPE crypto_box_keypair AS (public bytea, secret bytea);
 
@@ -133,9 +133,9 @@ LANGUAGE C IMMUTABLE STRICT;
 CREATE OR REPLACE FUNCTION crypto_box_seal(message bytea, public_key bytea)
 RETURNS bytea
 AS '$libdir/pgsodium', 'pgsodium_crypto_box_seal'
-LANGUAGE C VOLATILE STRICT;
+LANGUAGE C IMMUTABLE STRICT;
 
 CREATE OR REPLACE FUNCTION crypto_box_seal_open(ciphertext bytea, public_key bytea, secret_key bytea)
 RETURNS bytea
 AS '$libdir/pgsodium', 'pgsodium_crypto_box_seal_open'
-LANGUAGE C VOLATILE STRICT;
+LANGUAGE C IMMUTABLE STRICT;
