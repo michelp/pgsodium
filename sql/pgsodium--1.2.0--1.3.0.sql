@@ -84,3 +84,49 @@ CREATE FUNCTION crypto_auth_hmacsha256_verify(hash bytea, message bytea, key_id 
 RETURNS bool
 AS '$libdir/pgsodium', 'pgsodium_crypto_auth_hmacsha256_verify_by_id'
 LANGUAGE C IMMUTABLE STRICT;
+
+-- aead_det
+
+CREATE FUNCTION crypto_aead_det_keygen()
+RETURNS bytea
+AS '$libdir/pgsodium', 'pgsodium_crypto_aead_det_keygen'
+LANGUAGE C VOLATILE;
+
+CREATE FUNCTION crypto_aead_det_encrypt(message bytea, additional bytea, key bytea)
+RETURNS bytea
+AS '$libdir/pgsodium', 'pgsodium_crypto_aead_det_encrypt'
+LANGUAGE C IMMUTABLE STRICT;
+
+CREATE FUNCTION crypto_aead_det_decrypt(ciphertext bytea, additional bytea, key bytea)
+RETURNS bytea
+AS '$libdir/pgsodium', 'pgsodium_crypto_aead_det_decrypt'
+LANGUAGE C IMMUTABLE STRICT;
+
+-- CREATE FUNCTION crypto_aead_det_encrypt(message bytea, additional bytea, key_id bigint, context bytea = 'pgsodium')
+-- RETURNS bytea
+-- AS '$libdir/pgsodium', 'pgsodium_crypto_aead_det_encrypt_by_id'
+-- LANGUAGE C IMMUTABLE STRICT;
+
+-- CREATE FUNCTION crypto_aead_det_decrypt(message bytea, additional bytea, key_id bigint, context bytea = 'pgsodium')
+-- RETURNS bytea
+-- AS '$libdir/pgsodium', 'pgsodium_crypto_aead_det_decrypt_by_id'
+-- LANGUAGE C IMMUTABLE STRICT;
+
+
+
+-- Sign-Cryption
+
+CREATE TYPE crypto_signcrypt_state AS (state bytea, sig bytea);
+CREATE TYPE crypto_signcrypt_keypair AS (public bytea, secret bytea);
+
+CREATE FUNCTION crypto_signcrypt_sign_before(sender bytea, recipient bytea, sender_sk bytea, recipient_pk bytea, additional bytea)
+RETURNS crypto_signcrypt_state
+AS '$libdir/pgsodium', 'pgsodium_crypto_signcrypt_sign_before'
+LANGUAGE C IMMUTABLE STRICT;
+
+CREATE FUNCTION crypto_signcrypt_new_kepair()
+RETURNS crypto_signcrypt_keypair
+AS '$libdir/pgsodium', 'pgsodium_crypto_signcrypt_keypair'
+LANGUAGE C VOLATILE;
+
+    

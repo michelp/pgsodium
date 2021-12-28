@@ -18,6 +18,9 @@
 #include "port.h"
 #include "miscadmin.h"
 
+#include "crypto_aead_det_xchacha20.h"
+#include "signcrypt_tbsbr.h"
+
 #define PG_GETKEY_EXEC "pgsodium_getkey"
 
 #define PGSODIUM_UCHARDATA(_vlena) (unsigned char *)VARDATA(_vlena)
@@ -121,6 +124,12 @@ Datum pgsodium_crypto_aead_ietf_decrypt(PG_FUNCTION_ARGS);
 Datum pgsodium_crypto_aead_ietf_encrypt_by_id(PG_FUNCTION_ARGS);
 Datum pgsodium_crypto_aead_ietf_decrypt_by_id(PG_FUNCTION_ARGS);
 
+Datum pgsodium_crypto_aead_det_keygen(PG_FUNCTION_ARGS);
+Datum pgsodium_crypto_aead_det_encrypt(PG_FUNCTION_ARGS);
+Datum pgsodium_crypto_aead_det_decrypt(PG_FUNCTION_ARGS);
+Datum pgsodium_crypto_aead_det_encrypt_by_id(PG_FUNCTION_ARGS);
+Datum pgsodium_crypto_aead_det_decrypt_by_id(PG_FUNCTION_ARGS);
+
 /* Hashing */
 
 Datum pgsodium_crypto_generichash_keygen(PG_FUNCTION_ARGS);
@@ -208,6 +217,11 @@ Datum pgsodium_crypto_stream_xchacha20_xor_ic(PG_FUNCTION_ARGS);
 Datum pgsodium_crypto_stream_xchacha20_by_id(PG_FUNCTION_ARGS);
 Datum pgsodium_crypto_stream_xchacha20_xor_by_id(PG_FUNCTION_ARGS);
 Datum pgsodium_crypto_stream_xchacha20_xor_ic_by_id(PG_FUNCTION_ARGS);
+
+/* Sign-Cryption */
+
+Datum pgsodium_crypto_signcrypt_sign_before(PG_FUNCTION_ARGS);
+Datum pgsodium_crypto_signcrypt_keypair(PG_FUNCTION_ARGS);
 
 /* Helpers */
 

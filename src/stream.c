@@ -68,7 +68,6 @@ Datum pgsodium_crypto_stream_xchacha20_xor_ic(PG_FUNCTION_ARGS) {
             "invalid nonce");
     ERRORIF(VARSIZE_ANY_EXHDR(key) != crypto_stream_xchacha20_KEYBYTES,
             "invalid key");
-
     crypto_stream_xchacha20_xor_ic(PGSODIUM_UCHARDATA(result),
                                    PGSODIUM_UCHARDATA(data),
                                    result_size,

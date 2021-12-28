@@ -32,6 +32,8 @@ cryptography functions.
       * [Key Derivation](#key-derivation)
       * [Key Exchange](#key-exchange)
       * [HMAC512](#hmac512)
+      * [Advanced Stream API](#stream)
+      * [Signcryption API](#signcryption)
 
 ## Installation
 
@@ -41,7 +43,7 @@ header files typically in the '-dev' packages to build the extension.
 
 [Travis CI](https://travis-ci.com/github/michelp/pgsodium) tests all
 changes with the [official docker
-images](https://hub.docker.com/_/postgres) for PostgreSQL 13, 12, 11,
+images](https://hub.docker.com/_/postgres) for PostgreSQL 14, 13, 12, 11,
 and 10.  PostgreSQL 9.x is not supported.
 
 Clone the repo and run 'sudo make install'.
@@ -78,8 +80,8 @@ postgres=# SELECT * FROM crypto_box_new_keypair();
 ```
 
 pgsodium is careful to use memory cleanup callbacks to zero out all
-allocated memory used by the when freed.  In general it is a bad idea
-to store secrets in the database itself, although this can be done
+allocated memory used when freed.  In general it is a bad idea to
+store secrets in the database itself, although this can be done
 carefully it has a higher risk.  To help with this problem, pgsodium
 has an optional Server Key Management function that can load a hidden
 server key at boot that other keys are *derived* from.
@@ -90,13 +92,13 @@ If you add pgsodium to your
 [`shared_preload_libraries`](https://www.postgresql.org/docs/12/runtime-config-client.html#RUNTIME-CONFIG-CLIENT-PRELOAD)
 configuration and place a special script in your postgres shared
 extension directory, the server can preload a libsodium key on server
-start. **The secret key cannot be accessed from SQL**.  The only way
-to use the server secret key is to derive other keys from it using
+start. **This root secret key cannot be accessed from SQL**.  The only
+way to use the server secret key is to derive other keys from it using
 `derive_key()` or use the key_id variants of the API that take key ids
 and contexts instead of raw `bytea` keys.
 
 Server managed keys are completely optional, pgsodium can still be
-used without putting it in `shared_preload_libraries`, you will simply
+used without putting it in `shared_preload_libraries`, but you will
 need to provide your own key management.  Skip ahead to the API usage
 section if you choose not to use server managed keys.
 
@@ -119,19 +121,22 @@ pgsodium also comes with example scripts for:
 Next place `pgsodium` in your `shared_preload_libraries`.  For docker
 containers, you can append this after the run:
 
-    docker run -d --name "$DB_HOST" $TAG -c 'shared_preload_libraries=pgsodium'
+    docker run -d ... -c 'shared_preload_libraries=pgsodium'
 
-When the server starts, it will load the secret key into memory but
-the key is not accessible to SQL.  It's possible that a sufficiently
-clever maliscious superuser can access the key by invoking external
-programs.
+When the server starts, it will load the secret key into memory, but
+this key is *never* accessible to SQL.  It's possible that a
+sufficiently clever maliscious superuser can access the key by
+invoking external programs, causing core dumps, looking in swap space,
+or other attack paths beyond the scope of pgsodium.  Databases that
+work with encryption and keys should be extra cautious and use as many
+protection mitigations as possible.
 
-It is up to you to edit the script to get or generate the key however
-you want.  pgsodium can be used to generate a new random key with
-`select encode(randombytes_buf(32), 'hex')`.  Other common patterns
-including prompting for the key on boot, fetching it from an ssh
-server or managed cloud secret system, or using a command line tool to
-get it from a hardware security module.
+It is up to you to edit the get key script to get or generate the key
+however you want.  pgsodium can be used to generate a new random key
+with `select encode(randombytes_buf(32), 'hex')`.  Other common
+patterns including prompting for the key on boot, fetching it from an
+ssh server or managed cloud secret system, or using a command line
+tool to get it from a hardware security module.
 
 # Server Key Derivation
 
@@ -229,9 +234,11 @@ The pgsodium API has three nested layers of security roles:
 
 Note that public key apis like `crypto_box` and `crypto_sign` do not
 have "key id" variants, because they work with a combination of four
-keys, two keypairs for each party.  The point of public key encryption
-is for each party to keep their secrets and for that secret to not be
-derivable.  You can certainly call something like `SELECT * FROM
+keys, two keypairs for each of two parties.  
+
+As the point of public key encryption is for each party to keep their
+secrets and for that secret to not be centrally derivable.  You can
+certainly call something like `SELECT * FROM
 crypto_box_seed_new_keypair(derive_key(1))` and make deterministic
 keypairs, but then if an attacker steals your root key they can derive
 all keypair secrets, so this approach is not recommended.
@@ -953,7 +960,7 @@ shared keys using their peer's public key and their own secret key.
 
 [C API Documentation](https://doc.libsodium.org/key_exchange)
 
-## HMAC512
+## HMAC512/256
 
     select crypto_auth_hmacsha512_keygen() hmac512key \gset
     select crypto_auth_hmacsha512('food', :'hmac512key') hmac512 \gset
@@ -962,3 +969,15 @@ shared keys using their peer's public key and their own secret key.
     select is(crypto_auth_hmacsha512_verify(:'hmac512', 'fo0d', :'hmac512key'), false, 'hmac512 not verified');
 
 [C API Documentation](https://doc.libsodium.org/advanced/hmac-sha2)
+
+## Advanced Stream API (XChaCha20)
+
+[C API Documentation](https://doc.libsodium.org/advanced/stream_ciphers/xchacha20)
+
+## XChaCha20-SIV
+
+[C API Documentation](https://doc.libsodium.org/advanced/)
+
+## SignCryption
+
+[C API Documentation](https://doc.libsodium.org/advanced/)
