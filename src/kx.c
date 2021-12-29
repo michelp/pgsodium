@@ -9,7 +9,7 @@ Datum pgsodium_crypto_kx_seed_keypair(PG_FUNCTION_ARGS) {
     Datum result;
     bytea *publickey;
     bytea *secretkey;
-    bytea *seed = PG_GETARG_BYTEA_P(0);
+    bytea *seed = PG_GETARG_BYTEA_PP(0);
     size_t public_size = crypto_kx_PUBLICKEYBYTES + VARHDRSZ;
     size_t secret_size = crypto_kx_SECRETKEYBYTES + VARHDRSZ;
     if (get_call_result_type(fcinfo, NULL, &tupdesc) != TYPEFUNC_COMPOSITE)
@@ -48,9 +48,9 @@ Datum pgsodium_crypto_kx_client_session_keys(PG_FUNCTION_ARGS) {
     Datum result;
     bytea *rx;
     bytea *tx;
-    bytea *client_pk = PG_GETARG_BYTEA_P(0);
-    bytea *client_sk = PG_GETARG_BYTEA_P(1);
-    bytea *server_pk = PG_GETARG_BYTEA_P(2);
+    bytea *client_pk = PG_GETARG_BYTEA_PP(0);
+    bytea *client_sk = PG_GETARG_BYTEA_PP(1);
+    bytea *server_pk = PG_GETARG_BYTEA_PP(2);
     size_t rx_size = crypto_kx_SESSIONKEYBYTES + VARHDRSZ;
     size_t tx_size = crypto_kx_SESSIONKEYBYTES + VARHDRSZ;
     if (get_call_result_type(fcinfo, NULL, &tupdesc) != TYPEFUNC_COMPOSITE)
@@ -89,9 +89,9 @@ Datum pgsodium_crypto_kx_server_session_keys(PG_FUNCTION_ARGS) {
     Datum result;
     bytea *rx;
     bytea *tx;
-    bytea *server_pk = PG_GETARG_BYTEA_P(0);
-    bytea *server_sk = PG_GETARG_BYTEA_P(1);
-    bytea *client_pk = PG_GETARG_BYTEA_P(2);
+    bytea *server_pk = PG_GETARG_BYTEA_PP(0);
+    bytea *server_sk = PG_GETARG_BYTEA_PP(1);
+    bytea *client_pk = PG_GETARG_BYTEA_PP(2);
     size_t rx_size = crypto_kx_SESSIONKEYBYTES + VARHDRSZ;
     size_t tx_size = crypto_kx_SESSIONKEYBYTES + VARHDRSZ;
     if (get_call_result_type(fcinfo, NULL, &tupdesc) != TYPEFUNC_COMPOSITE)

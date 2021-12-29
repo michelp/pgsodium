@@ -44,7 +44,7 @@ Datum pgsodium_crypto_box_seed_keypair(PG_FUNCTION_ARGS) {
     Datum result;
     bytea *publickey;
     bytea *secretkey;
-    bytea *seed = PG_GETARG_BYTEA_P(0);
+    bytea *seed = PG_GETARG_BYTEA_PP(0);
     size_t public_size = crypto_box_PUBLICKEYBYTES + VARHDRSZ;
     size_t secret_size = crypto_box_SECRETKEYBYTES + VARHDRSZ;
     ERRORIF(VARSIZE_ANY_EXHDR(seed) != crypto_box_SEEDBYTES, "invalid seed");
@@ -75,10 +75,10 @@ Datum pgsodium_crypto_box_noncegen(PG_FUNCTION_ARGS) {
 
 PG_FUNCTION_INFO_V1(pgsodium_crypto_box);
 Datum pgsodium_crypto_box(PG_FUNCTION_ARGS) {
-    bytea *message = PG_GETARG_BYTEA_P(0);
-    bytea *nonce = PG_GETARG_BYTEA_P(1);
-    bytea *publickey = PG_GETARG_BYTEA_P(2);
-    bytea *secretkey = PG_GETARG_BYTEA_P(3);
+    bytea *message = PG_GETARG_BYTEA_PP(0);
+    bytea *nonce = PG_GETARG_BYTEA_PP(1);
+    bytea *publickey = PG_GETARG_BYTEA_PP(2);
+    bytea *secretkey = PG_GETARG_BYTEA_PP(3);
     int success;
     size_t message_size;
     bytea *result;
@@ -103,10 +103,10 @@ Datum pgsodium_crypto_box(PG_FUNCTION_ARGS) {
 PG_FUNCTION_INFO_V1(pgsodium_crypto_box_open);
 Datum pgsodium_crypto_box_open(PG_FUNCTION_ARGS) {
     int success;
-    bytea *message = PG_GETARG_BYTEA_P(0);
-    bytea *nonce = PG_GETARG_BYTEA_P(1);
-    bytea *publickey = PG_GETARG_BYTEA_P(2);
-    bytea *secretkey = PG_GETARG_BYTEA_P(3);
+    bytea *message = PG_GETARG_BYTEA_PP(0);
+    bytea *nonce = PG_GETARG_BYTEA_PP(1);
+    bytea *publickey = PG_GETARG_BYTEA_PP(2);
+    bytea *secretkey = PG_GETARG_BYTEA_PP(3);
     size_t message_size;
     bytea *result;
 
@@ -132,8 +132,8 @@ Datum pgsodium_crypto_box_open(PG_FUNCTION_ARGS) {
 
 PG_FUNCTION_INFO_V1(pgsodium_crypto_box_seal);
 Datum pgsodium_crypto_box_seal(PG_FUNCTION_ARGS) {
-    bytea *message = PG_GETARG_BYTEA_P(0);
-    bytea *public_key = PG_GETARG_BYTEA_P(1);
+    bytea *message = PG_GETARG_BYTEA_PP(0);
+    bytea *public_key = PG_GETARG_BYTEA_PP(1);
     size_t result_size;
     bytea *result;
     ERRORIF(VARSIZE_ANY_EXHDR(public_key) != crypto_box_PUBLICKEYBYTES,
@@ -150,9 +150,9 @@ Datum pgsodium_crypto_box_seal(PG_FUNCTION_ARGS) {
 PG_FUNCTION_INFO_V1(pgsodium_crypto_box_seal_open);
 Datum pgsodium_crypto_box_seal_open(PG_FUNCTION_ARGS) {
     int success;
-    bytea *ciphertext = PG_GETARG_BYTEA_P(0);
-    bytea *public_key = PG_GETARG_BYTEA_P(1);
-    bytea *secret_key = PG_GETARG_BYTEA_P(2);
+    bytea *ciphertext = PG_GETARG_BYTEA_PP(0);
+    bytea *public_key = PG_GETARG_BYTEA_PP(1);
+    bytea *secret_key = PG_GETARG_BYTEA_PP(2);
     size_t result_size;
     bytea *result;
     ERRORIF(VARSIZE_ANY_EXHDR(public_key) != crypto_box_PUBLICKEYBYTES,

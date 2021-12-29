@@ -19,10 +19,10 @@ Datum pgsodium_crypto_aead_ietf_noncegen(PG_FUNCTION_ARGS) {
 
 PG_FUNCTION_INFO_V1(pgsodium_crypto_aead_ietf_encrypt);
 Datum pgsodium_crypto_aead_ietf_encrypt(PG_FUNCTION_ARGS) {
-    bytea *message = PG_GETARG_BYTEA_P(0);
-    bytea *additional = PG_GETARG_BYTEA_P(1);
-    bytea *nonce = PG_GETARG_BYTEA_P(2);
-    bytea *key = PG_GETARG_BYTEA_P(3);
+    bytea *message = PG_GETARG_BYTEA_PP(0);
+    bytea *additional = PG_GETARG_BYTEA_PP(1);
+    bytea *nonce = PG_GETARG_BYTEA_PP(2);
+    bytea *key = PG_GETARG_BYTEA_PP(3);
     unsigned long long result_size;
     bytea *result;
     ERRORIF(VARSIZE_ANY_EXHDR(nonce) !=
@@ -52,10 +52,10 @@ Datum pgsodium_crypto_aead_ietf_encrypt(PG_FUNCTION_ARGS) {
 
 PG_FUNCTION_INFO_V1(pgsodium_crypto_aead_ietf_decrypt);
 Datum pgsodium_crypto_aead_ietf_decrypt(PG_FUNCTION_ARGS) {
-    bytea *ciphertext = PG_GETARG_BYTEA_P(0);
-    bytea *additional = PG_GETARG_BYTEA_P(1);
-    bytea *nonce = PG_GETARG_BYTEA_P(2);
-    bytea *key = PG_GETARG_BYTEA_P(3);
+    bytea *ciphertext = PG_GETARG_BYTEA_PP(0);
+    bytea *additional = PG_GETARG_BYTEA_PP(1);
+    bytea *nonce = PG_GETARG_BYTEA_PP(2);
+    bytea *key = PG_GETARG_BYTEA_PP(3);
     size_t ciphertext_len;
     unsigned long long result_size;
     bytea *result;
@@ -92,11 +92,11 @@ Datum pgsodium_crypto_aead_ietf_decrypt(PG_FUNCTION_ARGS) {
 
 PG_FUNCTION_INFO_V1(pgsodium_crypto_aead_ietf_encrypt_by_id);
 Datum pgsodium_crypto_aead_ietf_encrypt_by_id(PG_FUNCTION_ARGS) {
-    bytea *message = PG_GETARG_BYTEA_P(0);
-    bytea *additional = PG_GETARG_BYTEA_P(1);
-    bytea *nonce = PG_GETARG_BYTEA_P(2);
+    bytea *message = PG_GETARG_BYTEA_PP(0);
+    bytea *additional = PG_GETARG_BYTEA_PP(1);
+    bytea *nonce = PG_GETARG_BYTEA_PP(2);
     unsigned long long key_id = PG_GETARG_INT64(3);
-    bytea *context = PG_GETARG_BYTEA_P(4);
+    bytea *context = PG_GETARG_BYTEA_PP(4);
     unsigned long long result_size;
     bytea *result;
     bytea *key;
@@ -125,11 +125,11 @@ Datum pgsodium_crypto_aead_ietf_encrypt_by_id(PG_FUNCTION_ARGS) {
 
 PG_FUNCTION_INFO_V1(pgsodium_crypto_aead_ietf_decrypt_by_id);
 Datum pgsodium_crypto_aead_ietf_decrypt_by_id(PG_FUNCTION_ARGS) {
-    bytea *ciphertext = PG_GETARG_BYTEA_P(0);
-    bytea *additional = PG_GETARG_BYTEA_P(1);
-    bytea *nonce = PG_GETARG_BYTEA_P(2);
+    bytea *ciphertext = PG_GETARG_BYTEA_PP(0);
+    bytea *additional = PG_GETARG_BYTEA_PP(1);
+    bytea *nonce = PG_GETARG_BYTEA_PP(2);
     unsigned long long key_id = PG_GETARG_INT64(3);
-    bytea *context = PG_GETARG_BYTEA_P(4);
+    bytea *context = PG_GETARG_BYTEA_PP(4);
     size_t ciphertext_len;
     unsigned long long result_size;
     bytea *result;
@@ -173,9 +173,9 @@ Datum pgsodium_crypto_aead_det_keygen(PG_FUNCTION_ARGS) {
 
 PG_FUNCTION_INFO_V1(pgsodium_crypto_aead_det_encrypt);
 Datum pgsodium_crypto_aead_det_encrypt(PG_FUNCTION_ARGS) {
-    bytea *message = PG_GETARG_BYTEA_P(0);
-    bytea *additional = PG_GETARG_BYTEA_P(1);
-    bytea *key = PG_GETARG_BYTEA_P(2);
+    bytea *message = PG_GETARG_BYTEA_PP(0);
+    bytea *additional = PG_GETARG_BYTEA_PP(1);
+    bytea *key = PG_GETARG_BYTEA_PP(2);
     size_t result_size;
     bytea *result;
     ERRORIF(VARSIZE_ANY_EXHDR(key) != crypto_aead_det_xchacha20_KEYBYTES,
@@ -195,9 +195,9 @@ Datum pgsodium_crypto_aead_det_encrypt(PG_FUNCTION_ARGS) {
 
 PG_FUNCTION_INFO_V1(pgsodium_crypto_aead_det_decrypt);
 Datum pgsodium_crypto_aead_det_decrypt(PG_FUNCTION_ARGS) {
-    bytea *ciphertext = PG_GETARG_BYTEA_P(0);
-    bytea *additional = PG_GETARG_BYTEA_P(1);
-    bytea *key = PG_GETARG_BYTEA_P(2);
+    bytea *ciphertext = PG_GETARG_BYTEA_PP(0);
+    bytea *additional = PG_GETARG_BYTEA_PP(1);
+    bytea *key = PG_GETARG_BYTEA_PP(2);
     size_t result_len;
     bytea *result;
     int success;

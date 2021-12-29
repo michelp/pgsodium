@@ -5,8 +5,8 @@ Datum pgsodium_cmp(PG_FUNCTION_ARGS) {
     int i = 0;
     int m = 0;
 
-    bytea *X = PG_GETARG_BYTEA_P(0);
-    bytea *Y = PG_GETARG_BYTEA_P(1);
+    bytea *X = PG_GETARG_BYTEA_PP(0);
+    bytea *Y = PG_GETARG_BYTEA_PP(1);
     size_t xlen = VARSIZE_ANY(X);
     size_t ylen = VARSIZE_ANY(Y);
     char * x = VARDATA_ANY(X);

@@ -29,11 +29,11 @@ Datum pgsodium_crypto_signcrypt_keypair(PG_FUNCTION_ARGS) {
 
 PG_FUNCTION_INFO_V1(pgsodium_crypto_signcrypt_sign_before);
 Datum pgsodium_crypto_signcrypt_sign_before(PG_FUNCTION_ARGS) {
-    bytea *sender = PG_GETARG_BYTEA_P(0);
-    bytea *recipient = PG_GETARG_BYTEA_P(1);
-    bytea *sender_sk = PG_GETARG_BYTEA_P(2);
-    bytea *recipient_pk = PG_GETARG_BYTEA_P(3);
-    bytea *additional = PG_GETARG_BYTEA_P(4);
+    bytea *sender = PG_GETARG_BYTEA_PP(0);
+    bytea *recipient = PG_GETARG_BYTEA_PP(1);
+    bytea *sender_sk = PG_GETARG_BYTEA_PP(2);
+    bytea *recipient_pk = PG_GETARG_BYTEA_PP(3);
+    bytea *additional = PG_GETARG_BYTEA_PP(4);
 
     TupleDesc tupdesc;
     Datum values[2];
@@ -75,4 +75,24 @@ Datum pgsodium_crypto_signcrypt_sign_before(PG_FUNCTION_ARGS) {
     tuple = heap_form_tuple(tupdesc, values, nulls);
     result = HeapTupleGetDatum(tuple);
     return result;
+}
+
+PG_FUNCTION_INFO_V1(pgsodium_crypto_signcrypt_sign_after);
+Datum pgsodium_crypto_signcrypt_sign_after(PG_FUNCTION_ARGS) {
+    bytea *state = PG_GETARG_BYTEA_PP(0);
+    bytea *sender_sk = PG_GETARG_BYTEA_PP(1);
+    bytea *ciphertext = PG_GETARG_BYTEA_PP(2);
+    size_t sig_size = crypto_signcrypt_tbsbr_SIGNBYTES + VARHDRSZ;
+    bytea *signature = _pgsodium_zalloc_bytea(sig_size);
+
+    int success;
+
+    success = crypto_signcrypt_tbsbr_sign_after(PGSODIUM_UCHARDATA(state),
+                                                PGSODIUM_UCHARDATA(signature),
+                                                PGSODIUM_UCHARDATA(sender_sk),
+                                                PGSODIUM_UCHARDATA(ciphertext),
+                                                VARSIZE_ANY_EXHDR(ciphertext));
+
+    ERRORIF(success != 0, "sign_after failed");
+    PG_RETURN_BYTEA_P(signature);
 }

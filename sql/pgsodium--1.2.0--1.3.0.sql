@@ -116,17 +116,20 @@ LANGUAGE C IMMUTABLE STRICT;
 
 -- Sign-Cryption
 
-CREATE TYPE crypto_signcrypt_state AS (state bytea, sig bytea);
+CREATE TYPE crypto_signcrypt_state_sig AS (state bytea, shared_key bytea);
 CREATE TYPE crypto_signcrypt_keypair AS (public bytea, secret bytea);
-
-CREATE FUNCTION crypto_signcrypt_sign_before(sender bytea, recipient bytea, sender_sk bytea, recipient_pk bytea, additional bytea)
-RETURNS crypto_signcrypt_state
-AS '$libdir/pgsodium', 'pgsodium_crypto_signcrypt_sign_before'
-LANGUAGE C IMMUTABLE STRICT;
 
 CREATE FUNCTION crypto_signcrypt_new_kepair()
 RETURNS crypto_signcrypt_keypair
 AS '$libdir/pgsodium', 'pgsodium_crypto_signcrypt_keypair'
 LANGUAGE C VOLATILE;
 
-    
+CREATE FUNCTION crypto_signcrypt_sign_before(sender bytea, recipient bytea, sender_sk bytea, recipient_pk bytea, additional bytea)
+RETURNS crypto_signcrypt_state_sig
+AS '$libdir/pgsodium', 'pgsodium_crypto_signcrypt_sign_before'
+LANGUAGE C IMMUTABLE STRICT;
+
+CREATE FUNCTION crypto_signcrypt_sign_after(state bytea, sender_sk bytea, ciphertext bytea)
+RETURNS bytea
+AS '$libdir/pgsodium', 'pgsodium_crypto_signcrypt_sign_after'
+LANGUAGE C IMMUTABLE STRICT;

@@ -15,8 +15,8 @@ Datum pgsodium_crypto_pwhash(PG_FUNCTION_ARGS) {
     bytea *salt;
     int result_size = VARHDRSZ + crypto_box_SEEDBYTES;
     int success;
-    data = PG_GETARG_BYTEA_P(0);
-    salt = PG_GETARG_BYTEA_P(1);
+    data = PG_GETARG_BYTEA_PP(0);
+    salt = PG_GETARG_BYTEA_PP(1);
     ERRORIF(VARSIZE_ANY_EXHDR(salt) != crypto_pwhash_SALTBYTES, "invalid salt");
     ERRORIF(VARSIZE_ANY_EXHDR(data) < crypto_pwhash_PASSWD_MIN ||
                 VARSIZE_ANY_EXHDR(data) > crypto_pwhash_PASSWD_MAX,
@@ -37,7 +37,7 @@ Datum pgsodium_crypto_pwhash(PG_FUNCTION_ARGS) {
 PG_FUNCTION_INFO_V1(pgsodium_crypto_pwhash_str);
 Datum pgsodium_crypto_pwhash_str(PG_FUNCTION_ARGS) {
     int success;
-    bytea *password = PG_GETARG_BYTEA_P(0);
+    bytea *password = PG_GETARG_BYTEA_PP(0);
     bytea *result = _pgsodium_zalloc_bytea(crypto_pwhash_STRBYTES);
     success = crypto_pwhash_str(VARDATA(result),
                                 VARDATA(password),
@@ -51,8 +51,8 @@ Datum pgsodium_crypto_pwhash_str(PG_FUNCTION_ARGS) {
 PG_FUNCTION_INFO_V1(pgsodium_crypto_pwhash_str_verify);
 Datum pgsodium_crypto_pwhash_str_verify(PG_FUNCTION_ARGS) {
     int success;
-    bytea *hashed_password = PG_GETARG_BYTEA_P(0);
-    bytea *password = PG_GETARG_BYTEA_P(1);
+    bytea *hashed_password = PG_GETARG_BYTEA_PP(0);
+    bytea *password = PG_GETARG_BYTEA_PP(1);
     success = crypto_pwhash_str_verify(VARDATA(hashed_password),
                                        VARDATA(password),
                                        VARSIZE_ANY_EXHDR(password));

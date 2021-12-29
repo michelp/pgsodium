@@ -2,8 +2,8 @@
 
 PG_FUNCTION_INFO_V1(pgsodium_crypto_auth);
 Datum pgsodium_crypto_auth(PG_FUNCTION_ARGS) {
-    bytea *message = PG_GETARG_BYTEA_P(0);
-    bytea *key = PG_GETARG_BYTEA_P(1);
+    bytea *message = PG_GETARG_BYTEA_PP(0);
+    bytea *key = PG_GETARG_BYTEA_PP(1);
     int result_size;
     bytea *result;
     ERRORIF(VARSIZE_ANY_EXHDR(key) != crypto_auth_KEYBYTES, "invalid key");
@@ -18,9 +18,9 @@ Datum pgsodium_crypto_auth(PG_FUNCTION_ARGS) {
 
 PG_FUNCTION_INFO_V1(pgsodium_crypto_auth_by_id);
 Datum pgsodium_crypto_auth_by_id(PG_FUNCTION_ARGS) {
-    bytea *message = PG_GETARG_BYTEA_P(0);
+    bytea *message = PG_GETARG_BYTEA_PP(0);
     unsigned long long key_id = PG_GETARG_INT64(1);
-    bytea *context = PG_GETARG_BYTEA_P(2);
+    bytea *context = PG_GETARG_BYTEA_PP(2);
     bytea *key = pgsodium_derive_helper(key_id, crypto_auth_KEYBYTES, context);
     int result_size;
     bytea *result;
@@ -37,9 +37,9 @@ Datum pgsodium_crypto_auth_by_id(PG_FUNCTION_ARGS) {
 PG_FUNCTION_INFO_V1(pgsodium_crypto_auth_verify);
 Datum pgsodium_crypto_auth_verify(PG_FUNCTION_ARGS) {
     int success;
-    bytea *mac = PG_GETARG_BYTEA_P(0);
-    bytea *message = PG_GETARG_BYTEA_P(1);
-    bytea *key = PG_GETARG_BYTEA_P(2);
+    bytea *mac = PG_GETARG_BYTEA_PP(0);
+    bytea *message = PG_GETARG_BYTEA_PP(1);
+    bytea *key = PG_GETARG_BYTEA_PP(2);
     ERRORIF(VARSIZE_ANY_EXHDR(mac) != crypto_auth_BYTES, "invalid mac");
     ERRORIF(VARSIZE_ANY_EXHDR(key) != crypto_auth_KEYBYTES, "invalid key");
     success = crypto_auth_verify(PGSODIUM_UCHARDATA(mac),
@@ -52,10 +52,10 @@ Datum pgsodium_crypto_auth_verify(PG_FUNCTION_ARGS) {
 PG_FUNCTION_INFO_V1(pgsodium_crypto_auth_verify_by_id);
 Datum pgsodium_crypto_auth_verify_by_id(PG_FUNCTION_ARGS) {
     int success;
-    bytea *mac = PG_GETARG_BYTEA_P(0);
-    bytea *message = PG_GETARG_BYTEA_P(1);
+    bytea *mac = PG_GETARG_BYTEA_PP(0);
+    bytea *message = PG_GETARG_BYTEA_PP(1);
     unsigned long long key_id = PG_GETARG_INT64(2);
-    bytea *context = PG_GETARG_BYTEA_P(3);
+    bytea *context = PG_GETARG_BYTEA_PP(3);
     bytea *key =
         pgsodium_derive_helper(key_id, crypto_secretbox_KEYBYTES, context);
 

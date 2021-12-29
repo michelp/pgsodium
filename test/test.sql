@@ -29,5 +29,7 @@ SELECT EXISTS (SELECT * FROM pg_settings
 \ir kdf.sql
 \ir kx.sql
 \ir sha2.sql
-\ir hmac.sql	
+\ir hmac.sql
 \ir derive.sql
+\ir signcrypt.sql
+
