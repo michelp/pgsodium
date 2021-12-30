@@ -1,6 +1,6 @@
 
 BEGIN;
-SELECT plan(2);
+SELECT plan(4);
 
 SELECT crypto_secretbox_noncegen() secretboxnonce \gset
 
@@ -11,9 +11,6 @@ select state, shared_key from crypto_signcrypt_sign_before('bob', 'alice', :'bob
 
 SELECT crypto_secretbox('bob is your uncle', :'secretboxnonce', :'shared_key'::bytea) secretbox \gset
 
-SELECT is(crypto_secretbox_open(:'secretbox', :'secretboxnonce', :'shared_key'::bytea),
-          'bob is your uncle', 'crypto_aead_ietf_decrypt with signcrypt key');
-
 select crypto_signcrypt_sign_after(:'state', :'bob_secret', :'secretbox') signature \gset
 
 select state as vstate, shared_key as vkey from
@@ -21,10 +18,15 @@ select state as vstate, shared_key as vkey from
 
 select is(:'vkey'::bytea, :'shared_key'::bytea, 'signcrypt shared keys match');
 
-select is(crypto_signcrypt_verify_after(:'vstate', :'signature', :'bob_public', :'secretbox'), true, 'signcrypt_verify_after');
+SELECT is(crypto_secretbox_open(:'secretbox', :'secretboxnonce', :'vkey'::bytea),
+          'bob is your uncle', 'crypto_aead_ietf_decrypt with signcrypt key');
 
--- \set SINGLESTEP true
--- select is(:'signature', true, 'signcrypt_sign_after');
+select is(crypto_signcrypt_verify_after(:'vstate', :'signature', :'bob_public', :'secretbox'),
+    true, 'signcrypt_verify_after');
+
+select is(crypto_signcrypt_verify_public(:'signature', 'bob', 'alice', 'additional data', :'bob_public', :'secretbox'),
+    true, 'signcrypt_verify_public');
+
 
 SELECT * FROM finish();
 ROLLBACK;

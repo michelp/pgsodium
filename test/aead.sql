@@ -1,5 +1,5 @@
 BEGIN;
-SELECT plan(6);
+SELECT plan(7);
 
 SELECT crypto_aead_ietf_keygen() aeadkey \gset
 SELECT crypto_aead_ietf_noncegen() aeadnonce \gset
