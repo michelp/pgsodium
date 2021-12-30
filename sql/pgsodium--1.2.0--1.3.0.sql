@@ -149,3 +149,58 @@ RETURNS bool
 AS '$libdir/pgsodium', 'pgsodium_crypto_signcrypt_verify_public'
 LANGUAGE C STRICT;
 
+CREATE OR REPLACE FUNCTION url_encode(data bytea) RETURNS text LANGUAGE sql AS $$
+    SELECT translate(encode(data, 'base64'), E'+/=\n', '-_');
+$$ IMMUTABLE;
+
+CREATE OR REPLACE FUNCTION url_decode(data text) RETURNS bytea LANGUAGE sql AS $$
+WITH t AS (SELECT translate(data, '-_', '+/') AS trans),
+     rem AS (SELECT length(t.trans) % 4 AS remainder FROM t) -- compute padding size
+    SELECT decode(
+        t.trans ||
+        CASE WHEN rem.remainder > 0
+           THEN repeat('=', (4 - rem.remainder))
+           ELSE '' END,
+    'base64') FROM t, rem;
+$$ IMMUTABLE;
+
+
+CREATE OR REPLACE FUNCTION crypto_signcrypt_token(
+    sender bytea,
+    recipient bytea,
+    sender_sk bytea,
+    recipient_pk bytea,
+    message bytea,
+    additional bytea)
+RETURNS text AS $$
+WITH
+    sign_before AS (
+        SELECT state, shared_key
+        FROM crypto_signcrypt_sign_before(
+            sender,
+            recipient,
+            sender_sk,
+            recipient_pk,
+            additional)
+    ),
+    secret AS (
+        SELECT crypto_aead_det_encrypt(
+            message,
+            '',
+            b.shared_key
+        ) AS secret FROM sign_before b
+    ),
+    signature AS (
+        SELECT crypto_signcrypt_sign_after(
+            b.state,
+            sender_sk,
+            s.secret
+        ) AS signature FROM sign_before b, secret s
+    )
+    SELECT format(
+        '0000.%s.%s.%s',
+        url_encode(sender),
+        url_encode(s.secret),
+        url_encode(i.signature))
+    FROM secret s, signature i;
+$$ LANGUAGE SQL STRICT;
