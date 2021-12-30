@@ -116,7 +116,7 @@ LANGUAGE C IMMUTABLE STRICT;
 
 -- Sign-Cryption
 
-CREATE TYPE crypto_signcrypt_state_sig AS (state bytea, shared_key bytea);
+CREATE TYPE crypto_signcrypt_state_key AS (state bytea, shared_key bytea);
 CREATE TYPE crypto_signcrypt_keypair AS (public bytea, secret bytea);
 
 CREATE FUNCTION crypto_signcrypt_new_kepair()
@@ -125,11 +125,27 @@ AS '$libdir/pgsodium', 'pgsodium_crypto_signcrypt_keypair'
 LANGUAGE C VOLATILE;
 
 CREATE FUNCTION crypto_signcrypt_sign_before(sender bytea, recipient bytea, sender_sk bytea, recipient_pk bytea, additional bytea)
-RETURNS crypto_signcrypt_state_sig
+RETURNS crypto_signcrypt_state_key
 AS '$libdir/pgsodium', 'pgsodium_crypto_signcrypt_sign_before'
-LANGUAGE C IMMUTABLE STRICT;
+LANGUAGE C STRICT;
 
 CREATE FUNCTION crypto_signcrypt_sign_after(state bytea, sender_sk bytea, ciphertext bytea)
 RETURNS bytea
 AS '$libdir/pgsodium', 'pgsodium_crypto_signcrypt_sign_after'
-LANGUAGE C IMMUTABLE STRICT;
+LANGUAGE C STRICT;
+
+CREATE FUNCTION crypto_signcrypt_verify_before(signature bytea, sender bytea, recipient bytea, additional bytea, sender_pk bytea, recipient_sk bytea)
+RETURNS crypto_signcrypt_state_key
+AS '$libdir/pgsodium', 'pgsodium_crypto_signcrypt_verify_before'
+LANGUAGE C STRICT;
+
+CREATE FUNCTION crypto_signcrypt_verify_after(state bytea, signature bytea, sender_pk bytea, ciphertext bytea)
+RETURNS bool
+AS '$libdir/pgsodium', 'pgsodium_crypto_signcrypt_verify_after'
+LANGUAGE C STRICT;
+
+CREATE FUNCTION crypto_signcrypt_verify_public(signature bytea, sender bytea, recipient bytea, additional bytea, sender_pk bytea, ciphertext bytea)
+RETURNS bool
+AS '$libdir/pgsodium', 'pgsodium_crypto_signcrypt_verify_public'
+LANGUAGE C STRICT;
+

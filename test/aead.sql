@@ -25,13 +25,13 @@ SELECT throws_ok(format($$select crypto_aead_ietf_decrypt(%L, 'and also your fri
 SELECT throws_ok(format($$select crypto_aead_ietf_decrypt('foo', 'and also your friend', %L, %L::bytea)$$, :'aeadnonce', :'aeadkey'),
 	   	         '22000', 'invalid message', 'crypto_aead_ietf_decrypt invalid message');
 
--- SELECT crypto_aead_det_keygen() detkey \gset
+SELECT crypto_aead_det_keygen() detkey \gset
 
--- SELECT crypto_aead_det_encrypt(
--- 	'bob is your uncle', 'and also your friend', :'detkey'::bytea) aead \gset
+SELECT crypto_aead_det_encrypt(
+	'bob is your uncle', 'and also your friend', :'detkey'::bytea) detaead \gset
 
--- SELECT is(crypto_aead_det_decrypt(:'aead', 'and also your friend', :'aeadkey'::bytea),
---           'bob is your uncle', 'crypto_aead_det_decrypt');
+SELECT is(crypto_aead_det_decrypt(:'detaead', 'and also your friend', :'detkey'::bytea),
+          'bob is your uncle', 'crypto_aead_det_decrypt');
 
 SELECT * FROM finish();
 ROLLBACK;
