@@ -32,4 +32,4 @@ SELECT EXISTS (SELECT * FROM pg_settings
 \ir hmac.sql
 \ir derive.sql
 \ir signcrypt.sql
-
+\ir helpers.sql

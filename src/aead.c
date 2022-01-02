@@ -44,9 +44,7 @@ Datum pgsodium_crypto_aead_ietf_encrypt(PG_FUNCTION_ARGS) {
                                               NULL,
                                               PGSODIUM_UCHARDATA(nonce),
                                               PGSODIUM_UCHARDATA(key));
-    SET_VARSIZE(result,
-                VARHDRSZ + result_size +
-                    crypto_aead_chacha20poly1305_IETF_ABYTES);
+    SET_VARSIZE(result, result_size + VARHDRSZ + crypto_aead_chacha20poly1305_IETF_ABYTES);
     PG_RETURN_BYTEA_P(result);
 }
 
@@ -176,19 +174,27 @@ Datum pgsodium_crypto_aead_det_encrypt(PG_FUNCTION_ARGS) {
     bytea *message = PG_GETARG_BYTEA_PP(0);
     bytea *additional = PG_GETARG_BYTEA_PP(1);
     bytea *key = PG_GETARG_BYTEA_PP(2);
+    bytea *nonce;
     size_t result_size;
     bytea *result;
+
     ERRORIF(VARSIZE_ANY_EXHDR(key) != crypto_aead_det_xchacha20_KEYBYTES,
             "invalid key");
+
+    if (!PG_ARGISNULL(3))
+        nonce = PG_GETARG_BYTEA_PP(3);
+    else
+        nonce = NULL;
     result_size = VARSIZE_ANY_EXHDR(message) + crypto_aead_det_xchacha20_ABYTES;
     result = _pgsodium_zalloc_bytea(result_size);
-    crypto_aead_det_xchacha20_encrypt(PGSODIUM_UCHARDATA(result),
-                                      PGSODIUM_UCHARDATA(message),
-                                      VARSIZE_ANY_EXHDR(message),
-                                      PGSODIUM_UCHARDATA(additional),
-                                      VARSIZE_ANY_EXHDR(additional),
-                                      NULL,
-                                      PGSODIUM_UCHARDATA(key));
+    crypto_aead_det_xchacha20_encrypt(
+        PGSODIUM_UCHARDATA(result),
+        PGSODIUM_UCHARDATA(message),
+        VARSIZE_ANY_EXHDR(message),
+        PGSODIUM_UCHARDATA(additional),
+        VARSIZE_ANY_EXHDR(additional),
+        nonce != NULL ? PGSODIUM_UCHARDATA(additional) : NULL,
+        PGSODIUM_UCHARDATA(key));
     SET_VARSIZE(result, VARHDRSZ + result_size);
     PG_RETURN_BYTEA_P(result);
 }

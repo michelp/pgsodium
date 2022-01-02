@@ -92,10 +92,10 @@ RETURNS bytea
 AS '$libdir/pgsodium', 'pgsodium_crypto_aead_det_keygen'
 LANGUAGE C VOLATILE;
 
-CREATE FUNCTION crypto_aead_det_encrypt(message bytea, additional bytea, key bytea)
+CREATE FUNCTION crypto_aead_det_encrypt(message bytea, additional bytea, key bytea, nonce bytea = NULL)
 RETURNS bytea
 AS '$libdir/pgsodium', 'pgsodium_crypto_aead_det_encrypt'
-LANGUAGE C IMMUTABLE STRICT;
+LANGUAGE C IMMUTABLE;
 
 CREATE FUNCTION crypto_aead_det_decrypt(ciphertext bytea, additional bytea, key bytea)
 RETURNS bytea
@@ -112,14 +112,12 @@ LANGUAGE C IMMUTABLE STRICT;
 -- AS '$libdir/pgsodium', 'pgsodium_crypto_aead_det_decrypt_by_id'
 -- LANGUAGE C IMMUTABLE STRICT;
 
-
-
 -- Sign-Cryption
 
 CREATE TYPE crypto_signcrypt_state_key AS (state bytea, shared_key bytea);
 CREATE TYPE crypto_signcrypt_keypair AS (public bytea, secret bytea);
 
-CREATE FUNCTION crypto_signcrypt_new_kepair()
+CREATE FUNCTION crypto_signcrypt_new_keypair()
 RETURNS crypto_signcrypt_keypair
 AS '$libdir/pgsodium', 'pgsodium_crypto_signcrypt_keypair'
 LANGUAGE C VOLATILE;
@@ -149,21 +147,19 @@ RETURNS bool
 AS '$libdir/pgsodium', 'pgsodium_crypto_signcrypt_verify_public'
 LANGUAGE C STRICT;
 
-CREATE OR REPLACE FUNCTION url_encode(data bytea) RETURNS text LANGUAGE sql AS $$
-    SELECT translate(encode(data, 'base64'), E'+/=\n', '-_');
-$$ IMMUTABLE;
+-- helpers
 
-CREATE OR REPLACE FUNCTION url_decode(data text) RETURNS bytea LANGUAGE sql AS $$
-WITH t AS (SELECT translate(data, '-_', '+/') AS trans),
-     rem AS (SELECT length(t.trans) % 4 AS remainder FROM t) -- compute padding size
-    SELECT decode(
-        t.trans ||
-        CASE WHEN rem.remainder > 0
-           THEN repeat('=', (4 - rem.remainder))
-           ELSE '' END,
-    'base64') FROM t, rem;
-$$ IMMUTABLE;
 
+
+CREATE FUNCTION sodium_bin2base64(bin bytea) RETURNS text
+AS '$libdir/pgsodium', 'pgsodium_sodium_bin2base64'
+LANGUAGE C IMMUTABLE STRICT;
+
+CREATE FUNCTION sodium_base642bin(base64 text) RETURNS bytea
+AS '$libdir/pgsodium', 'pgsodium_sodium_base642bin'
+LANGUAGE C IMMUTABLE STRICT;
+
+-- experimental signcrypt token
 
 CREATE OR REPLACE FUNCTION crypto_signcrypt_token(
     sender bytea,
@@ -183,24 +179,30 @@ WITH
             recipient_pk,
             additional)
     ),
-    secret AS (
+    ciphertext AS (
         SELECT crypto_aead_det_encrypt(
             message,
-            '',
+            additional,
             b.shared_key
-        ) AS secret FROM sign_before b
+        ) AS ciphertext
+        FROM sign_before b
     ),
     signature AS (
         SELECT crypto_signcrypt_sign_after(
             b.state,
             sender_sk,
-            s.secret
-        ) AS signature FROM sign_before b, secret s
+            c.ciphertext
+        ) AS signature
+        FROM
+            sign_before b,
+            ciphertext c
     )
     SELECT format(
         '0000.%s.%s.%s',
-        url_encode(sender),
-        url_encode(s.secret),
-        url_encode(i.signature))
-    FROM secret s, signature i;
+        sodium_bin2base64(sender),
+        sodium_bin2base64(c.ciphertext),
+        sodium_bin2base64(s.signature))
+    FROM
+        ciphertext c,
+        signature s;
 $$ LANGUAGE SQL STRICT;

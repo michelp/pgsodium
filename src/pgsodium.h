@@ -21,9 +21,13 @@
 #include "crypto_aead_det_xchacha20.h"
 #include "signcrypt_tbsbr.h"
 
+#define elogn(s) elog(NOTICE, "%s", (s))
+#define elogn1(s, v) elog(NOTICE, "%s: %lu", (s), (v))
+
 #define PG_GETKEY_EXEC "pgsodium_getkey"
 
 #define PGSODIUM_UCHARDATA(_vlena) (unsigned char *)VARDATA(_vlena)
+#define PGSODIUM_CHARDATA(_vlena) (char *)VARDATA(_vlena)
 
 #define ERRORIF(B, msg)                                                        \
     if ((B))                                                                   \
@@ -50,6 +54,20 @@ extern bytea *pgsodium_secret_key;
 /* allocator attached zero-callback to clean up memory */
 static inline bytea *_pgsodium_zalloc_bytea(size_t allocation_size) {
     bytea *result = (bytea *)palloc(allocation_size);
+    MemoryContextCallback *ctxcb = (MemoryContextCallback *)MemoryContextAlloc(
+        CurrentMemoryContext, sizeof(MemoryContextCallback));
+    _pgsodium_cb *d = (_pgsodium_cb *)palloc(sizeof(_pgsodium_cb));
+    d->ptr = result;
+    d->size = allocation_size;
+    ctxcb->func = context_cb_zero_buff;
+    ctxcb->arg = d;
+    MemoryContextRegisterResetCallback(CurrentMemoryContext, ctxcb);
+    SET_VARSIZE(result, allocation_size);
+    return result;
+}
+
+static inline text *_pgsodium_zalloc_text(size_t allocation_size) {
+    text *result = (text *)palloc(allocation_size);
     MemoryContextCallback *ctxcb = (MemoryContextCallback *)MemoryContextAlloc(
         CurrentMemoryContext, sizeof(MemoryContextCallback));
     _pgsodium_cb *d = (_pgsodium_cb *)palloc(sizeof(_pgsodium_cb));
@@ -226,6 +244,7 @@ Datum pgsodium_crypto_signcrypt_keypair(PG_FUNCTION_ARGS);
 /* Helpers */
 
 Datum pgsodium_cmp(PG_FUNCTION_ARGS);
-
+Datum pgsodium_sodium_bin2base64(PG_FUNCTION_ARGS);
+Datum pgsodium_sodium_base642bin(PG_FUNCTION_ARGS);
 
 #endif /* PGSODIUM_H */

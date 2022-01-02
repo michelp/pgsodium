@@ -63,11 +63,16 @@ void _PG_init(void) {
                 stderr, "%s: could not close shell command\n", PG_GETKEY_EXEC);
             proc_exit(1);
         }
-        pgsodium_secret_key = malloc(crypto_sign_SECRETKEYBYTES + VARHDRSZ);
+        pgsodium_secret_key =
+            sodium_malloc(crypto_sign_SECRETKEYBYTES + VARHDRSZ);
+
+        if (pgsodium_secret_key == NULL) {
+            fprintf(stderr, "%s: sodium_malloc() failed\n", PG_GETKEY_EXEC);
+            proc_exit(1);
+        }
+
         hex_decode(secret_buf, secret_len, VARDATA(pgsodium_secret_key));
-        sodium_mlock(pgsodium_secret_key,
-                     crypto_sign_SECRETKEYBYTES + VARHDRSZ);
-        memset(secret_buf, 0, secret_len);
+        sodium_memzero(secret_buf, secret_len);
         free(secret_buf);
     }
 }
