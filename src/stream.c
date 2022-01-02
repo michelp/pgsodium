@@ -77,7 +77,6 @@ Datum pgsodium_crypto_stream_xchacha20_xor_ic(PG_FUNCTION_ARGS) {
     PG_RETURN_BYTEA_P(result);
 }
 
-
 PG_FUNCTION_INFO_V1(pgsodium_crypto_stream_xchacha20_by_id);
 Datum pgsodium_crypto_stream_xchacha20_by_id(PG_FUNCTION_ARGS) {
     size_t size = PG_GETARG_INT64(0);

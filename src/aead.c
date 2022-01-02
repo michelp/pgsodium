@@ -44,7 +44,9 @@ Datum pgsodium_crypto_aead_ietf_encrypt(PG_FUNCTION_ARGS) {
                                               NULL,
                                               PGSODIUM_UCHARDATA(nonce),
                                               PGSODIUM_UCHARDATA(key));
-    SET_VARSIZE(result, result_size + VARHDRSZ + crypto_aead_chacha20poly1305_IETF_ABYTES);
+    SET_VARSIZE(result,
+                result_size + VARHDRSZ +
+                    crypto_aead_chacha20poly1305_IETF_ABYTES);
     PG_RETURN_BYTEA_P(result);
 }
 

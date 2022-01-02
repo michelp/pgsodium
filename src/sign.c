@@ -180,11 +180,10 @@ Datum pgsodium_crypto_sign_final_create(PG_FUNCTION_ARGS) {
     size_t result_size = VARHDRSZ + sig_size;
     bytea *result = _pgsodium_zalloc_bytea(result_size);
 
-    success =
-        crypto_sign_final_create((crypto_sign_state *)VARDATA(state),
-                                 PGSODIUM_UCHARDATA(result),
-                                 NULL,
-                                 PGSODIUM_UCHARDATA(key));
+    success = crypto_sign_final_create((crypto_sign_state *)VARDATA(state),
+                                       PGSODIUM_UCHARDATA(result),
+                                       NULL,
+                                       PGSODIUM_UCHARDATA(key));
     pfree(state);
 
     ERRORIF(success != 0, "unable to complete signature");
@@ -195,13 +194,12 @@ PG_FUNCTION_INFO_V1(pgsodium_crypto_sign_final_verify);
 Datum pgsodium_crypto_sign_final_verify(PG_FUNCTION_ARGS) {
     int success;
     bytea *state = PG_GETARG_BYTEA_P_COPY(0);
-    bytea *sig = PG_GETARG_BYTEA_P(1);  // why doesn't _PP work here?
+    bytea *sig = PG_GETARG_BYTEA_P(1); // why doesn't _PP work here?
     bytea *key = PG_GETARG_BYTEA_PP(2);
 
-    success =
-        crypto_sign_final_verify((crypto_sign_state *)VARDATA(state),
-                                 PGSODIUM_UCHARDATA(sig),
-                                 PGSODIUM_UCHARDATA(key));
+    success = crypto_sign_final_verify((crypto_sign_state *)VARDATA(state),
+                                       PGSODIUM_UCHARDATA(sig),
+                                       PGSODIUM_UCHARDATA(key));
     pfree(state);
     PG_RETURN_BOOL(success == 0);
 }
