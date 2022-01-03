@@ -1,0 +1,12 @@
+name: Run tests on all postgres versions
+
+on: push
+
+jobs:
+  test-job:
+    name: Test Job
+    runs-on: ubuntu-latest
+    steps:
+      - name: Run test script
+        run: |
+          ./test.sh
