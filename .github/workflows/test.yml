@@ -7,7 +7,8 @@ jobs:
     name: Test Job
     runs-on: ubuntu-latest
     steps:
-      - name: Run test script
+      - name: Checkout
         uses: actions/checkout@v2        
+      - name: Run test script
         run: |
           ./test.sh
