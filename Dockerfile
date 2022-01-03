@@ -8,7 +8,7 @@ RUN curl -s -L https://download.libsodium.org/libsodium/releases/libsodium-1.0.1
 RUN mkdir "/pgsodium"
 WORKDIR "/pgsodium"
 COPY . .
-RUN make && make install
+RUN make -j 4 && make install
 RUN ldconfig
 RUN cd `pg_config --sharedir`/extension/
 RUN cp getkey_scripts/pgsodium_getkey_urandom.sh `pg_config --sharedir`/extension/pgsodium_getkey

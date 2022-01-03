@@ -97,20 +97,20 @@ RETURNS bytea
 AS '$libdir/pgsodium', 'pgsodium_crypto_aead_det_encrypt'
 LANGUAGE C IMMUTABLE;
 
-CREATE FUNCTION crypto_aead_det_decrypt(ciphertext bytea, additional bytea, key bytea)
+CREATE FUNCTION crypto_aead_det_decrypt(ciphertext bytea, additional bytea, key bytea, nonce bytea = NULL)
 RETURNS bytea
 AS '$libdir/pgsodium', 'pgsodium_crypto_aead_det_decrypt'
-LANGUAGE C IMMUTABLE STRICT;
+LANGUAGE C IMMUTABLE;
 
--- CREATE FUNCTION crypto_aead_det_encrypt(message bytea, additional bytea, key_id bigint, context bytea = 'pgsodium')
--- RETURNS bytea
--- AS '$libdir/pgsodium', 'pgsodium_crypto_aead_det_encrypt_by_id'
--- LANGUAGE C IMMUTABLE STRICT;
+CREATE FUNCTION crypto_aead_det_encrypt(message bytea, additional bytea, key_id bigint, context bytea = 'pgsodium', nonce bytea = NULL)
+RETURNS bytea
+AS '$libdir/pgsodium', 'pgsodium_crypto_aead_det_encrypt_by_id'
+LANGUAGE C IMMUTABLE;
 
--- CREATE FUNCTION crypto_aead_det_decrypt(message bytea, additional bytea, key_id bigint, context bytea = 'pgsodium')
--- RETURNS bytea
--- AS '$libdir/pgsodium', 'pgsodium_crypto_aead_det_decrypt_by_id'
--- LANGUAGE C IMMUTABLE STRICT;
+CREATE FUNCTION crypto_aead_det_decrypt(message bytea, additional bytea, key_id bigint, context bytea = 'pgsodium', nonce bytea = NULL)
+RETURNS bytea
+AS '$libdir/pgsodium', 'pgsodium_crypto_aead_det_decrypt_by_id'
+LANGUAGE C IMMUTABLE;
 
 -- Sign-Cryption
 
@@ -149,8 +149,6 @@ LANGUAGE C STRICT;
 
 -- helpers
 
-
-
 CREATE FUNCTION sodium_bin2base64(bin bytea) RETURNS text
 AS '$libdir/pgsodium', 'pgsodium_sodium_bin2base64'
 LANGUAGE C IMMUTABLE STRICT;
@@ -161,7 +159,7 @@ LANGUAGE C IMMUTABLE STRICT;
 
 -- experimental signcrypt token
 
-CREATE OR REPLACE FUNCTION crypto_signcrypt_token(
+CREATE OR REPLACE FUNCTION crypto_signcrypt_token_encrypt(
     sender bytea,
     recipient bytea,
     sender_sk bytea,
@@ -198,11 +196,100 @@ WITH
             ciphertext c
     )
     SELECT format(
-        '0000.%s.%s.%s',
+        '0000.%s.%s.%s.%s',
         sodium_bin2base64(sender),
         sodium_bin2base64(c.ciphertext),
+        sodium_bin2base64(additional),
         sodium_bin2base64(s.signature))
     FROM
         ciphertext c,
         signature s;
 $$ LANGUAGE SQL STRICT;
+
+CREATE OR REPLACE FUNCTION crypto_signcrypt_token_decrypt(
+    token text,
+    recipient bytea,
+    sender_pk bytea,
+    recipient_sk bytea,
+    sender OUT bytea,
+    message OUT bytea,
+    additional OUT bytea)
+AS $$
+    SELECT NULL::bytea, NULL::bytea, NULL::bytea;
+$$ LANGUAGE SQL STRICT;
+
+
+CREATE OR REPLACE FUNCTION crypto_signcrypt_token_verify(
+    token text,
+    sender_pk bytea,
+    sender OUT bytea,
+    message OUT bytea,
+    additional OUT bytea)
+AS $$
+    SELECT NULL::bytea, NULL::bytea, NULL::bytea;
+$$ LANGUAGE SQL STRICT;
+
+-- pgsodium_keymaker
+
+DO $$
+DECLARE
+	func text;
+BEGIN
+	FOREACH func IN ARRAY
+		ARRAY[
+		'crypto_signcrypt_new_keypair',
+        'crypto_aead_det_keygen'
+	]
+	LOOP
+		EXECUTE format($i$
+			REVOKE ALL ON FUNCTION %s FROM PUBLIC;
+			GRANT EXECUTE ON FUNCTION %s TO pgsodium_keymaker;
+		$i$, func, func);
+	END LOOP;
+END
+$$;
+
+-- pgsodium_keyholder
+
+DO $$
+DECLARE
+	func text;
+BEGIN
+	FOREACH func IN ARRAY
+	ARRAY[
+    'crypto_signcrypt_sign_before',
+    'crypto_signcrypt_sign_after',
+    'crypto_signcrypt_verify_before',
+    'crypto_signcrypt_verify_after',
+    'crypto_signcrypt_verify_public',
+    'crypto_aead_det_encrypt(bytea, bytea, bytea, bytea)',
+    'crypto_aead_det_decrypt(bytea, bytea, bytea, bytea)'
+	]
+	LOOP
+		EXECUTE format($i$
+			REVOKE ALL ON FUNCTION %s FROM PUBLIC;
+			GRANT EXECUTE ON FUNCTION %s TO pgsodium_keyholder;
+		$i$, func, func);
+	END LOOP;
+END
+$$;
+
+-- pgsodium_keyiduser
+
+DO $$
+DECLARE
+	func text;
+BEGIN
+	FOREACH func IN ARRAY
+	ARRAY[
+    'crypto_aead_det_encrypt(bytea, bytea, bigint, bytea, bytea)',
+    'crypto_aead_det_decrypt(bytea, bytea, bigint, bytea, bytea)'
+	]
+	LOOP
+		EXECUTE format($i$
+			REVOKE ALL ON FUNCTION %s FROM PUBLIC;
+			GRANT EXECUTE ON FUNCTION %s TO pgsodium_keyiduser;
+		$i$, func, func);
+	END LOOP;
+END
+$$;

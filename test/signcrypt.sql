@@ -4,8 +4,8 @@ SELECT plan(4);
 
 SELECT crypto_secretbox_noncegen() secretboxnonce \gset
 
-SELECT public, secret FROM crypto_signcrypt_new_kepair() \gset bob_
-SELECT public, secret FROM crypto_signcrypt_new_kepair() \gset alice_
+SELECT public, secret FROM crypto_signcrypt_new_keypair() \gset bob_
+SELECT public, secret FROM crypto_signcrypt_new_keypair() \gset alice_
 
 SELECT state, shared_key FROM crypto_signcrypt_sign_before('bob', 'alice', :'bob_secret', :'alice_public', 'additional data') \gset
 

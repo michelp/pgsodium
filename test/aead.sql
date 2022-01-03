@@ -51,6 +51,18 @@ SELECT throws_ok($$select crypto_aead_ietf_encrypt('bob is your uncle', 'and als
 	   	         '42501', 'permission denied for function crypto_aead_ietf_encrypt', 'crypto_aead_ietf_encrypt denied');
 SELECT throws_ok($$select crypto_aead_ietf_decrypt('bob is your uncle', 'and also your friend', 'whatever', 'whatever'::bytea)$$,
 	   	         '42501', 'permission denied for function crypto_aead_ietf_decrypt', 'crypto_aead_ietf_decrypt denied');
+
+SELECT crypto_aead_det_encrypt(
+	'bob is your uncle', 'and also your friend', 32) detaeadid \gset
+
+SELECT is(crypto_aead_det_decrypt(:'detaeadid', 'and also your friend', 32),
+          'bob is your uncle', 'crypto_aead_det_decrypt by id');
+
+SELECT throws_ok($$select crypto_aead_det_encrypt('bob is your uncle', 'and also your friend', 'whatever', 'whatever'::bytea)$$,
+	   	         '42501', 'permission denied for function crypto_aead_det_encrypt', 'crypto_aead_det_encrypt denied');
+SELECT throws_ok($$select crypto_aead_det_decrypt('bob is your uncle', 'and also your friend', 'whatever', 'whatever'::bytea)$$,
+	   	         '42501', 'permission denied for function crypto_aead_det_decrypt', 'crypto_aead_det_decrypt denied');
+
 RESET ROLE;
 SELECT * FROM finish();
 ROLLBACK;
