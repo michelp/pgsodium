@@ -11,4 +11,4 @@ jobs:
         uses: actions/checkout@v2        
       - name: Run test script
         run: |
-          ./test.sh
+          ./test.sh 14
