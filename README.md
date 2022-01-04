@@ -3,9 +3,8 @@
 <br />
 # pgsodium
 
-pgsodium is a [PostgreSQL](https://www.postgresql.org/) extension that
-uses modern [libsodium](https://download.libsodium.org/doc/)-based
-cryptography functions.
+pgsodium bring [libsodium](https://download.libsodium.org/doc/) to
+[PostgreSQL](https://www.postgresql.org/).
 
 # Table of Contents
 
@@ -34,6 +33,8 @@ cryptography functions.
       * [HMAC512](#hmac512)
       * [Advanced Stream API](#stream)
       * [Signcryption API](#signcryption)
+      * [XChaCha-SIV](#xchacha-siv)
+      * [Signcryption](#signcryption)
 
 ## Installation
 
@@ -41,14 +42,10 @@ pgsodium requires libsodium >= 1.0.18.  In addition to the libsodium
 library and it's development headers, you may also need the PostgreSQL
 header files typically in the '-dev' packages to build the extension.
 
-[Travis CI](https://travis-ci.com/github/michelp/pgsodium) tests all
-changes with the [official docker
-images](https://hub.docker.com/_/postgres) for PostgreSQL 14, 13, 12, 11,
-and 10.  PostgreSQL 9.x is not supported.
+After installing the dependencies, clone the repo and run `sudo make
+install`.
 
-Clone the repo and run 'sudo make install'.
-
-pgTAP tests can be run with 'sudo -u postgres pg_prove test.sql' or
+pgTAP tests can be run with `sudo -u postgres pg_prove test.sql` or
 they can be run in a self-contained Docker image.  Run `./test.sh` if
 you have docker installed to run all tests.  Note that this will run
 the tests against and download docker images for four different major
@@ -962,6 +959,15 @@ shared keys using their peer's public key and their own secret key.
 
 ## HMAC512/256
 
+[https://en.wikipedia.org/wiki/HMAC]
+
+In cryptography, an HMAC (sometimes expanded as either keyed-hash
+message authentication code or hash-based message authentication code)
+is a specific type of message authentication code (MAC) involving a
+cryptographic hash function and a secret cryptographic key. As with
+any MAC, it may be used to simultaneously verify both the data
+integrity and authenticity of a message.
+
     select crypto_auth_hmacsha512_keygen() hmac512key \gset
     select crypto_auth_hmacsha512('food', :'hmac512key') hmac512 \gset
 
@@ -972,12 +978,31 @@ shared keys using their peer's public key and their own secret key.
 
 ## Advanced Stream API (XChaCha20)
 
+The stream API is for advanced users only and only provide low level
+encryption without authentication.
+
 [C API Documentation](https://doc.libsodium.org/advanced/stream_ciphers/xchacha20)
 
 ## XChaCha20-SIV
 
-[C API Documentation](https://doc.libsodium.org/advanced/)
+Deterministic/nonce-reuse resistant authenticated encryption scheme
+using XChaCha20.
+
+[C API Documentation](https://github.com/jedisct1/libsodium-xchacha20-siv)
 
 ## SignCryption
 
-[C API Documentation](https://doc.libsodium.org/advanced/)
+Traditional authenticated encryption with a shared key allows two or
+more parties to decrypt a ciphertext and verify that it was created by
+a member of the group knowing that secret key.
+
+However, it doesn't allow verification of who in a group originally
+created a message.
+
+In order to do so, authenticated encryption has to be combined with
+signatures.
+
+The Toorani-Beheshti signcryption scheme achieves this using a single
+key pair per device, with forward security and public verifiability.
+
+[C API Documentation](https://github.com/jedisct1/libsodium-signcryption)
