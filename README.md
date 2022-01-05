@@ -32,7 +32,6 @@ pgsodium bring [libsodium](https://download.libsodium.org/doc/) to
       * [Key Exchange](#key-exchange)
       * [HMAC512](#hmac512)
       * [Advanced Stream API](#stream)
-      * [Signcryption API](#signcryption)
       * [XChaCha-SIV](#xchacha-siv)
       * [Signcryption](#signcryption)
 
@@ -996,8 +995,9 @@ Traditional authenticated encryption with a shared key allows two or
 more parties to decrypt a ciphertext and verify that it was created by
 a member of the group knowing that secret key.
 
-However, it doesn't allow verification of who in a group originally
-created a message.
+However, [it doesn't allow
+verification](https://theworld.com/~dtd/sign_encrypt/sign_encrypt7.html)
+of who in a group originally created a message.
 
 In order to do so, authenticated encryption has to be combined with
 signatures.

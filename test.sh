@@ -23,11 +23,10 @@ do
 		echo waiting for database to accept connections
 		sleep 1;
 		until
-			$EXEC \
-				psql -o /dev/null -t -q -U "$SU" \
-				-c 'select pg_sleep(1)' \
-				2>/dev/null;
-		do sleep 1;
+			$EXEC pg_isready -U "$SU";
+		do
+            docker logs "$DB_HOST";
+            sleep 1;
 		done
 
 		echo running tests
