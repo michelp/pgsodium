@@ -25,8 +25,8 @@ do
 		until
 			$EXEC pg_isready -U "$SU";
 		do
-            docker logs "$DB_HOST";
-            sleep 1;
+            docker logs -n 100 "$DB_HOST";
+            sleep 3;
 		done
 
 		echo running tests
