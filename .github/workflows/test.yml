@@ -1,14 +1,58 @@
-name: Run tests on all postgres versions
+# .github/workflows/pgtest.yml
+name: Postgres tests
 
 on: push
 
 jobs:
-  test-job:
-    name: Test Job
+  pgtap:
+
     runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:14
+        env:
+          POSTGRES_PASSWORD: postgres
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+
     steps:
-      - name: Checkout
-        uses: actions/checkout@v2        
-      - name: Run test script
-        run: |
-          ./test.sh 14
+      - uses: actions/checkout@v2
+
+      - name: install pg_prove
+        run: sudo cpan TAP::Parser::SourceHandler::pgTAP
+        env:
+          SHELL: /bin/bash
+
+      - name: install postgres dev
+        run: sudo apt-get install -y --no-install-recommends postgresql-server-dev-all
+
+      - name: Checkout pgtap
+        uses: actions/checkout@v2
+        with:
+          repository: theory/pgtap
+          path: pgtap
+          ref: v1.1.0
+
+      - name: install pgtap
+        working-directory: pgtap
+        run: make && psql --host localhost --username postgres --dbname postgres --file sql/pgtap.sql
+        env:
+          PGPASSWORD: postgres
+
+      - name: Checkout libsodium
+        uses: actions/checkout@v2
+        with:
+          repository: jedisct1/libsodium
+          path: libsodium
+          ref: 1.0.18
+
+      - name: install libsodium
+        working-directory: libsodium
+        run: make && make install
+

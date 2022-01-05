@@ -23,12 +23,11 @@ do
 		echo waiting for database to accept connections
 		sleep 1;
 		until
-			$EXEC pg_isready -U "$SU";
+			$EXEC pg_isready -t 3 -U "$SU";
 		do
-            docker logs -n 100 "$DB_HOST";
             sleep 3;
 		done
-
+        docker logs "$DB_HOST"
 		echo running tests
 		$EXEC psql -U "$SU" -f /pgsodium/test/test.sql
 
