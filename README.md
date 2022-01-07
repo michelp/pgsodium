@@ -121,7 +121,7 @@ containers, you can append this after the run:
 
 When the server starts, it will load the secret key into memory, but
 this key is *never* accessible to SQL.  It's possible that a
-sufficiently clever maliscious superuser can access the key by
+sufficiently clever malicious superuser can access the key by
 invoking external programs, causing core dumps, looking in swap space,
 or other attack paths beyond the scope of pgsodium.  Databases that
 work with encryption and keys should be extra cautious and use as many
@@ -289,7 +289,7 @@ least privledged `pgsodium_keyiduser` role:
         EXECUTE FUNCTION test_encrypt();
 
 Use the view as if it were a normal table, but the underlying table is
-encrypted.  Again, no keys are stored or even avilable to this code,
+encrypted.  Again, no keys are stored or even available to this code,
 only [derived keys](#server-key-management) based on a key id are
 used.
 
@@ -650,7 +650,7 @@ recipient's public key and the sender's secret key.  The resulting
 ciphertext can only be decrypted by the intended recipient using their
 secret key.  The nonce must be sent along with the ciphertext.
 
-`crypto_box_open()` descrypts a ciphertext encrypted using
+`crypto_box_open()` decrypts a ciphertext encrypted using
 `crypto_box()`.  It takes the ciphertext, nonce, the sender's public
 key and the recipient's secret key as parameters, and returns the
 original message.  Note that the recipient should ensure that the
