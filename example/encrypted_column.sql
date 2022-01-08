@@ -2,8 +2,8 @@ CREATE SCHEMA IF NOT EXISTS pgsodium;
 CREATE EXTENSION  IF NOT EXISTS pgsodium WITH SCHEMA pgsodium;
 s
 -- This is a demonstration user to show that the pgsodium_keyiduser
--- role can be used to access only encrpytion functions by key_id,
--- this role can never access raw encrpytion keys.
+-- role can be used to access only encryption functions by key_id,
+-- this role can never access raw encryption keys.
 	
 CREATE ROLE auser;
 GRANT pgsodium_keyiduser TO auser;
