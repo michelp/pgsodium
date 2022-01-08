@@ -1,13 +1,10 @@
-# .github/workflows/pgtest.yml
 name: Postgres tests
 
 on: push
 
 jobs:
-  pgtap:
-
+  tests:
     runs-on: ubuntu-latest
-
     services:
       postgres:
         image: postgres:14
@@ -45,7 +42,9 @@ jobs:
         env:
           PGPASSWORD: postgres
 
-    - uses: actions/checkout@v2
-    - name: Run tests
-      run: |
-        psql test/test.sql
+      - uses: actions/checkout@v2
+      - name: Run tests
+        run: |
+          psql -U postgres test/test.sql
+        env:
+          PGPASSWORD: postgres
