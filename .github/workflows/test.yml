@@ -30,7 +30,7 @@ jobs:
           SHELL: /bin/bash
 
       - name: install postgres dev
-        run: sudo apt-get install -y --no-install-recommends postgresql-server-dev-all libsodium-dev==1.0.18
+        run: sudo apt-get install -y --no-install-recommends postgresql-server-dev-all libsodium-dev
 
       - name: Checkout pgtap
         uses: actions/checkout@v2
@@ -44,3 +44,8 @@ jobs:
         run: make && psql --host localhost --username postgres --dbname postgres --file sql/pgtap.sql
         env:
           PGPASSWORD: postgres
+
+    - uses: actions/checkout@v2
+    - name: Run tests
+      run: |
+        psql test/test.sql
