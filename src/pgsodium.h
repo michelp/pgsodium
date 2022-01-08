@@ -7,7 +7,7 @@
 #include <stdbool.h>
 #include <stdlib.h>
 
-#include "postgres.h"
+#include <postgres.h>
 #include "utils/builtins.h"
 #include "libpq/pqformat.h"
 #include "funcapi.h"
