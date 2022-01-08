@@ -54,5 +54,5 @@ jobs:
 
       - name: install libsodium
         working-directory: libsodium
-        run: make && make install
+        run: ./configure && make && make install
 
