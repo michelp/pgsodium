@@ -24,7 +24,7 @@ do
 		sleep 3;
 		echo running tests
         
-		$EXEC psql -U "$SU" -f /pgsodium/test/test.sql > /pgsodium_test.log
+		$EXEC psql -q -U "$SU" -f /pgsodium/test/test.sql
 
 		echo destroying test container and image
 		docker rm --force "$DB_HOST"
