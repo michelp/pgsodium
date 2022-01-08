@@ -112,7 +112,7 @@ pgsodium also comes with example scripts for:
     Management](getkey_scripts/pgsodium_getkey_gcp.sh).
 
   - [Zymbit Zymkey 4i Hardware Security
-    Module]((getkey_scripts/pgsodium_getkey_zmk.sh).
+    Module](getkey_scripts/pgsodium_getkey_zmk.sh).
 
 Next place `pgsodium` in your `shared_preload_libraries`.  For docker
 containers, you can append this after the run:
