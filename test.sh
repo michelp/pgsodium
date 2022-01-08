@@ -21,14 +21,7 @@ do
 		docker run --rm -e POSTGRES_HOST_AUTH_METHOD=trust -d --name "$DB_HOST" $TAG $config
 
 		echo waiting for database to accept connections
-		sleep 1;
-		until
-			$EXEC pg_isready -t 3 -U "$SU";
-		do
-            docker logs "$DB_HOST";
-            sleep 3;
-		done
-        docker logs "$DB_HOST"
+		sleep 10;
 		echo running tests
 		$EXEC psql -U "$SU" -f /pgsodium/test/test.sql
 
