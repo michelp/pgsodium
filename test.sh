@@ -6,7 +6,7 @@ versions=${1:-14 13 12 11 10}
 
 for version in $versions
 do
-	for config in '-c shared_preload_libraries=pgsodium' '' '-c shared_preload_libraries=pgsodium -c pgsodium.getkey_script=/getkey'
+	for config in '' '-c shared_preload_libraries=pgsodium' '-c shared_preload_libraries=pgsodium -c pgsodium.getkey_script=/getkey'
 	do
 		DB_HOST="pgsodium-test-db-$version"
 		DB_NAME="postgres"
@@ -21,10 +21,10 @@ do
 		docker run --rm -e POSTGRES_HOST_AUTH_METHOD=trust -d --name "$DB_HOST" $TAG $config
 
 		echo waiting for database to accept connections
-		sleep 10;
+		sleep 3;
 		echo running tests
         
-		$EXEC psql -U "$SU" -f /pgsodium/test/test.sql
+		$EXEC psql -U "$SU" -f /pgsodium/test/test.sql > /pgsodium_test.log
 
 		echo destroying test container and image
 		docker rm --force "$DB_HOST"
