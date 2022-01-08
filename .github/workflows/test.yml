@@ -19,8 +19,6 @@ jobs:
           - 5432:5432
 
     steps:
-      - uses: actions/checkout@v2
-
       - name: install pg_prove
         run: sudo cpan TAP::Parser::SourceHandler::pgTAP
         env:
@@ -45,6 +43,8 @@ jobs:
       - uses: actions/checkout@v2
       - name: Run tests
         run: |
-          psql -U postgres test/test.sql
+          make && make install
+          ldconfig
+          psql -h localhost -U postgres test/test.sql
         env:
           PGPASSWORD: postgres
