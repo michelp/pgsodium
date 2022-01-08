@@ -1,6 +1,5 @@
+[![Tests](https://github.com/michelp/pgsodium/actions/workflows/test.yml/badge.svg)](https://github.com/michelp/pgsodium/actions/workflows/test.yml)
 
-[![Build Status](https://api.travis-ci.com/michelp/pgsodium.svg?branch=master)](https://travis-ci.com/github/michelp/pgsodium)
-<br />
 # pgsodium
 
 pgsodium bring [libsodium](https://download.libsodium.org/doc/) to

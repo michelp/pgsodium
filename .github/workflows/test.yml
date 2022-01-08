@@ -1,4 +1,4 @@
-name: Postgres tests
+name: Tests
 
 on: push
 
