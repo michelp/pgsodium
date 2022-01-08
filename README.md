@@ -46,9 +46,9 @@ install`.
 pgTAP tests can be run with `sudo -u postgres pg_prove test.sql` or
 they can be run in a self-contained Docker image.  Run `./test.sh` if
 you have docker installed to run all tests.  Note that this will run
-the tests against and download docker images for four different major
-versions of PostgreSQL, so it takes a while and requires a lot of
-network bandwidth the first time you run it.
+the tests against and download docker images for five different major
+versions of PostgreSQL (10, 11, 12, 13, 14), so it takes a while and
+requires a lot of network bandwidth the first time you run it.
 
 # Usage
 
