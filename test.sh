@@ -23,6 +23,7 @@ do
 		echo waiting for database to accept connections
 		sleep 10;
 		echo running tests
+        
 		$EXEC psql -U "$SU" -f /pgsodium/test/test.sql
 
 		echo destroying test container and image
