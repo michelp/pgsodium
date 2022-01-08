@@ -2,8 +2,63 @@
 
 # pgsodium
 
-pgsodium brings [libsodium](https://download.libsodium.org/doc/) to
-[PostgreSQL](https://www.postgresql.org/).
+pgsodium is an encryption library extension for
+[PostgreSQL](https://www.postgresql.org/) using the
+[libsodium](https://download.libsodium.org/doc/) library for high
+level cryptographic algorithms.
+
+pgsodium can be used a straight interface to libsodium, but it can
+also use a powerful feature called [Server Key
+Management](#server-key-management) where pgsodium loads an external
+secret key into memory that is never accessible to SQL.  This
+inaccessible root key can then be used to derive sub-keys and keypairs
+*by key id*.  This id (a biginteger type) can then be stored *instead
+of a key*.
+
+pgsodium provides some convenience roles that can be used to enforce
+access to polymorphic functions for encrypting either with a bytekey
+or a key id.  For example, as a database superuser (or if you have the
+`pgsodium_keyholder` role) you can see derived sub-keys and use them
+directly in encryption functions:
+
+```sql
+postgres=# select derive_key(42);
+                             derive_key
+--------------------------------------------------------------------
+ \xdf2d989f7ca632b3165813a4e960749a207eab16926d792be7484aff9cfde322
+(1 row)
+
+postgres=# select crypto_aead_det_encrypt('sekret message', 'additional data', derive_key(42));
+                                    crypto_aead_det_encrypt
+------------------------------------------------------------------------------------------------
+ \xe7fa66d918654e70ff0fc9a87e2144a31cdf34526cf7f2846b321f47af8c87de02d925ad2343058c12bbb254ac3a
+(1 row)
+```
+
+But this means the sub-key `42` can be seen in SQL or logged (but
+never the root key!).  In order to remove the ability for users to
+access raw byte keys *at all*, use the `pgsodium_keyiduser` role that
+can never derive or use raw keys, only key ids:
+
+```sql
+postgres=# set role pgsodium_keyiduser ;
+SET
+
+postgres=> select derive_key(42);
+ERROR:  permission denied for function derive_key
+
+postgres=> select crypto_aead_det_encrypt('sekret message', 'additional data', 42);
+                                    crypto_aead_det_encrypt
+------------------------------------------------------------------------------------------------
+ \xe7fa66d918654e70ff0fc9a87e2144a31cdf34526cf7f2846b321f47af8c87de02d925ad2343058c12bbb254ac3a
+(1 row)
+```
+
+Notice in the second form using the restricted `pgsodium_keyiduser`
+role, `derive_key` is not permitted, but the same encryption function
+can be called directly with the integer `42`.  Permission to call the
+form of `crypto_aead_det_encrypt` with a raw byte key is revoked from
+the `pgsodium_keyiduser` role.
 
 # Table of Contents
 
@@ -229,7 +284,7 @@ The pgsodium API has three nested layers of security roles:
 
 Note that public key apis like `crypto_box` and `crypto_sign` do not
 have "key id" variants, because they work with a combination of four
-keys, two keypairs for each of two parties.  
+keys, two keypairs for each of two parties.
 
 As the point of public key encryption is for each party to keep their
 secrets and for that secret to not be centrally derivable.  You can
