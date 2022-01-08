@@ -1,5 +1,5 @@
 CREATE SCHEMA IF NOT EXISTS pgsodium;
-CREATE EXTENSION  IF NOT EXISTS pgsodium WITH SCHEMA pgsodium;
+CREATE EXTENSION IF NOT EXISTS pgsodium WITH SCHEMA pgsodium;
 s
 -- This is a demonstration user to show that the pgsodium_keyiduser
 -- role can be used to access only encryption functions by key_id,
