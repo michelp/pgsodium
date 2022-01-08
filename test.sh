@@ -11,7 +11,7 @@ do
 		DB_HOST="pgsodium-test-db-$version"
 		DB_NAME="postgres"
 		SU="postgres"
-		EXEC="docker exec -it $DB_HOST"
+		EXEC="docker exec -i $DB_HOST"
 		TAG="pgsodium/test-$version"
 
 		echo building test image $DB_HOST
