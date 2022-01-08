@@ -2,7 +2,7 @@
 
 # pgsodium
 
-pgsodium bring [libsodium](https://download.libsodium.org/doc/) to
+pgsodium brings [libsodium](https://download.libsodium.org/doc/) to
 [PostgreSQL](https://www.postgresql.org/).
 
 # Table of Contents
@@ -31,7 +31,7 @@ pgsodium bring [libsodium](https://download.libsodium.org/doc/) to
       * [Key Exchange](#key-exchange)
       * [HMAC512](#hmac512)
       * [Advanced Stream API](#stream)
-      * [XChaCha-SIV](#xchacha-siv)
+      * [XChaCha20-SIV](#xchacha20-siv)
       * [Signcryption](#signcryption)
 
 ## Installation
