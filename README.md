@@ -208,21 +208,21 @@ keypairs using for example `crypto_box_seed_new_keypair()` and
 
 The pgsodium API has three nested layers of security roles:
 
-  - `pgsodium_keyiduser` Is the least privledged role, it cannot
+  - `pgsodium_keyiduser` Is the least privileged role, it cannot
     create or use raw `bytea` keys, it can only create
     `crypto_secretkey` nonces and access the `crypto_secretkey`,
     `crypto_auth` and `crypto_aead` API functions that accept key ids
     only.  This role can also access the `randombytes` API.  This is
     the role you would typically give to a user facing application.
 
-  - `pgsodium_keyholder` Is the next more privledged layer, it can do
+  - `pgsodium_keyholder` Is the next more privileged layer, it can do
     everything `pgsodium_keyiduser` can do, but it can also use, but
     not create, raw `bytea` encryption keys.  This role can use public
     key APIs like `crypto_box` and `crypto_sign`, but it cannot create
     keypairs.  This role is useful for when keys come from external
     sources and must be passed as `bytea` to API functions.
 
-  - `pgsodium_keymaker` is the most privledged role, it can do
+  - `pgsodium_keymaker` is the most privileged role, it can do
     everything the previous roles can do, but it can also create keys,
     keypairs and key seeds and derive keys from key ids.  Be very
     careful how you grant access to this role, as it can create valid
@@ -245,7 +245,7 @@ Here's an example script that encrypts a column in a table and
 provides a view that does on the fly decryption.  Each row's stores
 the nonce and key id used to encrypt the column.  Note how no keys are
 used in this example, only key ids, so this code can be run by the
-least privledged `pgsodium_keyiduser` role:
+least privileged `pgsodium_keyiduser` role:
 
     CREATE SCHEMA pgsodium;
     CREATE EXTENSION pgsodium WITH SCHEMA pgsodium;
@@ -314,7 +314,7 @@ derived from the stored key_id which defaults to 1.
 Key rotation can be done with a rotation function that will re-encrypt
 a row with a new key id.  This function also requires no access to
 keys, it works only by key id and thus can be run by the least
-privledged `pgsodium_keyiduser`:
+privileged `pgsodium_keyiduser`:
 
     CREATE OR REPLACE FUNCTION rotate_key(test_id bigint, new_key bigint)
         RETURNS void LANGUAGE plpgsql AS $$
