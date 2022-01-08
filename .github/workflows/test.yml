@@ -5,28 +5,10 @@ on: push
 jobs:
   tests:
     runs-on: ubuntu-latest
-    services:
-      postgres:
-        image: postgres:14
-        env:
-          POSTGRES_PASSWORD: postgres
-        options: >-
-          --health-cmd pg_isready
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-        ports:
-          - 5432:5432
-
     steps:
-      - name: install postgres dev
-        run: sudo apt-get install -y --no-install-recommends postgresql-14 postgresql-server-dev-all libsodium-dev pgtap
-
       - uses: actions/checkout@v2
       - name: Run tests
         run: |
-          make && make install
-          ldconfig
-          psql -h localhost -U postgres test/test.sql
+          ./test.sh 14
         env:
           PGPASSWORD: postgres
