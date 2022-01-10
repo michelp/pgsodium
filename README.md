@@ -12,8 +12,8 @@ also use a powerful feature called [Server Key
 Management](#server-key-management) where pgsodium loads an external
 secret key into memory that is never accessible to SQL.  This
 inaccessible root key can then be used to derive sub-keys and keypairs
-*by key id*.  This id (a biginteger type) can then be stored *instead
-of a key*.
+*by key id*.  This id (type `bigint`) can then be stored *instead of
+the derived key*.
 
 pgsodium provides some convenience roles that can be used to enforce
 access to polymorphic functions for encrypting either with a bytekey
