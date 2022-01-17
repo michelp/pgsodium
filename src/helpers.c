@@ -5,8 +5,8 @@ Datum pgsodium_cmp(PG_FUNCTION_ARGS) {
     int i = 0;
     int m = 0;
 
-    bytea *X = PG_GETARG_BYTEA_PP(0);
-    bytea *Y = PG_GETARG_BYTEA_PP(1);
+    bytea *X = PG_GETARG_BYTEA_P(0);
+    bytea *Y = PG_GETARG_BYTEA_P(1);
     size_t xlen = VARSIZE_ANY(X);
     size_t ylen = VARSIZE_ANY(Y);
     char *x = VARDATA_ANY(X);
@@ -23,7 +23,7 @@ Datum pgsodium_cmp(PG_FUNCTION_ARGS) {
 
 PG_FUNCTION_INFO_V1(pgsodium_sodium_bin2base64);
 Datum pgsodium_sodium_bin2base64(PG_FUNCTION_ARGS) {
-    bytea *bin = PG_GETARG_BYTEA_PP(0);
+    bytea *bin = PG_GETARG_BYTEA_P(0);
     size_t bin_size = VARSIZE_ANY_EXHDR(bin);
     size_t text_size = sodium_base64_ENCODED_LEN(
         bin_size, sodium_base64_VARIANT_URLSAFE_NO_PADDING);
@@ -38,7 +38,7 @@ Datum pgsodium_sodium_bin2base64(PG_FUNCTION_ARGS) {
 
 PG_FUNCTION_INFO_V1(pgsodium_sodium_base642bin);
 Datum pgsodium_sodium_base642bin(PG_FUNCTION_ARGS) {
-    text *base64 = PG_GETARG_TEXT_PP(0);
+    text *base64 = PG_GETARG_TEXT_P(0);
     size_t base64_size = VARSIZE_ANY_EXHDR(base64);
     size_t max_bin_size = ((base64_size + 1) / 4) * 3;
     bytea *bin = _pgsodium_zalloc_bytea(max_bin_size);

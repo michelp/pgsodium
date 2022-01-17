@@ -31,7 +31,7 @@ Datum pgsodium_randombytes_new_seed(PG_FUNCTION_ARGS) {
 PG_FUNCTION_INFO_V1(pgsodium_randombytes_buf_deterministic);
 Datum pgsodium_randombytes_buf_deterministic(PG_FUNCTION_ARGS) {
     size_t size = PG_GETARG_UINT32(0);
-    bytea *seed = PG_GETARG_BYTEA_PP(1);
+    bytea *seed = PG_GETARG_BYTEA_P(1);
     size_t result_size = VARHDRSZ + size;
     bytea *result = _pgsodium_zalloc_bytea(result_size);
     randombytes_buf_deterministic(

@@ -30,11 +30,11 @@ Datum pgsodium_crypto_signcrypt_keypair(PG_FUNCTION_ARGS) {
 
 PG_FUNCTION_INFO_V1(pgsodium_crypto_signcrypt_sign_before);
 Datum pgsodium_crypto_signcrypt_sign_before(PG_FUNCTION_ARGS) {
-    bytea *sender = PG_GETARG_BYTEA_PP(0);
-    bytea *recipient = PG_GETARG_BYTEA_PP(1);
-    bytea *sender_sk = PG_GETARG_BYTEA_PP(2);
-    bytea *recipient_pk = PG_GETARG_BYTEA_PP(3);
-    bytea *additional = PG_GETARG_BYTEA_PP(4);
+    bytea *sender = PG_GETARG_BYTEA_P(0);
+    bytea *recipient = PG_GETARG_BYTEA_P(1);
+    bytea *sender_sk = PG_GETARG_BYTEA_P(2);
+    bytea *recipient_pk = PG_GETARG_BYTEA_P(3);
+    bytea *additional = PG_GETARG_BYTEA_P(4);
 
     TupleDesc tupdesc;
     Datum values[2];
@@ -79,9 +79,9 @@ Datum pgsodium_crypto_signcrypt_sign_before(PG_FUNCTION_ARGS) {
 
 PG_FUNCTION_INFO_V1(pgsodium_crypto_signcrypt_sign_after);
 Datum pgsodium_crypto_signcrypt_sign_after(PG_FUNCTION_ARGS) {
-    bytea *state = PG_GETARG_BYTEA_PP(0);
-    bytea *sender_sk = PG_GETARG_BYTEA_PP(1);
-    bytea *ciphertext = PG_GETARG_BYTEA_PP(2);
+    bytea *state = PG_GETARG_BYTEA_P(0);
+    bytea *sender_sk = PG_GETARG_BYTEA_P(1);
+    bytea *ciphertext = PG_GETARG_BYTEA_P(2);
     bytea *signature =
         _pgsodium_zalloc_bytea(crypto_signcrypt_tbsbr_SIGNBYTES + VARHDRSZ);
     int success;
@@ -98,12 +98,12 @@ Datum pgsodium_crypto_signcrypt_sign_after(PG_FUNCTION_ARGS) {
 
 PG_FUNCTION_INFO_V1(pgsodium_crypto_signcrypt_verify_before);
 Datum pgsodium_crypto_signcrypt_verify_before(PG_FUNCTION_ARGS) {
-    bytea *signature = PG_GETARG_BYTEA_PP(0);
-    bytea *sender = PG_GETARG_BYTEA_PP(1);
-    bytea *recipient = PG_GETARG_BYTEA_PP(2);
-    bytea *additional = PG_GETARG_BYTEA_PP(3);
-    bytea *sender_pk = PG_GETARG_BYTEA_PP(4);
-    bytea *recipient_sk = PG_GETARG_BYTEA_PP(5);
+    bytea *signature = PG_GETARG_BYTEA_P(0);
+    bytea *sender = PG_GETARG_BYTEA_P(1);
+    bytea *recipient = PG_GETARG_BYTEA_P(2);
+    bytea *additional = PG_GETARG_BYTEA_P(3);
+    bytea *sender_pk = PG_GETARG_BYTEA_P(4);
+    bytea *recipient_sk = PG_GETARG_BYTEA_P(5);
 
     TupleDesc tupdesc;
     Datum values[2];
@@ -146,10 +146,10 @@ Datum pgsodium_crypto_signcrypt_verify_before(PG_FUNCTION_ARGS) {
 
 PG_FUNCTION_INFO_V1(pgsodium_crypto_signcrypt_verify_after);
 Datum pgsodium_crypto_signcrypt_verify_after(PG_FUNCTION_ARGS) {
-    bytea *state = PG_GETARG_BYTEA_PP(0);
-    bytea *signature = PG_GETARG_BYTEA_PP(1);
-    bytea *sender_pk = PG_GETARG_BYTEA_PP(2);
-    bytea *ciphertext = PG_GETARG_BYTEA_PP(3);
+    bytea *state = PG_GETARG_BYTEA_P(0);
+    bytea *signature = PG_GETARG_BYTEA_P(1);
+    bytea *sender_pk = PG_GETARG_BYTEA_P(2);
+    bytea *ciphertext = PG_GETARG_BYTEA_P(3);
     int success;
 
     success =
@@ -165,12 +165,12 @@ Datum pgsodium_crypto_signcrypt_verify_after(PG_FUNCTION_ARGS) {
 
 PG_FUNCTION_INFO_V1(pgsodium_crypto_signcrypt_verify_public);
 Datum pgsodium_crypto_signcrypt_verify_public(PG_FUNCTION_ARGS) {
-    bytea *signature = PG_GETARG_BYTEA_PP(0);
-    bytea *sender = PG_GETARG_BYTEA_PP(1);
-    bytea *recipient = PG_GETARG_BYTEA_PP(2);
-    bytea *additional = PG_GETARG_BYTEA_PP(3);
-    bytea *sender_pk = PG_GETARG_BYTEA_PP(4);
-    bytea *ciphertext = PG_GETARG_BYTEA_PP(5);
+    bytea *signature = PG_GETARG_BYTEA_P(0);
+    bytea *sender = PG_GETARG_BYTEA_P(1);
+    bytea *recipient = PG_GETARG_BYTEA_P(2);
+    bytea *additional = PG_GETARG_BYTEA_P(3);
+    bytea *sender_pk = PG_GETARG_BYTEA_P(4);
+    bytea *ciphertext = PG_GETARG_BYTEA_P(5);
     int success;
 
     success =

@@ -13,8 +13,8 @@ Datum pgsodium_crypto_kdf_derive_from_key(PG_FUNCTION_ARGS) {
     size_t subkey_size = PG_GETARG_UINT32(0);
     size_t result_size = VARHDRSZ + subkey_size;
     unsigned long long subkey_id = PG_GETARG_INT64(1);
-    bytea *context = PG_GETARG_BYTEA_PP(2);
-    bytea *primary_key = PG_GETARG_BYTEA_PP(3);
+    bytea *context = PG_GETARG_BYTEA_P(2);
+    bytea *primary_key = PG_GETARG_BYTEA_P(3);
     bytea *result;
     ERRORIF(VARSIZE_ANY_EXHDR(primary_key) != crypto_kdf_KEYBYTES,
             "invalid derivation key");

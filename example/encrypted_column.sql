@@ -1,6 +1,6 @@
 CREATE SCHEMA IF NOT EXISTS pgsodium;
 CREATE EXTENSION IF NOT EXISTS pgsodium WITH SCHEMA pgsodium;
-s
+
 -- This is a demonstration user to show that the pgsodium_keyiduser
 -- role can be used to access only encryption functions by key_id,
 -- this role can never access raw encryption keys.
@@ -75,3 +75,5 @@ $$;
 \echo Try inserting some data in test_view like:
 \echo "    postgres=> insert into test_view (data) values ('this is one'), ('this is two');"
 \echo Type RESET ROLE; to get back to previous user
+
+insert into test_view (data) values ('this is one'), ('this is two');    

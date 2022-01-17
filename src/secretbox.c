@@ -18,9 +18,9 @@ Datum pgsodium_crypto_secretbox_noncegen(PG_FUNCTION_ARGS) {
 
 PG_FUNCTION_INFO_V1(pgsodium_crypto_secretbox);
 Datum pgsodium_crypto_secretbox(PG_FUNCTION_ARGS) {
-    bytea *message = PG_GETARG_BYTEA_PP(0);
-    bytea *nonce = PG_GETARG_BYTEA_PP(1);
-    bytea *key = PG_GETARG_BYTEA_PP(2);
+    bytea *message = PG_GETARG_BYTEA_P(0);
+    bytea *nonce = PG_GETARG_BYTEA_P(1);
+    bytea *key = PG_GETARG_BYTEA_P(2);
     size_t result_size;
     bytea *result;
     ERRORIF(VARSIZE_ANY_EXHDR(nonce) != crypto_secretbox_NONCEBYTES,
@@ -38,10 +38,10 @@ Datum pgsodium_crypto_secretbox(PG_FUNCTION_ARGS) {
 
 PG_FUNCTION_INFO_V1(pgsodium_crypto_secretbox_by_id);
 Datum pgsodium_crypto_secretbox_by_id(PG_FUNCTION_ARGS) {
-    bytea *message = PG_GETARG_BYTEA_PP(0);
-    bytea *nonce = PG_GETARG_BYTEA_PP(1);
+    bytea *message = PG_GETARG_BYTEA_P(0);
+    bytea *nonce = PG_GETARG_BYTEA_P(1);
     unsigned long long key_id = PG_GETARG_INT64(2);
-    bytea *context = PG_GETARG_BYTEA_PP(3);
+    bytea *context = PG_GETARG_BYTEA_P(3);
     bytea *key =
         pgsodium_derive_helper(key_id, crypto_secretbox_KEYBYTES, context);
     size_t result_size = crypto_secretbox_MACBYTES + VARSIZE_ANY(message);
@@ -57,9 +57,9 @@ Datum pgsodium_crypto_secretbox_by_id(PG_FUNCTION_ARGS) {
 PG_FUNCTION_INFO_V1(pgsodium_crypto_secretbox_open);
 Datum pgsodium_crypto_secretbox_open(PG_FUNCTION_ARGS) {
     int success;
-    bytea *message = PG_GETARG_BYTEA_PP(0);
-    bytea *nonce = PG_GETARG_BYTEA_PP(1);
-    bytea *key = PG_GETARG_BYTEA_PP(2);
+    bytea *message = PG_GETARG_BYTEA_P(0);
+    bytea *nonce = PG_GETARG_BYTEA_P(1);
+    bytea *key = PG_GETARG_BYTEA_P(2);
     size_t message_size;
     size_t result_size;
     bytea *result;
@@ -86,10 +86,10 @@ Datum pgsodium_crypto_secretbox_open(PG_FUNCTION_ARGS) {
 PG_FUNCTION_INFO_V1(pgsodium_crypto_secretbox_open_by_id);
 Datum pgsodium_crypto_secretbox_open_by_id(PG_FUNCTION_ARGS) {
     int success;
-    bytea *message = PG_GETARG_BYTEA_PP(0);
-    bytea *nonce = PG_GETARG_BYTEA_PP(1);
+    bytea *message = PG_GETARG_BYTEA_P(0);
+    bytea *nonce = PG_GETARG_BYTEA_P(1);
     unsigned long long key_id = PG_GETARG_INT64(2);
-    bytea *context = PG_GETARG_BYTEA_PP(3);
+    bytea *context = PG_GETARG_BYTEA_P(3);
     bytea *key =
         pgsodium_derive_helper(key_id, crypto_secretbox_KEYBYTES, context);
     size_t message_size;
