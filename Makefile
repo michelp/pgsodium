@@ -13,3 +13,6 @@ PG_CPPFLAGS = -O0
 # REGRESS      = $(patsubst test/%.sql,%,$(TESTS))
 # REGRESS_OPTS = --inputdir=test --load-language=plpgsql
 include $(PGXS)
+
+dist:
+	git archive --format zip --prefix=$(EXTENSION)-$(DISTVERSION)/ -o $(EXTENSION)-$(DISTVERSION).zip HEAD
