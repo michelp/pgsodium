@@ -38,7 +38,7 @@ ROLLBACK;
 
 \if :serverkeys
 BEGIN;
-SELECT plan(3);
+SELECT plan(10);
 SET ROLE pgsodium_keyiduser;
 
 SELECT crypto_aead_ietf_encrypt(
@@ -58,10 +58,40 @@ SELECT crypto_aead_det_encrypt(
 SELECT is(crypto_aead_det_decrypt(:'detaeadid', 'and also your friend', 32),
           'bob is your uncle', 'crypto_aead_det_decrypt by id');
 
-SELECT throws_ok($$select crypto_aead_det_encrypt('bob is your uncle', 'and also your friend', 'whatever', 'whatever'::bytea)$$,
-	   	         '42501', 'permission denied for function crypto_aead_det_encrypt', 'crypto_aead_det_encrypt denied');
-SELECT throws_ok($$select crypto_aead_det_decrypt('bob is your uncle', 'and also your friend', 'whatever', 'whatever'::bytea)$$,
-	   	         '42501', 'permission denied for function crypto_aead_det_decrypt', 'crypto_aead_det_decrypt denied');
+-- Test UUID key ids into key table
+
+RESET ROLE;
+
+CREATE EXTENSION "uuid-ossp";
+   
+SET ROLE pgsodium_keymaker;
+select id as det_key_uuid from create_key('aead-det', 'det Test Key') \gset
+select id as ietf_key_uuid from create_key('aead-ietf', 'ietf Test Key') \gset
+RESET ROLE;
+
+SET ROLE pgsodium_keyiduser;
+
+SELECT crypto_aead_det_encrypt(
+	'bob is your uncle', 'and also your friend', :'det_key_uuid'::uuid) detaeadid \gset
+
+SELECT is(crypto_aead_det_decrypt(:'detaeadid', 'and also your friend', :'det_key_uuid'::uuid),
+          'bob is your uncle', 'crypto_aead_ietf_decrypt by uuid');
+
+SELECT throws_ok($$select crypto_aead_det_encrypt('bob is your uncle', 'and also your friend', uuid_nil())$$,
+	   	         'P0002', 'query returned no rows', 'crypto_aead_det_encrypt invalid uuid');
+SELECT throws_ok($$select crypto_aead_det_decrypt('bob is your uncle', 'and also your friend', uuid_nil())$$,
+	   	         'P0002', 'query returned no rows', 'crypto_aead_det_decrypt invalid uuid');
+
+SELECT crypto_aead_ietf_encrypt(
+	'bob is your uncle', 'and also your friend', :'aeadnonce', :'ietf_key_uuid'::uuid) detaeadid \gset
+
+SELECT is(crypto_aead_ietf_decrypt(:'detaeadid', 'and also your friend', :'aeadnonce', :'ietf_key_uuid'::uuid),
+          'bob is your uncle', 'crypto_aead_ietf_decrypt by uuid');
+
+SELECT throws_ok(format($$select crypto_aead_ietf_encrypt('bob is your uncle', 'and also your friend', %L, uuid_nil())$$, :'aeadnonce'),
+	   	         'P0002', 'query returned no rows', 'crypto_aead_ietf_encrypt invalid uuid');
+SELECT throws_ok(format($$select crypto_aead_ietf_decrypt('bob is your uncle', 'and also your friend', %L, uuid_nil())$$, :'aeadnonce'),
+	   	         'P0002', 'query returned no rows', 'crypto_aead_ietf_decrypt invalid uuid');
 
 RESET ROLE;
 SELECT * FROM finish();

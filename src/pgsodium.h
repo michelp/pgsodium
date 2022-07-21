@@ -8,6 +8,7 @@
 #include <stdlib.h>
 
 #include "postgres.h"
+#include "commands/seclabel.h"
 #include "utils/builtins.h"
 #include "libpq/pqformat.h"
 #include "funcapi.h"
@@ -16,6 +17,9 @@
 #include "storage/ipc.h"
 #include "utils/guc.h"
 #include "port.h"
+#include "catalog/pg_class.h"
+#include "catalog/pg_namespace.h"
+#include "catalog/pg_authid.h"
 #include "miscadmin.h"
 
 #include "crypto_aead_det_xchacha20.h"
@@ -61,7 +65,7 @@ static inline bytea *_pgsodium_zalloc_bytea(size_t allocation_size) {
     d->size = allocation_size;
     ctxcb->func = context_cb_zero_buff;
     ctxcb->arg = d;
-    MemoryContextRegisterResetCallback(CurrentMemoryContext, ctxcb);
+    MemoryContextRegisterResetCallback(CurrentMemoryContext, ctxcb); // verify where this cb fires
     SET_VARSIZE(result, allocation_size);
     return result;
 }
