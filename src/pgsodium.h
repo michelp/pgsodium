@@ -35,7 +35,7 @@
 
 #define ERRORIF(B, msg)                                                        \
     if ((B))                                                                   \
-    ereport(ERROR, (errcode(ERRCODE_DATA_EXCEPTION), errmsg(msg)))
+        ereport(ERROR, (errcode(ERRCODE_DATA_EXCEPTION), errmsg(msg, __func__)))
 
 typedef struct _pgsodium_cb {
     void *ptr;
@@ -90,12 +90,12 @@ static inline bytea *pgsodium_derive_helper(unsigned long long subkey_id,
     size_t result_size;
     bytea *result;
     ERRORIF(pgsodium_secret_key == NULL,
-            "pgsodium_derive: no server secret key defined.");
+            "%s: pgsodium_derive: no server secret key defined.");
     ERRORIF(subkey_size < crypto_kdf_BYTES_MIN ||
                 subkey_size > crypto_kdf_BYTES_MAX,
-            "crypto_kdf_derive_from_key: invalid key size requested");
+            "%s: crypto_kdf_derive_from_key: invalid key size requested");
     ERRORIF(VARSIZE_ANY_EXHDR(context) != 8,
-            "crypto_kdf_derive_from_key: context must be 8 bytes");
+            "%s: crypto_kdf_derive_from_key: context must be 8 bytes");
     result_size = VARHDRSZ + subkey_size;
     result = _pgsodium_zalloc_bytea(result_size);
     crypto_kdf_derive_from_key(PGSODIUM_UCHARDATA(result),

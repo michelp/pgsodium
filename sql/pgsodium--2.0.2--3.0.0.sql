@@ -155,7 +155,7 @@ END;
 GRANT EXECUTE ON FUNCTION
   crypto_aead_det_decrypt(message bytea, additional bytea, key_uuid uuid)
   TO pgsodium_keyiduser;
-                   
+
 -- IETF AEAD functions by key uuid
 
 CREATE FUNCTION @extschema@.crypto_aead_ietf_encrypt(message bytea, additional bytea, nonce bytea, key_uuid uuid)
@@ -166,7 +166,7 @@ DECLARE
 BEGIN
   SELECT v.key_id, v.key_context INTO STRICT key_id FROM @extschema@.valid_key v WHERE id = key_uuid;
   RETURN @extschema@.crypto_aead_ietf_encrypt(message, additional, nonce, key_id.key_id, key_id.key_context);
-END;  
+END;
   $$
   LANGUAGE plpgsql
   STRICT
@@ -198,14 +198,14 @@ GRANT EXECUTE ON FUNCTION
   TO pgsodium_keyiduser;
 
 -- Transparent Column Encryption
-  
-CREATE VIEW @extschema@.masking_rule AS
+
+CREATE OR REPLACE VIEW @extschema@.masking_rule AS
   WITH const AS (
     SELECT
       -- #" is the escape-double-quote separator
-      '%ENCRYPT +WITH +KEY +COLUMN +#"%#'::TEXT
-        AS pattern_key_column,
-      'ENCRYPT +WITH +KEY ID +#"%#" ?'::TEXT
+      '%ENCRYPT +WITH +KEY +ID +COLUMN +#"%#'::TEXT
+        AS pattern_key_id_column,
+      'ENCRYPT +WITH +KEY +ID +#"%#" ?'::TEXT
         AS pattern_key_id
   ),
   rules_from_seclabels AS (
@@ -217,8 +217,8 @@ CREATE VIEW @extschema@.masking_rule AS
       a.attname,
       pg_catalog.format_type(a.atttypid, a.atttypmod),
       sl.label AS col_description,
-      trim(substring(sl.label FROM k.pattern_key_column FOR '#'))
-        AS key_column,
+      trim(substring(sl.label FROM k.pattern_key_id_column FOR '#'))
+        AS key_id_column,
       trim(substring(sl.label FROM k.pattern_key_id FOR '#'))
         AS key_id,
       100 AS priority -- high priority for the security label syntax
@@ -229,22 +229,22 @@ CREATE VIEW @extschema@.masking_rule AS
      WHERE a.attnum > 0
            --  TODO : Filter out the catalog tables
        AND NOT a.attisdropped
-       AND (sl.label SIMILAR TO k.pattern_key_column ESCAPE '#'
+       AND (sl.label SIMILAR TO k.pattern_key_id_column ESCAPE '#'
             OR sl.label SIMILAR TO k.pattern_key_id ESCAPE '#'
        )
        AND sl.provider = 'pgsodium' -- this is hard-coded in pgsodium.c
   )
   -- DISTINCT will keep just the 1st rule for each column based on priority,
   SELECT
-    DISTINCT ON (attrelid, attnum) *,
-    COALESCE(key_column, key_id) AS masking_filter
+    DISTINCT ON (attrelid, attnum) attrelid, attnum, relnamespace, relname, attname, format_type, col_description, priority,
+    COALESCE(key_id_column, quote_literal(key_id)) AS key_id
     FROM rules_from_seclabels
    ORDER BY attrelid, attnum, priority DESC;
 
 GRANT SELECT ON @extschema@.masking_rule TO PUBLIC;
 
 
-CREATE FUNCTION @extschema@.hasmask(
+CREATE FUNCTION @extschema@.has_mask(
   role REGROLE
 )
   RETURNS BOOLEAN AS
@@ -267,28 +267,21 @@ CREATE FUNCTION @extschema@.hasmask(
   ;
 
 -- Display all columns of the relation with the masking function (if any)
-CREATE FUNCTION @extschema@.mask_columns(
-  source_relid OID
-)
-RETURNS TABLE (
-    attname NAME,
-    masking_filter TEXT,
-    format_type TEXT
-) AS
+CREATE FUNCTION @extschema@.mask_columns(source_relid oid)
+RETURNS TABLE (attname name, key_id text, format_type text) AS
 $$
-SELECT
+  SELECT
   a.attname,
-  m.masking_filter,
+  m.key_id,
   m.format_type
-FROM pg_attribute a
-LEFT JOIN  @extschema@.masking_rule m
-        ON m.attrelid = a.attrelid
-        AND m.attname = a.attname
-WHERE  a.attrelid = source_relid
-AND    a.attnum > 0 -- exclude ctid, cmin, cmax
-AND    NOT a.attisdropped
-ORDER BY a.attnum
-;
+  FROM pg_attribute a
+  LEFT JOIN  @extschema@.masking_rule m
+  ON m.attrelid = a.attrelid
+  AND m.attname = a.attname
+  WHERE  a.attrelid = source_relid
+  AND    a.attnum > 0 -- exclude ctid, cmin, cmax
+  AND    NOT a.attisdropped
+  ORDER BY a.attnum;
 $$
   LANGUAGE SQL
   VOLATILE
@@ -296,7 +289,7 @@ $$
 ;
 
 -- get the "select filters" that will decrypt the real data of a table
-CREATE FUNCTION @extschema@.mask_filters(
+CREATE FUNCTION @extschema@.decrypted_columns(
   relid OID
 )
 RETURNS TEXT AS
@@ -306,22 +299,28 @@ DECLARE
     expression TEXT;
     comma TEXT;
 BEGIN
-    expression := '';
-    comma := '';
-    FOR m IN SELECT * FROM @extschema@.mask_columns(relid)
+  expression := '';
+  comma := E'\n        ';
+  FOR m IN SELECT * FROM @extschema@.mask_columns(relid)
     LOOP
-        expression := expression || comma;
-        IF m.masking_filter IS NULL THEN
-            expression := expression || quote_ident(m.attname);
-        ELSE
-            expression := expression || format('CAST(%s AS %s) AS %s',
-                                                m.masking_filter,
-                                                m.format_type,
-                                                quote_ident(m.attname)
-                                              );
-        END IF;
-        comma := ',';
-    END LOOP;
+    expression := expression || comma;
+    IF m.key_id IS NULL THEN
+      expression := expression || quote_ident(m.attname);
+    ELSE
+      expression := expression || format(
+        $f$pg_catalog.convert_from(
+          @extschema@.crypto_aead_det_decrypt(
+            pg_catalog.decode(%s, 'base64'),
+            '',
+            %s::uuid),
+            'utf8') AS %s
+            $f$,
+            quote_ident(m.attname),
+            m.key_id,
+            quote_ident(m.attname));
+    END IF;
+    comma := E',\n        ';
+  END LOOP;
   RETURN expression;
 END
 $$
@@ -330,12 +329,56 @@ $$
   SET search_path=''
 ;
 
+-- get the "insert filters" that will encrypt the real data of a table
+CREATE FUNCTION @extschema@.encrypted_columns(
+  relid OID
+)
+RETURNS TEXT AS
+$$
+DECLARE
+    m RECORD;
+    expression TEXT;
+    comma TEXT;
+BEGIN
+  expression := '';
+  comma := E'\n        ';
+  FOR m IN SELECT * FROM @extschema@.mask_columns(relid)
+    LOOP
+    expression := expression || comma;
+    IF m.key_id IS NOT NULL THEN
+      expression := expression || format(
+        $f$%s = pg_catalog.encode(
+          @extschema@.crypto_aead_det_encrypt(
+            pg_catalog.convert_to(%s, 'utf8'),
+            ''::bytea,
+            %s::uuid),
+            'base64')
+            $f$,
+            'new.' || quote_ident(m.attname),
+            'new.' || quote_ident(m.attname),
+            m.key_id);
+      comma := E',\n        ';
+    END IF;
+  END LOOP;
+  RETURN expression;
+END
+$$
+  LANGUAGE plpgsql
+  VOLATILE
+  SET search_path=''
+  ;
+  
 CREATE FUNCTION @extschema@.mask_create_view(
   relid OID,
   drop_view boolean = false
 )
 RETURNS BOOLEAN AS
-$$
+  $$
+  DECLARE
+  body text;
+  source_name text;
+  view_name text;
+  rule @extschema@.masking_rule;
 BEGIN
   if drop_view THEN
   raise notice '%', format(
@@ -344,19 +387,51 @@ BEGIN
     $drop$,
     relid::regclass);
   END IF;
-  raise notice '%', format(
-    $create$
-    CREATE OR REPLACE VIEW @extschema@_masks.%s AS SELECT %s FROM %s
-    $create$,
-    ( SELECT quote_ident(relname)
-        FROM pg_class c, pg_seclabel sl
-       WHERE relid = c.oid
-         AND sl.classoid = c.tableoid
-         AND sl.objoid = c.oid
-    ),
-    @extschema@.mask_filters(relid),
-    relid::regclass
+
+  SELECT quote_ident(relname) INTO STRICT view_name
+    FROM pg_class c, pg_seclabel sl
+   WHERE relid = c.oid
+     AND sl.classoid = c.tableoid
+     AND sl.objoid = c.oid;
+
+  source_name := relid::regclass;
+
+  body = format(
+    $c$
+    CREATE OR REPLACE VIEW @extschema@_masks.%s AS SELECT %s FROM %s;
+    $c$,
+    view_name,
+    @extschema@.decrypted_columns(relid),
+    source_name
   );
+  RAISE NOTICE '%', body;
+  EXECUTE body;
+
+  body = format(
+    $c$
+    CREATE OR REPLACE FUNCTION @extschema@_masks.%s_encrypt_secret()
+      RETURNS TRIGGER
+      LANGUAGE plpgsql
+      AS $t$
+    BEGIN
+    %s;
+    RETURN new;
+    END;
+    $t$;
+
+    CREATE TRIGGER %s_encrypt_secret_trigger
+      BEFORE INSERT ON %s
+      FOR EACH ROW
+      EXECUTE FUNCTION @extschema@_masks.%s_encrypt_secret ();
+    $c$,
+    view_name,
+    @extschema@.encrypted_columns(relid),
+    view_name,
+    source_name,
+    view_name
+  );
+  RAISE NOTICE '%', body;
+  EXECUTE body;
   RETURN TRUE;
 END
   $$
@@ -437,7 +512,7 @@ BEGIN
 
   -- Walk through all masked roles and apply the restrictions
   PERFORM @extschema@.mask_role(oid::regrole)
-  FROM pg_roles WHERE @extschema@.hasmask(oid::regrole);
+  FROM pg_roles WHERE @extschema@.has_mask(oid::regrole);
 
   RETURN TRUE;
 END
@@ -465,4 +540,3 @@ CREATE EVENT TRIGGER @extschema@_trg_mask_update
   )
   EXECUTE PROCEDURE @extschema@.trg_mask_update()
 ;
-

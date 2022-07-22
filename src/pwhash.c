@@ -17,10 +17,10 @@ Datum pgsodium_crypto_pwhash(PG_FUNCTION_ARGS) {
     int success;
     data = PG_GETARG_BYTEA_P(0);
     salt = PG_GETARG_BYTEA_P(1);
-    ERRORIF(VARSIZE_ANY_EXHDR(salt) != crypto_pwhash_SALTBYTES, "invalid salt");
+    ERRORIF(VARSIZE_ANY_EXHDR(salt) != crypto_pwhash_SALTBYTES, "%s: invalid salt");
     ERRORIF(VARSIZE_ANY_EXHDR(data) < crypto_pwhash_PASSWD_MIN ||
                 VARSIZE_ANY_EXHDR(data) > crypto_pwhash_PASSWD_MAX,
-            "invalid password");
+            "%s: invalid password");
     result = _pgsodium_zalloc_bytea(result_size);
     success = crypto_pwhash(PGSODIUM_UCHARDATA(result),
                             crypto_box_SEEDBYTES,
@@ -30,7 +30,7 @@ Datum pgsodium_crypto_pwhash(PG_FUNCTION_ARGS) {
                             crypto_pwhash_OPSLIMIT_MODERATE,
                             crypto_pwhash_MEMLIMIT_MODERATE,
                             crypto_pwhash_ALG_DEFAULT);
-    ERRORIF(success != 0, "invalid message");
+    ERRORIF(success != 0, "%s: invalid message");
     PG_RETURN_BYTEA_P(result);
 }
 
@@ -44,7 +44,7 @@ Datum pgsodium_crypto_pwhash_str(PG_FUNCTION_ARGS) {
                                 VARSIZE_ANY_EXHDR(password),
                                 crypto_pwhash_OPSLIMIT_MODERATE,
                                 crypto_pwhash_MEMLIMIT_MODERATE);
-    ERRORIF(success != 0, "out of memory in pwhash_str");
+    ERRORIF(success != 0, "%s: out of memory in pwhash_str");
     PG_RETURN_BYTEA_P(result);
 }
 

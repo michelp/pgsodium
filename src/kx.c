@@ -17,7 +17,7 @@ Datum pgsodium_crypto_kx_seed_keypair(PG_FUNCTION_ARGS) {
                 (errcode(ERRCODE_FEATURE_NOT_SUPPORTED),
                  errmsg("function returning record called in context "
                         "that cannot accept type record")));
-    ERRORIF(VARSIZE_ANY_EXHDR(seed) != crypto_kx_SEEDBYTES, "invalid seed");
+    ERRORIF(VARSIZE_ANY_EXHDR(seed) != crypto_kx_SEEDBYTES, "%s: invalid seed");
     publickey = _pgsodium_zalloc_bytea(public_size);
     secretkey = _pgsodium_zalloc_bytea(secret_size);
     crypto_kx_seed_keypair(PGSODIUM_UCHARDATA(publickey),
@@ -59,11 +59,11 @@ Datum pgsodium_crypto_kx_client_session_keys(PG_FUNCTION_ARGS) {
                  errmsg("function returning record called in context "
                         "that cannot accept type record")));
     ERRORIF(VARSIZE_ANY_EXHDR(client_pk) != crypto_kx_PUBLICKEYBYTES,
-            "bad client public key");
+            "%s: bad client public key");
     ERRORIF(VARSIZE_ANY_EXHDR(client_sk) != crypto_kx_SECRETKEYBYTES,
-            "bad client secret key");
+            "%s: bad client secret key");
     ERRORIF(VARSIZE_ANY_EXHDR(server_pk) != crypto_kx_PUBLICKEYBYTES,
-            "bad server public key");
+            "%s: bad server public key");
     rx = _pgsodium_zalloc_bytea(rx_size);
     tx = _pgsodium_zalloc_bytea(tx_size);
     success = crypto_kx_client_session_keys(PGSODIUM_UCHARDATA(rx),
@@ -71,7 +71,7 @@ Datum pgsodium_crypto_kx_client_session_keys(PG_FUNCTION_ARGS) {
                                             PGSODIUM_UCHARDATA(client_pk),
                                             PGSODIUM_UCHARDATA(client_sk),
                                             PGSODIUM_UCHARDATA(server_pk));
-    ERRORIF(success != 0, "invalid message");
+    ERRORIF(success != 0, "%s: invalid message");
     values[0] = PointerGetDatum(rx);
     values[1] = PointerGetDatum(tx);
     tuple = heap_form_tuple(tupdesc, values, nulls);
@@ -100,11 +100,11 @@ Datum pgsodium_crypto_kx_server_session_keys(PG_FUNCTION_ARGS) {
                  errmsg("function returning record called in context "
                         "that cannot accept type record")));
     ERRORIF(VARSIZE_ANY_EXHDR(server_pk) != crypto_kx_PUBLICKEYBYTES,
-            "bad server public key");
+            "%s: bad server public key");
     ERRORIF(VARSIZE_ANY_EXHDR(server_sk) != crypto_kx_SECRETKEYBYTES,
-            "bad server secret key");
+            "%s: bad server secret key");
     ERRORIF(VARSIZE_ANY_EXHDR(client_pk) != crypto_kx_PUBLICKEYBYTES,
-            "bad client public key");
+            "%s: bad client public key");
     rx = _pgsodium_zalloc_bytea(rx_size);
     tx = _pgsodium_zalloc_bytea(tx_size);
     success = crypto_kx_server_session_keys(PGSODIUM_UCHARDATA(rx),
@@ -112,7 +112,7 @@ Datum pgsodium_crypto_kx_server_session_keys(PG_FUNCTION_ARGS) {
                                             PGSODIUM_UCHARDATA(server_pk),
                                             PGSODIUM_UCHARDATA(server_sk),
                                             PGSODIUM_UCHARDATA(client_pk));
-    ERRORIF(success != 0, "invalid message");
+    ERRORIF(success != 0, "%s: invalid message");
     values[0] = PointerGetDatum(rx);
     values[1] = PointerGetDatum(tx);
     tuple = heap_form_tuple(tupdesc, values, nulls);

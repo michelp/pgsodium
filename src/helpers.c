@@ -52,7 +52,7 @@ Datum pgsodium_sodium_base642bin(PG_FUNCTION_ARGS) {
                                 &bin_size,
                                 NULL,
                                 sodium_base64_VARIANT_URLSAFE_NO_PADDING);
-    ERRORIF(success != 0, "sodium_base642bin() failed");
+    ERRORIF(success != 0, "%s: sodium_base642bin() failed");
     SET_VARSIZE(bin, bin_size + VARHDRSZ);
     PG_RETURN_BYTEA_P(bin);
 }

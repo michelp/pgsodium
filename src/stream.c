@@ -25,9 +25,9 @@ Datum pgsodium_crypto_stream_xchacha20(PG_FUNCTION_ARGS) {
     uint64_t result_size = VARHDRSZ + size;
     bytea *result = _pgsodium_zalloc_bytea(result_size);
     ERRORIF(VARSIZE_ANY_EXHDR(nonce) != crypto_stream_xchacha20_NONCEBYTES,
-            "invalid nonce");
+            "%s: invalid nonce");
     ERRORIF(VARSIZE_ANY_EXHDR(key) != crypto_stream_xchacha20_KEYBYTES,
-            "invalid key");
+            "%s: invalid key");
 
     crypto_stream_xchacha20(PGSODIUM_UCHARDATA(result),
                             result_size,
@@ -44,9 +44,9 @@ Datum pgsodium_crypto_stream_xchacha20_xor(PG_FUNCTION_ARGS) {
     uint64_t result_size = VARSIZE_ANY(data);
     bytea *result = _pgsodium_zalloc_bytea(result_size);
     ERRORIF(VARSIZE_ANY_EXHDR(nonce) != crypto_stream_xchacha20_NONCEBYTES,
-            "invalid nonce");
+            "%s: invalid nonce");
     ERRORIF(VARSIZE_ANY_EXHDR(key) != crypto_stream_xchacha20_KEYBYTES,
-            "invalid key");
+            "%s: invalid key");
 
     crypto_stream_xchacha20_xor(PGSODIUM_UCHARDATA(result),
                                 PGSODIUM_UCHARDATA(data),
@@ -65,9 +65,9 @@ Datum pgsodium_crypto_stream_xchacha20_xor_ic(PG_FUNCTION_ARGS) {
     uint64_t result_size = VARSIZE_ANY(data);
     bytea *result = _pgsodium_zalloc_bytea(result_size);
     ERRORIF(VARSIZE_ANY_EXHDR(nonce) != crypto_stream_xchacha20_NONCEBYTES,
-            "invalid nonce");
+            "%s: invalid nonce");
     ERRORIF(VARSIZE_ANY_EXHDR(key) != crypto_stream_xchacha20_KEYBYTES,
-            "invalid key");
+            "%s: invalid key");
     crypto_stream_xchacha20_xor_ic(PGSODIUM_UCHARDATA(result),
                                    PGSODIUM_UCHARDATA(data),
                                    result_size,
@@ -89,9 +89,9 @@ Datum pgsodium_crypto_stream_xchacha20_by_id(PG_FUNCTION_ARGS) {
     uint64_t result_size = VARHDRSZ + size;
     bytea *result = _pgsodium_zalloc_bytea(result_size);
     ERRORIF(VARSIZE_ANY_EXHDR(nonce) != crypto_stream_xchacha20_NONCEBYTES,
-            "invalid nonce");
+            "%s: invalid nonce");
     ERRORIF(VARSIZE_ANY_EXHDR(key) != crypto_stream_xchacha20_KEYBYTES,
-            "invalid key");
+            "%s: invalid key");
 
     crypto_stream_xchacha20(PGSODIUM_UCHARDATA(result),
                             result_size,
@@ -111,9 +111,9 @@ Datum pgsodium_crypto_stream_xchacha20_xor_by_id(PG_FUNCTION_ARGS) {
     uint64_t result_size = VARSIZE_ANY(data);
     bytea *result = _pgsodium_zalloc_bytea(result_size);
     ERRORIF(VARSIZE_ANY_EXHDR(nonce) != crypto_stream_xchacha20_NONCEBYTES,
-            "invalid nonce");
+            "%s: invalid nonce");
     ERRORIF(VARSIZE_ANY_EXHDR(key) != crypto_stream_xchacha20_KEYBYTES,
-            "invalid key");
+            "%s: invalid key");
 
     crypto_stream_xchacha20_xor(PGSODIUM_UCHARDATA(result),
                                 PGSODIUM_UCHARDATA(data),
@@ -135,9 +135,9 @@ Datum pgsodium_crypto_stream_xchacha20_xor_ic_by_id(PG_FUNCTION_ARGS) {
     uint64_t result_size = VARSIZE_ANY(data);
     bytea *result = _pgsodium_zalloc_bytea(result_size);
     ERRORIF(VARSIZE_ANY_EXHDR(nonce) != crypto_stream_xchacha20_NONCEBYTES,
-            "invalid nonce");
+            "%s: invalid nonce");
     ERRORIF(VARSIZE_ANY_EXHDR(key) != crypto_stream_xchacha20_KEYBYTES,
-            "invalid key");
+            "%s: invalid key");
 
     crypto_stream_xchacha20_xor_ic(PGSODIUM_UCHARDATA(result),
                                    PGSODIUM_UCHARDATA(data),
