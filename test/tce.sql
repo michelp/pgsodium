@@ -1,5 +1,6 @@
+\if :serverkeys
 BEGIN;
-SELECT plan(9);
+SELECT plan(6);
 
 CREATE SCHEMA private;
 
@@ -12,9 +13,7 @@ SELECT throws_ok(
   'schemas cannot be labled');
 
 CREATE TABLE private.bar(
-  id bigserial,
-  secret text,
-  key_id uuid
+  secret text
 );
 
 SELECT throws_ok(
@@ -25,30 +24,20 @@ SELECT throws_ok(
   'pgsodium provider does not support labels on this object',
   'tables cannot be labeled');
 
+-- Create a key id to use in the tests below
+SELECT id AS secret_key_id
+  FROM pgsodium.create_key('aead-det', 'Optional Comment') \gset
+
 SELECT lives_ok(
-  $test$
-  SECURITY LABEL FOR pgsodium ON COLUMN private.bar.secret IS 'ENCRYPT WITH KEY ID key_id'
-  $test$,
+  format($test$
+  SECURITY LABEL FOR pgsodium ON COLUMN private.bar.secret IS 'ENCRYPT WITH KEY ID %s'
+  $test$, :'secret_key_id'),
   'can label column for encryption');
 
-SELECT id as secret_key_id FROM pgsodium.create_key('aead-det', 'Test Key') \gset
+CREATE ROLE bobo with login password 'foo';
 
-CREATE ROLE bobo;
-GRANT USAGE ON SCHEMA private TO bobo;
-
-SET ROLE bobo;
-
-select throws_ok(
-  format(
-    $test$
-    INSERT INTO private.bar (secret, key_id) values ('s3kr3t', %L);
-    $test$, :'secret_key_id'),
-    '42501',
-    'permission denied for table bar',
-    'test role cannot insert into labled table.'
-);
-
-RESET ROLE;
+GRANT USAGE ON SCHEMA private to bobo;
+GRANT SELECT ON TABLE private.bar to bobo;
 
 SELECT lives_ok(
   $test$
@@ -56,44 +45,29 @@ SELECT lives_ok(
   $test$,
   'can label roles ACCESS');
 
-SET ROLE bobo;
+SELECT * FROM finish();
+COMMIT;
 
-select throws_ok(
-  format(
-    $test$
-    INSERT INTO private.bar (secret, key_id) values ('s3kr3t', %L);
-    $test$, :'secret_key_id'),
-    '42501',
-    'permission denied for table bar',
-    'test role cannot insert into labled table.'
-);
+\c postgres bobo
+BEGIN;
+SELECT plan(2);
 
 SELECT lives_ok(
   format(
     $test$
-    INSERT INTO bar (secret, key_id) values ('s3kr3t', %L);
-    $test$, :'secret_key_id'),
-    'can insert into masking view');
-
-select throws_ok(
-  format(
-    $test$
-    TABLE private.bar;
+    INSERT INTO pgsodium_masks.bar (secret) values ('s3kr3t');
     $test$),
-    '42501',
-    'permission denied for table bar',
-    'test role cannot select from labled table.'
-);
+    'can insert into base table');
 
 SELECT lives_ok(
   format(
     $test$
-    TABLE bar;
+    TABLE pgsodium_masks.bar;
     $test$),
     'can select from masking view');
 
-RESET ROLE;
-
-DROP SCHEMA private CASCADE;
 SELECT * FROM finish();
-ROLLBACK;
+
+\c postgres postgres
+DROP SCHEMA private CASCADE;
+\endif

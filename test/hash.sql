@@ -15,7 +15,7 @@ SELECT crypto_shorthash_keygen() shortkey \gset
 SELECT lives_ok(format($$select crypto_shorthash('bob is your uncle', %L::bytea)$$, :'shortkey'), 'crypto_shorthash');
 
 SELECT throws_ok($$select crypto_shorthash('bob is your uncle', 's'::bytea)$$,
-	   '22000', 'invalid key', 'crypto_shorthash invalid key');
+       '22000', 'pgsodium_crypto_shorthash: invalid key', 'crypto_shorthash invalid key');
 
 SELECT * FROM finish();
 ROLLBACK;
@@ -30,5 +30,4 @@ SELECT lives_ok(format($$select crypto_shorthash('bob is your uncle', 42, '12345
 SELECT * FROM finish();
 ROLLBACK;
 
-\endif    
-    
+\endif

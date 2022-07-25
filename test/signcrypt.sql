@@ -1,4 +1,3 @@
-
 BEGIN;
 SELECT plan(4);
 
@@ -30,4 +29,3 @@ SELECT is(crypto_signcrypt_verify_public(:'signature', 'bob', 'alice', 'addition
 
 SELECT * FROM finish();
 ROLLBACK;
-

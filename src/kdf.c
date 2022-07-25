@@ -20,9 +20,9 @@ Datum pgsodium_crypto_kdf_derive_from_key(PG_FUNCTION_ARGS) {
             "%s: invalid derivation key");
     ERRORIF(subkey_size < crypto_kdf_BYTES_MIN ||
                 subkey_size > crypto_kdf_BYTES_MAX,
-            "%s: crypto_kdf_derive_from_key: invalid key size requested");
+            "%s: invalid key size requested");
     ERRORIF(VARSIZE_ANY_EXHDR(context) != 8,
-            "%s: crypto_kdf_derive_from_key: context must be 8 bytes");
+            "%s: context must be 8 bytes");
     result = _pgsodium_zalloc_bytea(result_size);
     crypto_kdf_derive_from_key(PGSODIUM_UCHARDATA(result),
                                subkey_size,

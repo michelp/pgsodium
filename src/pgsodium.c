@@ -33,9 +33,9 @@ pgsodium_object_relabel(const ObjectAddress *object, const char *seclabel)
          errmsg("'%s' is not a valid label for a column", seclabel)));
       break;
 
-    /* SECURITY LABEL FOR pgsodium ON ROLE sodium_user IS 'MASKED' */
+    /* SECURITY LABEL FOR pgsodium ON ROLE sodium_user IS 'ACCESS' */
     case AuthIdRelationId:
-        if (pg_strncasecmp(seclabel,"ACCESS", 6) == 0)
+        if (pg_strncasecmp(seclabel, "ACCESS", 6) == 0)
         return;
 
       ereport(ERROR,

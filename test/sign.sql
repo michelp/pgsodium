@@ -2,32 +2,39 @@ BEGIN;
 
 SELECT plan(14);
 
-SELECT lives_ok($$select crypto_sign_seed_new_keypair(crypto_sign_new_seed())$$, 'crypto_sign_seed_new_keypair');
-SELECT throws_ok($$select crypto_sign_seed_new_keypair('bogus')$$, '22000', 'invalid seed', 'crypto_sign_seed_new_keypair invalid seed');
+SELECT lives_ok($$select crypto_sign_seed_new_keypair(crypto_sign_new_seed())$$,
+                'crypto_sign_seed_new_keypair');
+SELECT throws_ok($$select crypto_sign_seed_new_keypair('bogus')$$, '22000',
+                 'pgsodium_crypto_sign_seed_keypair: invalid seed',
+                 'crypto_sign_seed_new_keypair invalid seed');
 
 SELECT public, secret FROM crypto_sign_new_keypair() \gset sign_
 
 SELECT crypto_sign('bob is your uncle', :'sign_secret') signed \gset
 SELECT throws_ok($$select crypto_sign('bob is your uncle', 's')$$,
-	   '22000', 'invalid secret key', 'crypto_sign invalid key');
+       '22000', 'pgsodium_crypto_sign: invalid secret key', 'crypto_sign invalid key');
 
 SELECT is(crypto_sign_open(:'signed', :'sign_public'),
           'bob is your uncle', 'crypto_sign_open');
 
 SELECT throws_ok(format($$select crypto_sign_open(%L, 'bad_key')$$, :'signed'),
-	   	         '22000', 'invalid public key', 'crypto_sign_open invalid public key');
+                 '22000', 'pgsodium_crypto_sign_open: invalid public key',
+                 'crypto_sign_open invalid public key');
 
 SELECT throws_ok(format($$select crypto_sign_open('foo', %L)$$, :'sign_public'),
-	   	         '22000', 'invalid message', 'crypto_sign_open invalid message');
+                 '22000', 'pgsodium_crypto_sign_open: invalid message',
+                 'crypto_sign_open invalid message');
 
 -- public key signatures
 -- We will sign our previously generated sealed box
 
 SELECT throws_ok($$select crypto_sign_detached('foo', 'bar')$$,
-	   	         '22000', 'invalid secret key', 'crypto_sign_detached invalid secret key');
+                 '22000', 'pgsodium_crypto_sign_detached: invalid secret key',
+                 'crypto_sign_detached invalid secret key');
 
 SELECT throws_ok($$select crypto_sign_verify_detached('foo', 'bar', 'bork')$$,
-	   	         '22000', 'invalid public key', 'crypto_sign_verify_detached invalid public key');
+                 '22000', 'pgsodium_crypto_sign_verify_detached: invalid public key',
+                 'crypto_sign_verify_detached invalid public key');
 
 SELECT crypto_sign_detached('sealed message', :'sign_secret') detached \gset
 
@@ -41,14 +48,14 @@ SELECT is(crypto_sign_verify_detached(:'detached', 'xyzzy', :'sign_public'),
 WITH parts(msg) AS
   (
     VALUES ('Hello Alice'),
-    	   ('Hello Bob'),
-    	   ('Hello Carol')
+           ('Hello Bob'),
+           ('Hello Carol')
   ),
 tampered(msg) AS
   (
     VALUES ('Hello Alice'),
-    	   ('Hello Bob'),
-    	   ('Hello CaRol')
+           ('Hello Bob'),
+           ('Hello CaRol')
   ),
 prep1 AS
   (

@@ -9,4 +9,3 @@ SELECT lives_ok(format($$SELECT randombytes_buf_deterministic(10, %L)$$, :'bufse
         'randombytes_buf_deterministic');
 SELECT * FROM finish();
 ROLLBACK;
-

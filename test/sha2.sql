@@ -9,4 +9,3 @@ select is(crypto_hash_sha512('bob is your uncle'),
 
 SELECT * FROM finish();
 ROLLBACK;
-

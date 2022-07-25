@@ -1,5 +1,3 @@
-
-
 BEGIN;
 SELECT plan(1);
 

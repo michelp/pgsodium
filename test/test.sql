@@ -16,8 +16,8 @@ CREATE EXTENSION IF NOT EXISTS pgsodium WITH SCHEMA pgsodium;
 SET search_path = pgsodium, public;
 
 SELECT EXISTS (SELECT * FROM pg_settings
-	WHERE name = 'shared_preload_libraries'
-	AND setting ilike '%pgsodium%') serverkeys \gset
+    WHERE name = 'shared_preload_libraries'
+    AND setting ilike '%pgsodium%') serverkeys \gset
 
 \ir random.sql
 \ir secretbox.sql
