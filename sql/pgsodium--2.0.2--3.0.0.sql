@@ -200,7 +200,7 @@ CREATE OR REPLACE VIEW @extschema@.masking_rule AS
   WITH const AS (
     SELECT
       -- #" is the escape-double-quote separator
-      '%ENCRYPT +WITH +KEY +ID +COLUMN +#"%#'::TEXT
+      '%ENCRYPT +WITH +KEY +COLUMN +#"%#'::TEXT
         AS pattern_key_id_column,
       'ENCRYPT +WITH +KEY +ID +#"%#" ?'::TEXT
         AS pattern_key_id
@@ -215,9 +215,9 @@ CREATE OR REPLACE VIEW @extschema@.masking_rule AS
       pg_catalog.format_type(a.atttypid, a.atttypmod),
       sl.label AS col_description,
       trim(substring(sl.label FROM k.pattern_key_id_column FOR '#'))
-        AS _key_id_column,
+        AS key_id_column,
       trim(substring(sl.label FROM k.pattern_key_id FOR '#'))
-        AS _key_id,
+        AS key_id,
       100 AS priority -- high priority for the security label syntax
       FROM const k,
            pg_catalog.pg_seclabel sl
@@ -233,8 +233,7 @@ CREATE OR REPLACE VIEW @extschema@.masking_rule AS
   )
   -- DISTINCT will keep just the 1st rule for each column based on priority,
   SELECT
-    DISTINCT ON (attrelid, attnum) *,
-    COALESCE(_key_id_column, quote_literal(_key_id)) AS key_id
+    DISTINCT ON (attrelid, attnum) *
     FROM rules_from_seclabels
    ORDER BY attrelid, attnum, priority DESC;
 
@@ -258,11 +257,12 @@ CREATE FUNCTION @extschema@.has_mask(role regrole, source_name text)
 
 -- Display all columns of the relation with the masking function (if any)
 CREATE FUNCTION @extschema@.mask_columns(source_relid oid)
-RETURNS TABLE (attname name, key_id text, format_type text) AS
+RETURNS TABLE (attname name, key_id text, key_id_column text, format_type text) AS
 $$
   SELECT
   a.attname,
   m.key_id,
+  m.key_id_column,
   m.format_type
   FROM pg_attribute a
   LEFT JOIN  @extschema@.masking_rule m
@@ -307,7 +307,10 @@ BEGIN
             %s::uuid),
             'utf8') AS %s$f$,
             quote_ident(m.attname),
-            m.key_id,
+            CASE WHEN m.key_id_column IS NOT NULL
+            THEN 'new.' || quote_ident(m.key_id_column)
+            ELSE quote_literal(m.key_id)
+            END,
             'decrypted_' || quote_ident(m.attname));
     END IF;
     comma := E',       \n';
@@ -334,7 +337,7 @@ BEGIN
   expression := '';
   comma := E'        ';
   FOR m IN SELECT * FROM @extschema@.mask_columns(relid) LOOP
-    IF m.key_id IS NULL THEN
+    IF m.key_id IS NULL AND m.key_id_column is NULL THEN
       CONTINUE;
     ELSE
       expression := expression || comma;
@@ -347,7 +350,10 @@ BEGIN
             'base64')$f$,
             'new.' || quote_ident(m.attname),
             'new.' || quote_ident(m.attname),
-            m.key_id);
+            CASE WHEN m.key_id_column IS NOT NULL
+            THEN 'new.' || quote_ident(m.key_id_column)
+            ELSE quote_literal(m.key_id)
+            END);
     END IF;
     comma := E';\n        ';
   END LOOP;
@@ -359,10 +365,9 @@ $$
   SET search_path=''
   ;
 
-CREATE FUNCTION @extschema@.create_mask_view(relid oid)
-RETURNS void AS
+CREATE FUNCTION @extschema@.create_mask_view(relid oid) RETURNS void AS
   $$
-  DECLARE
+DECLARE
   body text;
   source_name text;
   view_name text;
@@ -378,9 +383,11 @@ BEGIN
 
   body = format(
     $c$
-    CREATE OR REPLACE VIEW @extschema@_masks.%s AS SELECT %s
+    DROP VIEW IF EXISTS @extschema@_masks.%s;
+    CREATE VIEW @extschema@_masks.%s AS SELECT %s
     FROM %s;
     $c$,
+    view_name,
     view_name,
     @extschema@.decrypted_columns(relid),
     source_name
@@ -448,7 +455,6 @@ CREATE FUNCTION @extschema@.mask_role(masked_role regrole, source_name text, vie
   mask_schema REGNAMESPACE = '@extschema@_masks';
   source_schema REGNAMESPACE = (regexp_split_to_array(source_name, '\.'))[1];
 BEGIN
-  raise notice 'altering % from % to % in %', masked_role, source_name, view_name, source_schema;
   EXECUTE format(
     'GRANT pgsodium_keyiduser TO %s',
     masked_role);

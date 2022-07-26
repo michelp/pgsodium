@@ -13,7 +13,9 @@ SELECT throws_ok(
   'schemas cannot be labled');
 
 CREATE TABLE private.bar(
-  secret text
+  secret text,
+  secret2 text,
+  secret2_key_id uuid
 );
 
 SELECT throws_ok(
@@ -26,6 +28,10 @@ SELECT throws_ok(
 
 -- Create a key id to use in the tests below
 SELECT id AS secret_key_id
+  FROM pgsodium.create_key('aead-det', 'Optional Comment') \gset
+
+-- Create a key id to use in the tests below
+SELECT id AS secret2_key_id
   FROM pgsodium.create_key('aead-det', 'Optional Comment') \gset
 
 SELECT lives_ok(
@@ -55,8 +61,9 @@ SELECT plan(2);
 SELECT lives_ok(
   format(
     $test$
-    INSERT INTO pgsodium_masks.bar (secret) values ('s3kr3t');
-    $test$),
+    INSERT INTO pgsodium_masks.bar (secret, secret2, secret2_key_id) values ('s3kr3t', 'shhh', %L::uuid);
+    $test$,
+    :'secret2_key_id'),
     'can insert into base table');
 
 SELECT lives_ok(
