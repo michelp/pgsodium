@@ -36,8 +36,9 @@ SELECT id AS secret2_key_id
 
 SELECT lives_ok(
   format($test$
-  SECURITY LABEL FOR pgsodium ON COLUMN private.bar.secret IS 'ENCRYPT WITH KEY ID %s'
-  $test$, :'secret_key_id'),
+         SECURITY LABEL FOR pgsodium ON COLUMN private.bar.secret
+         IS 'ENCRYPT WITH KEY ID %s'
+         $test$, :'secret_key_id'),
   'can label column for encryption');
 
 CREATE ROLE bobo with login password 'foo';
@@ -51,17 +52,26 @@ SELECT lives_ok(
   $test$,
   'can label roles ACCESS');
 
+SELECT lives_ok(
+  format($test$
+         SECURITY LABEL FOR pgsodium ON COLUMN private.bar.secret2
+         IS 'ENCRYPT WITH KEY COLUMN secret2_key_id'
+  $test$),
+  'can label another column for encryption');
+
 SELECT * FROM finish();
 COMMIT;
 
 \c postgres bobo
+  
 BEGIN;
 SELECT plan(2);
 
 SELECT lives_ok(
   format(
     $test$
-    INSERT INTO pgsodium_masks.bar (secret, secret2, secret2_key_id) values ('s3kr3t', 'shhh', %L::uuid);
+    INSERT INTO bar (secret, secret2, secret2_key_id)
+    VALUES ('s3kr3t', 'shhh', %L::uuid);
     $test$,
     :'secret2_key_id'),
     'can insert into base table');
@@ -69,7 +79,7 @@ SELECT lives_ok(
 SELECT lives_ok(
   format(
     $test$
-    TABLE pgsodium_masks.bar;
+    TABLE bar;
     $test$),
     'can select from masking view');
 

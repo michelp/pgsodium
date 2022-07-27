@@ -294,7 +294,7 @@ BEGIN
   comma := padding;
   FOR m IN SELECT * FROM @extschema@.mask_columns(relid) LOOP
     expression := expression || comma;
-    IF m.key_id IS NULL THEN
+    IF m.key_id IS NULL AND m.key_id_column IS NULL THEN
       expression := expression || padding || quote_ident(m.attname);
     ELSE
       expression := expression || padding || quote_ident(m.attname) || E',\n';
@@ -308,7 +308,7 @@ BEGIN
             'utf8') AS %s$f$,
             quote_ident(m.attname),
             CASE WHEN m.key_id_column IS NOT NULL
-            THEN 'new.' || quote_ident(m.key_id_column)
+            THEN quote_ident(m.key_id_column)
             ELSE quote_literal(m.key_id)
             END,
             'decrypted_' || quote_ident(m.attname));
@@ -466,7 +466,7 @@ BEGIN
     masked_role);
 
   EXECUTE format(
-    'ALTER ROLE %s SET search_path TO %s,pg_catalog,%s,pg_temp',
+    'ALTER ROLE %s SET search_path TO %s,%s,pg_catalog,public,pg_temp',
     masked_role,
     mask_schema,
     source_schema);
