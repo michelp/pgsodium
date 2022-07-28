@@ -14,7 +14,9 @@ SELECT throws_ok(
 
 CREATE TABLE private.bar(
   secret text,
+  associated text,
   secret2 text,
+  associated2 text,
   secret2_key_id uuid
 );
 
@@ -37,7 +39,7 @@ SELECT id AS secret2_key_id
 SELECT lives_ok(
   format($test$
          SECURITY LABEL FOR pgsodium ON COLUMN private.bar.secret
-         IS 'ENCRYPT WITH KEY ID %s'
+         IS 'ENCRYPT KEY ID %s ASSOCIATED associated'
          $test$, :'secret_key_id'),
   'can label column for encryption');
 
@@ -55,7 +57,7 @@ SELECT lives_ok(
 SELECT lives_ok(
   format($test$
          SECURITY LABEL FOR pgsodium ON COLUMN private.bar.secret2
-         IS 'ENCRYPT WITH KEY COLUMN secret2_key_id'
+         IS 'ENCRYPT KEY COLUMN secret2_key_id ASSOCIATED associated2'
   $test$),
   'can label another column for encryption');
 
@@ -70,8 +72,8 @@ SELECT plan(2);
 SELECT lives_ok(
   format(
     $test$
-    INSERT INTO bar (secret, secret2, secret2_key_id)
-    VALUES ('s3kr3t', 'shhh', %L::uuid);
+    INSERT INTO bar (secret, secret2, associated2, secret2_key_id)
+    VALUES ('s3kr3t', 'shhh', 'bob was here', %L::uuid);
     $test$,
     :'secret2_key_id'),
     'can insert into base table');

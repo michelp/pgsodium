@@ -28,13 +28,8 @@ GRANT USAGE ON SCHEMA @extschema@_masks TO pgsodium_keyiduser;
 -- Misc functions
 
 CREATE OR REPLACE FUNCTION @extschema@.version()
-RETURNS text AS
-$$
-  SELECT extversion FROM pg_extension WHERE extname = 'pgsodium';
-$$
-  LANGUAGE SQL
-  SET search_path='pg_catalog'
-  ;
+  RETURNS text
+  RETURN (SELECT extversion FROM pg_extension WHERE extname = 'pgsodium');
 
 -- Internal Key Management
 
@@ -73,7 +68,7 @@ CREATE INDEX ON @extschema@.key (status)
 CREATE UNIQUE INDEX ON @extschema@.key (status)
   WHERE (status = 'default');
 
-CREATE UNIQUE INDEX ON @extschema@.key (key_id, key_context);
+CREATE UNIQUE INDEX ON @extschema@.key (key_id, key_context, key_type);
 
 COMMENT ON TABLE @extschema@.key IS
   'This table holds metadata for derived keys given a key_id '
@@ -94,18 +89,17 @@ CREATE FUNCTION @extschema@.create_key(
   key_id bigint = null,
   key_context bytea = 'pgsodium',
   expires timestamp = null,
-  user_data jsonb = null) RETURNS @extschema@.key AS
-  $$
-  INSERT INTO @extschema@.key (key_id, key_context, expires, comment, user_data)
-  VALUES (case  when key_id is null then nextval('@extschema@.key_key_id_seq'::regclass) else key_id
-          end,
-          key_context,
-          expires,
-          comment,
-          user_data) RETURNING *
-  $$ LANGUAGE SQL
-  SET search_path='pg_catalog'
-  ;
+  user_data jsonb = null) RETURNS @extschema@.key
+        BEGIN ATOMIC
+        INSERT INTO @extschema@.key (key_id, key_context, key_type, expires, comment, user_data)
+          VALUES (case when key_id is null then nextval('@extschema@.key_key_id_seq'::regclass) else key_id
+                  end,
+                  key_context,
+                  key_type,
+                  expires,
+                  comment,
+                  user_data) RETURNING *;
+        END;
 
 -- Deterministic AEAD functions by key uuid
 
@@ -199,11 +193,14 @@ GRANT EXECUTE ON FUNCTION
 CREATE OR REPLACE VIEW @extschema@.masking_rule AS
   WITH const AS (
     SELECT
-      -- #" is the escape-double-quote separator
-      '%ENCRYPT +WITH +KEY +COLUMN +#"%#'::TEXT
+      'encrypt +key +id +([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})'
+        AS pattern_key_id,
+      'encrypt +key +column +(\w+)'
         AS pattern_key_id_column,
-      'ENCRYPT +WITH +KEY +ID +#"%#" ?'::TEXT
-        AS pattern_key_id
+      '(?<=associated) +(\w+)'
+        AS pattern_associated_column,
+      '(?<=nonce) +(\w+)'
+        AS pattern_nonce_column
   ),
   rules_from_seclabels AS (
     SELECT
@@ -214,11 +211,11 @@ CREATE OR REPLACE VIEW @extschema@.masking_rule AS
       a.attname,
       pg_catalog.format_type(a.atttypid, a.atttypmod),
       sl.label AS col_description,
-      trim(substring(sl.label FROM k.pattern_key_id_column FOR '#'))
-        AS key_id_column,
-      trim(substring(sl.label FROM k.pattern_key_id FOR '#'))
-        AS key_id,
-      100 AS priority -- high priority for the security label syntax
+      (regexp_match(sl.label, k.pattern_key_id_column, 'i'))[1] AS key_id_column,
+      (regexp_match(sl.label, k.pattern_key_id, 'i'))[1] AS key_id,
+      (regexp_match(sl.label, k.pattern_associated_column, 'i'))[1] AS associated_column,
+      (regexp_match(sl.label, k.pattern_nonce_column, 'i'))[1] AS nonce_column,
+      100 AS priority
       FROM const k,
            pg_catalog.pg_seclabel sl
            JOIN pg_catalog.pg_class c ON sl.classoid = c.tableoid AND sl.objoid = c.oid
@@ -226,12 +223,9 @@ CREATE OR REPLACE VIEW @extschema@.masking_rule AS
      WHERE a.attnum > 0
            --  TODO : Filter out the catalog tables
        AND NOT a.attisdropped
-       AND (sl.label SIMILAR TO k.pattern_key_id_column ESCAPE '#'
-            OR sl.label SIMILAR TO k.pattern_key_id ESCAPE '#'
-       )
-       AND sl.provider = 'pgsodium' -- this is hard-coded in pgsodium.c
+       AND sl.label ilike 'ENCRYPT%'
+       AND sl.provider = 'pgsodium'
   )
-  -- DISTINCT will keep just the 1st rule for each column based on priority,
   SELECT
     DISTINCT ON (attrelid, attnum) *
     FROM rules_from_seclabels
@@ -241,28 +235,26 @@ GRANT SELECT ON @extschema@.masking_rule TO PUBLIC;
 
 
 CREATE FUNCTION @extschema@.has_mask(role regrole, source_name text)
-  RETURNS BOOLEAN AS
-  $$
+  RETURNS BOOLEAN RETURN (
   SELECT EXISTS(
     SELECT 1
       FROM pg_shseclabel
      WHERE  objoid = role
        AND provider = 'pgsodium'
        AND label SIMILAR TO 'ACCESS +' || source_name)
-  $$
-  LANGUAGE SQL
-  STABLE
-  SET search_path='pg_catalog'
-  ;
+  );
 
 -- Display all columns of the relation with the masking function (if any)
 CREATE FUNCTION @extschema@.mask_columns(source_relid oid)
-RETURNS TABLE (attname name, key_id text, key_id_column text, format_type text) AS
-$$
+  RETURNS TABLE (attname name, key_id text, key_id_column text,
+                 associated_column text, nonce_column text, format_type text)
+BEGIN ATOMIC
   SELECT
   a.attname,
   m.key_id,
   m.key_id_column,
+  m.associated_column,
+  m.nonce_column,
   m.format_type
   FROM pg_attribute a
   LEFT JOIN  @extschema@.masking_rule m
@@ -272,11 +264,7 @@ $$
   AND    a.attnum > 0 -- exclude ctid, cmin, cmax
   AND    NOT a.attisdropped
   ORDER BY a.attnum;
-$$
-  LANGUAGE SQL
-  VOLATILE
-  SET search_path='pg_catalog'
-;
+END;
 
 -- get the "select filters" that will decrypt the real data of a table
 CREATE FUNCTION @extschema@.decrypted_columns(
@@ -303,10 +291,14 @@ BEGIN
         pg_catalog.convert_from(
           @extschema@.crypto_aead_det_decrypt(
             pg_catalog.decode(%s, 'base64'),
-            '',
+            pg_catalog.convert_to(%s, 'utf8'),
             %s::uuid),
             'utf8') AS %s$f$,
             quote_ident(m.attname),
+            CASE WHEN m.associated_column IS NOT NULL
+            THEN quote_ident(m.associated_column)
+            ELSE quote_literal('')
+            END,
             CASE WHEN m.key_id_column IS NOT NULL
             THEN quote_ident(m.key_id_column)
             ELSE quote_literal(m.key_id)
@@ -345,11 +337,15 @@ BEGIN
         $f$%s = pg_catalog.encode(
           @extschema@.crypto_aead_det_encrypt(
             pg_catalog.convert_to(%s, 'utf8'),
-            ''::bytea,
+            pg_catalog.convert_to(%s, 'utf8'),
             %s::uuid),
             'base64')$f$,
             'new.' || quote_ident(m.attname),
             'new.' || quote_ident(m.attname),
+            CASE WHEN m.associated_column IS NOT NULL
+            THEN 'new.' || quote_ident(m.associated_column)
+            ELSE quote_literal('')
+            END,
             CASE WHEN m.key_id_column IS NOT NULL
             THEN 'new.' || quote_ident(m.key_id_column)
             ELSE quote_literal(m.key_id)

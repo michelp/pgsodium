@@ -2,4 +2,4 @@
 comment = 'Postgres extension for libsodium functions'
 default_version = '3.0.0'
 relocatable = false
-requires = ''
+requires = '"uuid-ossp"'

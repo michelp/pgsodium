@@ -6,12 +6,12 @@
 -- \pset pager
 
 -- \set ON_ERROR_ROLLBACK 1
--- \set ON_ERROR_STOP true
+\set ON_ERROR_STOP true
 -- \set QUIET 1
 
 CREATE EXTENSION IF NOT EXISTS pgtap;
 CREATE SCHEMA pgsodium;
-CREATE EXTENSION IF NOT EXISTS pgsodium WITH SCHEMA pgsodium;
+CREATE EXTENSION IF NOT EXISTS pgsodium WITH SCHEMA pgsodium CASCADE;
 
 SET search_path = pgsodium, public;
 
