@@ -25,7 +25,7 @@ pgsodium_object_relabel(const ObjectAddress *object, const char *seclabel)
            errmsg("pgsodium provider does not support labels on this object")));
 
       /* SECURITY LABEL FOR pgsodium ON COLUMN t.i IS '...' */
-      if ( pg_strncasecmp(seclabel, "ENCRYPT", 7) == 0)
+      if ( pg_strncasecmp(seclabel, "ENCRYPT WITH", 12) == 0)
         return;
 
       ereport(ERROR,

@@ -193,9 +193,9 @@ GRANT EXECUTE ON FUNCTION
 CREATE OR REPLACE VIEW @extschema@.masking_rule AS
   WITH const AS (
     SELECT
-      'encrypt +key +id +([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})'
+      'encrypt +with +key +id +([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})'
         AS pattern_key_id,
-      'encrypt +key +column +(\w+)'
+      'encrypt +with +key +column +(\w+)'
         AS pattern_key_id_column,
       '(?<=associated) +(\w+)'
         AS pattern_associated_column,
@@ -480,11 +480,12 @@ RETURNS void AS
   rname text;
 BEGIN
   PERFORM @extschema@.create_mask_view(c.oid)
-    FROM pg_seclabel s, pg_class c, pg_namespace n
-    WHERE s.objoid = c.oid
-    AND c.relnamespace = n.oid
-    AND c.relkind IN ('r', 'p', 'f') -- table, partition, or foreign
-    AND s.provider = 'pgsodium';
+    FROM (SELECT distinct(c.oid)
+            FROM pg_seclabel s, pg_class c, pg_namespace n
+           WHERE s.objoid = c.oid
+             AND c.relnamespace = n.oid
+             AND c.relkind IN ('r', 'p', 'f') -- table, partition, or foreign
+             AND s.provider = 'pgsodium') c;
   RETURN;
 END
 $$
