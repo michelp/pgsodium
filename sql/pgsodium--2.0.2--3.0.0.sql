@@ -106,7 +106,14 @@ CREATE FUNCTION @extschema@.create_key(
 CREATE TYPE @extschema@._key_id_context AS (
   key_id bigint,
   key_context bytea
-  );
+);
+
+CREATE FUNCTION @extschema@.crypto_aead_det_noncegen()
+RETURNS bytea
+AS '$libdir/pgsodium', 'pgsodium_crypto_aead_det_noncegen'
+LANGUAGE C VOLATILE;
+
+GRANT EXECUTE ON FUNCTION @extschema@.crypto_aead_det_noncegen() TO pgsodium_keyiduser;
 
 CREATE FUNCTION @extschema@.crypto_aead_det_encrypt(message bytea, additional bytea, key_uuid uuid)
   RETURNS bytea AS
@@ -119,8 +126,7 @@ BEGIN
 END;
   $$
   LANGUAGE plpgsql
-  STRICT
-  STABLE
+  STRICT IMMUTABLE
   SET search_path=''
   ;
 
@@ -139,12 +145,50 @@ BEGIN
 END;
   $$
   LANGUAGE plpgsql
-  STRICT
-  STABLE
+  STRICT IMMUTABLE
   SET search_path='';
 
 GRANT EXECUTE ON FUNCTION
   crypto_aead_det_decrypt(message bytea, additional bytea, key_uuid uuid)
+  TO pgsodium_keyiduser;
+
+--- AEAD det with nonce
+
+CREATE FUNCTION @extschema@.crypto_aead_det_encrypt(message bytea, additional bytea, key_uuid uuid, nonce bytea)
+  RETURNS bytea AS
+$$
+DECLARE
+  key_id @extschema@._key_id_context;
+BEGIN
+  SELECT v.key_id, v.key_context INTO STRICT key_id FROM @extschema@.valid_key v WHERE id = key_uuid;
+  RETURN @extschema@.crypto_aead_det_encrypt(message, additional, key_id.key_id, key_id.key_context, nonce);
+END;
+  $$
+  LANGUAGE plpgsql
+  STRICT IMMUTABLE
+  SET search_path=''
+  ;
+
+GRANT EXECUTE ON FUNCTION
+  @extschema@.crypto_aead_det_encrypt(message bytea, additional bytea, key_uuid uuid, nonce bytea)
+  TO pgsodium_keyiduser;
+
+CREATE FUNCTION @extschema@.crypto_aead_det_decrypt(message bytea, additional bytea, key_uuid uuid, nonce bytea)
+  RETURNS bytea AS
+  $$
+DECLARE
+  key_id @extschema@._key_id_context;
+BEGIN
+  SELECT v.key_id, v.key_context INTO STRICT key_id FROM @extschema@.valid_key v WHERE id = key_uuid;
+  RETURN @extschema@.crypto_aead_det_decrypt(message, additional, key_id.key_id, key_id.key_context, nonce);
+END;
+  $$
+  LANGUAGE plpgsql
+  STRICT IMMUTABLE
+  SET search_path='';
+
+GRANT EXECUTE ON FUNCTION
+  crypto_aead_det_decrypt(message bytea, additional bytea, key_uuid uuid, nonce bytea)
   TO pgsodium_keyiduser;
 
 -- IETF AEAD functions by key uuid
@@ -292,7 +336,9 @@ BEGIN
           @extschema@.crypto_aead_det_decrypt(
             pg_catalog.decode(%s, 'base64'),
             pg_catalog.convert_to(%s, 'utf8'),
-            %s::uuid),
+            %s::uuid,
+            %s
+          ),
             'utf8') AS %s$f$,
             quote_ident(m.attname),
             CASE WHEN m.associated_column IS NOT NULL
@@ -302,6 +348,10 @@ BEGIN
             CASE WHEN m.key_id_column IS NOT NULL
             THEN quote_ident(m.key_id_column)
             ELSE quote_literal(m.key_id)
+            END,
+            CASE WHEN m.nonce_column IS NOT NULL
+            THEN quote_ident(m.nonce_column)
+            ELSE 'NULL'
             END,
             'decrypted_' || quote_ident(m.attname));
     END IF;
@@ -338,7 +388,9 @@ BEGIN
           @extschema@.crypto_aead_det_encrypt(
             pg_catalog.convert_to(%s, 'utf8'),
             pg_catalog.convert_to(%s, 'utf8'),
-            %s::uuid),
+            %s::uuid,
+            %s
+          ),
             'base64')$f$,
             'new.' || quote_ident(m.attname),
             'new.' || quote_ident(m.attname),
@@ -349,6 +401,10 @@ BEGIN
             CASE WHEN m.key_id_column IS NOT NULL
             THEN 'new.' || quote_ident(m.key_id_column)
             ELSE quote_literal(m.key_id)
+            END,
+            CASE WHEN m.nonce_column IS NOT NULL
+            THEN 'new.' || quote_ident(m.nonce_column)
+            ELSE 'NULL'
             END);
     END IF;
     comma := E';\n        ';
