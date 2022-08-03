@@ -16,9 +16,9 @@ CREATE ROLE bob with login password 'foo';
 SECURITY LABEL FOR pgsodium ON ROLE bob is 'ACCESS public.test';
 
 SELECT format('ENCRYPT WITH KEY ID %s ASSOCIATED associated NONCE nonce',
-              (pgsodium.create_key('aead-det', 'Optional Comment for Secret Key')).id) AS seclabel \gset
+              (pgsodium.create_key('Optional Comment for Secret Key')).id) AS seclabel \gset
 
-SELECT id AS secret2_key_id FROM pgsodium.create_key('aead-det', 'Comment for Secret2 Key') \gset
+SELECT id AS secret2_key_id FROM pgsodium.create_key('Comment for Secret2 Key') \gset
 
 SECURITY LABEL FOR pgsodium	ON COLUMN test.secret IS :'seclabel';
 

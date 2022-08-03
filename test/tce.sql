@@ -31,12 +31,11 @@ SELECT throws_ok(
   'tables cannot be labeled');
 
 -- Create a key id to use in the tests below
-SELECT id AS secret_key_id
-  FROM pgsodium.create_key('aead-det', 'Optional Comment') \gset
+SELECT id AS secret_key_id FROM pgsodium.create_key('Optional Comment') \gset
 
 -- Create a key id to use in the tests below
 SELECT id AS secret2_key_id
-  FROM pgsodium.create_key('aead-det', 'Optional Comment') \gset
+  FROM pgsodium.create_key('Optional Comment 2') \gset
 
 SELECT lives_ok(
   format($test$

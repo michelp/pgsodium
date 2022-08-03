@@ -84,8 +84,8 @@ CREATE VIEW @extschema@.valid_key AS
      AND CASE WHEN expires IS NULL THEN true ELSE expires < now() END;
 
 CREATE FUNCTION @extschema@.create_key(
-  key_type @extschema@.key_type,
   comment text = null,
+  key_type @extschema@.key_type = 'aead-det',
   key_id bigint = null,
   key_context bytea = 'pgsodium',
   expires timestamp = null,
@@ -401,7 +401,7 @@ $$
   SET search_path=''
   ;
 
-CREATE FUNCTION @extschema@.create_mask_view(relid oid) RETURNS void AS
+CREATE FUNCTION @extschema@.create_mask_view(relid oid, debug boolean = false) RETURNS void AS
   $$
 DECLARE
   body text;
@@ -428,7 +428,9 @@ BEGIN
     @extschema@.decrypted_columns(relid),
     source_name
   );
-  -- RAISE NOTICE '%', body;
+  IF debug THEN
+    RAISE NOTICE '%', body;
+  END IF;
   EXECUTE body;
 
   body = format(
@@ -458,7 +460,9 @@ BEGIN
     source_name,
     view_name
   );
-  -- RAISE NOTICE '%', body;
+  if debug THEN
+    RAISE NOTICE '%', body;
+  END IF;
   EXECUTE body;
 
   PERFORM @extschema@.mask_role(oid::regrole, source_name, view_name)
@@ -513,13 +517,13 @@ $$
   SET search_path='pg_catalog'
 ;
 
-CREATE FUNCTION @extschema@.update_masks()
+CREATE FUNCTION @extschema@.update_masks(debug boolean = false)
 RETURNS void AS
   $$
   declare
   rname text;
 BEGIN
-  PERFORM @extschema@.create_mask_view(c.oid)
+  PERFORM @extschema@.create_mask_view(c.oid, debug)
     FROM (SELECT distinct(c.oid)
             FROM pg_seclabel s, pg_class c, pg_namespace n
            WHERE s.objoid = c.oid

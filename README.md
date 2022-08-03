@@ -15,6 +15,10 @@ inaccessible root key can then be used to derive sub-keys and keypairs
 *by key id*.  This id (type `bigint`) can then be stored *instead of
 the derived key*.
 
+Another advanced feature of pgsodium is [Transparent Column
+Encryption](#transparent-column-encryption) which can automatically
+encrypt and decrypt one or more columns of data in a table.
+
 pgsodium provides some convenience roles that can be used to enforce
 access to polymorphic functions for encrypting either with a bytekey
 or a key id.  For example, as a database superuser (or if you have the
@@ -60,6 +64,11 @@ can be called directly with the integer `42`.  Permission to call the
 form of `crypto_aead_det_encrypt` with a raw byte key is revoked from
 the `pgsodium_keyiduser` role.
 
+This pattern of using key ids is available throughout pgsodium, but
+there is also an optional, high level [Key Managment Table](#key-management-table) in the
+pgsodium extension schema called `pgsodium.key` that can be used as a
+simple key management API.
+
 # Table of Contents
 
    * [pgsodium](#pgsodium)
@@ -67,8 +76,9 @@ the `pgsodium_keyiduser` role.
    * [Usage](#usage)
    * [Server Key Management](#server-key-management)
    * [Server Key Derivation](#server-key-derivation)
+   * [Key Management Table](#key-management-table)
    * [Security Roles](#security-roles)
-   * [Encrypting Columns](#encrypting-columns)
+   * [Transparent Column Encryption](#transparent-column-encryption)
    * [Simple public key encryption with crypto_box()](#simple-public-key-encryption-with-crypto_box)
    * [Avoid secret logging](#avoid-secret-logging)
    * [API Reference](#api-reference)
@@ -258,6 +268,12 @@ keypairs using for example `crypto_box_seed_new_keypair()` and
     --------------------------------------------------------------------+--------------------------------------------------------------------
      \x01d0e0ec4b1fa9cc8dede88e0b43083f7e9cd33be4f91f0b25aa54d70f562278 | \x066ec431741a9d39f38c909de4a143ed39b09834ca37b6dd2ba3d015206f14ca
 
+# Key Management Table
+
+pgsodium provides an internal table and view for simple key id and
+context managment.  This table provides a number of useful columns
+including experation capability.
+
 # Security Roles
 
 The pgsodium API has three nested layers of security roles:
@@ -293,130 +309,120 @@ crypto_box_seed_new_keypair(derive_key(1))` and make deterministic
 keypairs, but then if an attacker steals your root key they can derive
 all keypair secrets, so this approach is not recommended.
 
-# Encrypting Columns
+# Transparent Column Encryption
 
-Here's an example script that encrypts a column in a table and
-provides a view that does on the fly decryption.  Each row's stores
-the nonce and key id used to encrypt the column.  Note how no keys are
-used in this example, only key ids, so this code can be run by the
-least privileged `pgsodium_keyiduser` role:
-
-    CREATE SCHEMA pgsodium;
-    CREATE EXTENSION pgsodium WITH SCHEMA pgsodium;
-
-    CREATE TABLE test (
-        id bigserial primary key,
-        key_id bigint not null default 1,
-        nonce bytea not null,
-        data bytea
-        );
-
-    CREATE VIEW test_view AS
-        SELECT id,
-        convert_from(pgsodium.crypto_secretbox_open(
-                 data,
-                 nonce,
-                 key_id),
-        'utf8') AS data FROM test;
-
-    CREATE OR REPLACE FUNCTION test_encrypt() RETURNS trigger
-        language plpgsql AS
-    $$
-    DECLARE
-        new_nonce bytea = pgsodium.crypto_secretbox_noncegen();
-        test_id bigint;
-    BEGIN
-
-        insert into test (nonce) values (new_nonce) returning id into test_id;
-        update test set data = pgsodium.crypto_secretbox(
-            convert_to(new.data, 'utf8'),
-            new_nonce,
-            key_id)
-        where id = test_id;
-        RETURN new;
-    END;
-    $$;
-
-    CREATE TRIGGER test_encrypt_trigger
-        INSTEAD OF INSERT ON test_view
-        FOR EACH ROW
-        EXECUTE FUNCTION test_encrypt();
-
-Use the view as if it were a normal table, but the underlying table is
-encrypted.  Again, no keys are stored or even available to this code,
-only [derived keys](#server-key-management) based on a key id are
-used.
-
-The trigger `test_encrypt_trigger` is fired `INSTEAD OF INSERT ON` the
-wrapper `test_view`, newly inserted rows are encrypted with a key
-derived from the stored key_id which defaults to 1.
-
-    # insert into test_view (data) values ('this is one'), ('this is two');
-
-    # select * from test;
-     id | key_id |                       nonce                        |                           data
-    ----+--------+----------------------------------------------------+----------------------------------------------------------
-      3 |      1 | \xa6b9c4bfbfe194541faa21f2d31565babff1a250a010fa79 | \xb1d0432b173eb7fbef315ba5dd961454a4e2eef1332f9847eaef68
-      4 |      1 | \x0ad82e537d5422966c110ed65f60c6bada57c0be73476950 | \x8c29b12778b6bb5873c9f7fa123c4f105d6eb16e0c54dfae93da10
-
-    # select * from test_view;
-     id |    data
-    ----+-------------
-      3 | this is one
-      4 | this is two
-
-Key rotation can be done with a rotation function that will re-encrypt
-a row with a new key id.  This function also requires no access to
-keys, it works only by key id and thus can be run by the least
-privileged `pgsodium_keyiduser`:
-
-    CREATE OR REPLACE FUNCTION rotate_key(test_id bigint, new_key bigint)
-        RETURNS void LANGUAGE plpgsql AS $$
-    DECLARE
-        new_nonce bytea;
-    BEGIN
-        new_nonce = pgsodium.crypto_secretbox_noncegen();
-        UPDATE test SET
-        nonce = new_nonce,
-        key_id = new_key,
-        data = pgsodium.crypto_secretbox(
-            pgsodium.crypto_secretbox_open(
-                 test.data,
-                 test.nonce,
-                 test.key_id),
-            new_nonce,
-            new_key)
-        WHERE test.id = test_id;
-        RETURN;
-    END;
-    $$;
-
-Call the rotation function by passing a row id and a new key id.  The
-old row will be decrypted with the old derived key, then encrypted
-with the new derived key.
-
-    # select rotate_key(3, 2);
-     rotate_key
-    ------------
-
-
-    # select * from test;
-     id | key_id |                       nonce                        |                           data
-    ----+--------+----------------------------------------------------+----------------------------------------------------------
-      4 |      1 | \x0ad82e537d5422966c110ed65f60c6bada57c0be73476950 | \x8c29b12778b6bb5873c9f7fa123c4f105d6eb16e0c54dfae93da10
-      3 |      2 | \x775f6b2fb01195f8646656d7588e581856ea44353332068e | \x27da7b96f4eb611a0c8ad8e4cee0988714d14e830a9aaf8f282c2a
-
-    # select * from test_view;
-     id |    data
-    ----+-------------
-      4 | this is two
-      3 | this is one
-
+pgsodium provides a useful pattern where a trigger is used to encrypt
+a column of data in a table which is then decrypted using a view.
+This is called *Transparent Column Encryption* and can be enabled with
+pgsodium using the [SECURITY LABEL ...]() PostgreSQL command.
 
 If an attacker acquires a dump of the table or database, they will not
-be able to derive the keys used encrypt the data since they will not
-have the root server managed key, which is never revealed to SQL See
-the [example file for more details](./example/encrypted_table.sql).
+be able to derive the keys used to encrypt the data since they will
+not have the root server managed key, which is never revealed to SQL
+See the [example file for more details](./example/tce.sql).
+
+In order to use TCE you must use keys created from the [Key Management
+Table](#key-management-table) API.  This API returns key ids that are
+UUIDs for use with the internal encryption functions used by the TCE
+functionality.  Creating a key to use is the first step:
+
+```
+# select * from pgsodium.create_key('Optional Comment');
+-[ RECORD 1 ]-------------------------------------
+id          | dfc44293-fa78-4a1a-9ef9-7e600e63e101
+status      | valid
+created     | 2022-08-03 18:50:53.355099
+expires     | 
+key_type    | aead-det
+key_id      | 5
+key_context | \x7067736f6469756d
+comment     | Optional Comment
+user_data   | 
+```
+
+This key is now stored in the `pgsodium.key` table, and can be
+accessed via the `pgsodium.valid_key` view:
+
+```
+# select EXISTS (select 1 from pgsodium.valid_key where id = 'dfc44293-fa78-4a1a-9ef9-7e600e63e101');
+-[ RECORD 1 ]
+exists | t
+```
+
+Now this key id can be used for simple TCE as shown in the next section.
+
+## One Key Id for the Entire Column
+
+For the simplest case, a column can be encrypted with one key id which
+must be of the type `aead-det` (as created above):
+
+```sql
+CREATE TABLE private.users (
+	id bigserial primary key,
+	secret text);
+
+SECURITY LABEL FOR pgsodium	ON COLUMN private.users.secret
+  IS 'ENCRYPT WITH KEY ID dfc44293-fa78-4a1a-9ef9-7e600e63e101';
+```
+
+The advantage of this approach is it is very simple, the user creates
+one key and labels a column with it.  The cryptographic algorithm for
+this approach uses a *nonceless* encryption algorithm called
+`crypto_aead_det_xchacha20()`.  If you wish to use a nonce value, see
+below.
+
+## One Key ID per Row
+
+Using one key for an entire column means that whoever can decrypt one
+row can decrypt them all from a database dump.  Also changing
+(rotating) the key means rewriting the whole table.
+
+A more fine grained approach is to store one key id per row:
+
+```sql
+CREATE TABLE private.users (
+	id bigserial primary key,
+	secret text,
+	key_id uuid not null,
+  nonce bytea
+);
+
+SECURITY LABEL FOR pgsodium
+	ON COLUMN private.users.secret
+  IS 'ENCRYPT WITH KEY COLUMN key_id NONCE COLUMN nonce';
+```
+
+This approach ensures that “cracking” the key for one row does not
+help decrypt any others.  It also acts as a natural partition that can
+work in conjunction with RLS to share distinct keys between owners.
+
+## One Key ID per Row with Nonce Support
+
+The default cryptographic algorithm for the above approach uses a
+*nonceless* encryption algorithm called `crypto_aead_det_xchacha20()`.
+This scheme has the advantage that it does not require nonce values,
+the disadvantage is that duplicate plaintexts will produce duplicate
+ciphertexts, but this information can not be used to attack the key it
+can only reveal the duplication.
+
+However duplication is still information, and if you want more
+security, slightly better performance, or you require duplicate
+plaintexts to have *different* ciphertexts, a unique *nonce* can be
+provided that mixes in some additional non-secret data that
+deduplicates ciphertexts for duplicate plaintext:
+
+```sql
+CREATE TABLE private.users (
+	id bigserial primary key,
+	secret text,
+	key_id uuid not null,
+  nonce bytea
+);
+
+SECURITY LABEL FOR pgsodium
+	ON COLUMN private.users.secret
+  IS 'ENCRYPT WITH KEY COLUMN key_id NONCE COLUMN nonce';
+```
 
 # Simple public key encryption with `crypto_box()`
 

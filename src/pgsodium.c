@@ -88,7 +88,7 @@ void _PG_init(void) {
 
     /* Security label provider hook */
     register_label_provider("pgsodium", pgsodium_object_relabel);
-  
+
     // we're done if not preloaded, otherwise try to get internal shared key
 	if (!process_shared_preload_libraries_in_progress)
 		return;
@@ -96,6 +96,7 @@ void _PG_init(void) {
     path = (char *)palloc0(MAXPGPATH);
     get_share_path(my_exec_path, sharepath);
     snprintf(path, MAXPGPATH, "%s/extension/%s", sharepath, PG_GETKEY_EXEC);
+
     DefineCustomStringVariable(
         "pgsodium.getkey_script",
         "path to script that returns pgsodium root key",
