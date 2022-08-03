@@ -341,19 +341,11 @@ BEGIN
           ),
             'utf8') AS %s$f$,
             quote_ident(m.attname),
-            CASE WHEN m.associated_column IS NOT NULL
-            THEN quote_ident(m.associated_column)
-            ELSE quote_literal('')
-            END,
-            CASE WHEN m.key_id_column IS NOT NULL
-            THEN quote_ident(m.key_id_column)
-            ELSE quote_literal(m.key_id)
-            END,
-            CASE WHEN m.nonce_column IS NOT NULL
-            THEN quote_ident(m.nonce_column)
-            ELSE 'NULL'
-            END,
-            'decrypted_' || quote_ident(m.attname));
+            coalesce(quote_ident(m.associated_column), quote_literal('')),
+            coalesce(quote_ident(m.key_id_column), quote_literal(m.key_id)),
+            coalesce(quote_ident(m.nonce_column), 'NULL'),
+            'decrypted_' || quote_ident(m.attname)
+      );
     END IF;
     comma := E',       \n';
   END LOOP;
@@ -394,18 +386,10 @@ BEGIN
             'base64')$f$,
             'new.' || quote_ident(m.attname),
             'new.' || quote_ident(m.attname),
-            CASE WHEN m.associated_column IS NOT NULL
-            THEN 'new.' || quote_ident(m.associated_column)
-            ELSE quote_literal('')
-            END,
-            CASE WHEN m.key_id_column IS NOT NULL
-            THEN 'new.' || quote_ident(m.key_id_column)
-            ELSE quote_literal(m.key_id)
-            END,
-            CASE WHEN m.nonce_column IS NOT NULL
-            THEN 'new.' || quote_ident(m.nonce_column)
-            ELSE 'NULL'
-            END);
+            COALESCE('new.' || quote_ident(m.associated_column), quote_literal('')),
+            COALESCE('new.' || quote_ident(m.key_id_column), quote_literal(m.key_id)),
+            COALESCE('new.' || quote_ident(m.nonce_column), 'NULL')
+      );
     END IF;
     comma := E';\n        ';
   END LOOP;
