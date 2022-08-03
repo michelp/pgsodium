@@ -16,8 +16,10 @@ CREATE TABLE private.bar(
   secret text,
   associated text,
   secret2 text,
+  nonce bytea,
   associated2 text,
-  secret2_key_id uuid
+  secret2_key_id uuid,
+  nonce2 bytea
 );
 
 SELECT throws_ok(
@@ -39,7 +41,7 @@ SELECT id AS secret2_key_id
 SELECT lives_ok(
   format($test$
          SECURITY LABEL FOR pgsodium ON COLUMN private.bar.secret
-         IS 'ENCRYPT WITH KEY ID %s ASSOCIATED associated'
+         IS 'ENCRYPT WITH KEY ID %s ASSOCIATED associated NONCE nonce'
          $test$, :'secret_key_id'),
   'can label column for encryption');
 
@@ -57,7 +59,7 @@ SELECT lives_ok(
 SELECT lives_ok(
   format($test$
          SECURITY LABEL FOR pgsodium ON COLUMN private.bar.secret2
-         IS 'ENCRYPT WITH KEY COLUMN secret2_key_id ASSOCIATED associated2'
+         IS 'ENCRYPT WITH KEY COLUMN secret2_key_id ASSOCIATED associated2 NONCE nonce2'
   $test$),
   'can label another column for encryption');
 
@@ -69,20 +71,23 @@ COMMIT;
 BEGIN;
 SELECT plan(2);
 
-SELECT lives_ok(
-  format(
-    $test$
-    INSERT INTO bar (secret, secret2, associated2, secret2_key_id)
-    VALUES ('s3kr3t', 'shhh', 'bob was here', %L::uuid);
-    $test$,
-    :'secret2_key_id'),
-    'can insert into base table');
+SELECT pgsodium.crypto_aead_det_noncegen() nonce \gset
+SELECT pgsodium.crypto_aead_det_noncegen() nonce2 \gset
 
 SELECT lives_ok(
   format(
     $test$
-    TABLE bar;
-    $test$),
+    INSERT INTO bar (secret, associated, nonce, secret2, associated2, nonce2, secret2_key_id)
+    VALUES ('s3kr3t', 'alice was here', %L, 'shhh', 'bob was here', %L, %L::uuid);
+    $test$,
+    :'nonce',
+    :'nonce2',
+    :'secret2_key_id'),
+    'can insert into base table');
+
+SELECT results_eq(
+    $$SELECT decrypted_secret = 's3kr3t' FROM bar$$,
+    $$VALUES (true)$$,
     'can select from masking view');
 
 SELECT * FROM finish();
