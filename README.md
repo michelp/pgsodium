@@ -19,56 +19,6 @@ Another advanced feature of pgsodium is [Transparent Column
 Encryption](#transparent-column-encryption) which can automatically
 encrypt and decrypt one or more columns of data in a table.
 
-pgsodium provides some convenience roles that can be used to enforce
-access to polymorphic functions for encrypting either with a bytekey
-or a key id.  For example, as a database superuser (or if you have the
-`pgsodium_keyholder` role) you can see derived sub-keys and use them
-directly in encryption functions:
-
-```sql
-postgres=# select derive_key(42);
-                             derive_key
---------------------------------------------------------------------
- \xdf2d989f7ca632b3165813a4e960749a207eab16926d792be7484aff9cfde322
-(1 row)
-
-postgres=# select crypto_aead_det_encrypt('sekret message', 'additional data', derive_key(42));
-                                    crypto_aead_det_encrypt
-------------------------------------------------------------------------------------------------
- \xe7fa66d918654e70ff0fc9a87e2144a31cdf34526cf7f2846b321f47af8c87de02d925ad2343058c12bbb254ac3a
-(1 row)
-```
-
-But this means the sub-key `42` can be seen in SQL or logged (but
-never the root key!).  In order to remove the ability for users to
-access raw byte keys *at all*, use the `pgsodium_keyiduser` role that
-can never derive or use raw keys, only key ids:
-
-```sql
-postgres=# set role pgsodium_keyiduser ;
-SET
-
-postgres=> select derive_key(42);
-ERROR:  permission denied for function derive_key
-
-postgres=> select crypto_aead_det_encrypt('sekret message', 'additional data', 42);
-                                    crypto_aead_det_encrypt
-------------------------------------------------------------------------------------------------
- \xe7fa66d918654e70ff0fc9a87e2144a31cdf34526cf7f2846b321f47af8c87de02d925ad2343058c12bbb254ac3a
-(1 row)
-```
-
-Notice in the second form using the restricted `pgsodium_keyiduser`
-role, `derive_key` is not permitted, but the same encryption function
-can be called directly with the integer `42`.  Permission to call the
-form of `crypto_aead_det_encrypt` with a raw byte key is revoked from
-the `pgsodium_keyiduser` role.
-
-This pattern of using key ids is available throughout pgsodium, but
-there is also an optional, high level [Key Managment Table](#key-management-table) in the
-pgsodium extension schema called `pgsodium.key` that can be used as a
-simple key management API.
-
 # Table of Contents
 
    * [pgsodium](#pgsodium)
@@ -76,7 +26,7 @@ simple key management API.
    * [Usage](#usage)
    * [Server Key Management](#server-key-management)
    * [Server Key Derivation](#server-key-derivation)
-   * [Key Management Table](#key-management-table)
+   * [Key Management API](#key-management-table)
    * [Security Roles](#security-roles)
    * [Transparent Column Encryption](#transparent-column-encryption)
    * [Simple public key encryption with crypto_box()](#simple-public-key-encryption-with-crypto_box)
@@ -268,11 +218,41 @@ keypairs using for example `crypto_box_seed_new_keypair()` and
     --------------------------------------------------------------------+--------------------------------------------------------------------
      \x01d0e0ec4b1fa9cc8dede88e0b43083f7e9cd33be4f91f0b25aa54d70f562278 | \x066ec431741a9d39f38c909de4a143ed39b09834ca37b6dd2ba3d015206f14ca
 
-# Key Management Table
+# Key Management API
 
-pgsodium provides an internal table and view for simple key id and
-context managment.  This table provides a number of useful columns
-including experation capability.
+pgsodium provides an API and internal table and view for simple key id
+and context managment.  This table provides a number of useful columns
+including experation capability.  Keys generated with this API must be
+used for the [Transparent Column
+Encryption](#transparent-column-encryption) features.
+
+Managed Keys have UUIDs for indentifiers, these UUIDs are used to
+lookup keys in the table.  Note that the key management is based on
+the same [Server Key Management](#server-key-management) that uses the
+internal hidden root key, so both the Key Management API and
+Transparent Column Encryption require it.
+
+To create a new key, call the `pgsodium.create_key()` function:
+
+```
+# select * from pgsodium.create_key('This is an optional comment');
+-[ RECORD 1 ]-------------------------------------
+id          | 74d97ba2-f9e3-4a64-a032-8427cd6bd686
+status      | valid
+created     | 2022-08-04 05:06:53.878502
+expires     | 
+key_type    | aead-det
+key_id      | 4
+key_context | \x7067736f6469756d
+comment     | This is an optional comment
+user_data   | 
+
+```
+
+This key can now be used for [Transparent Column
+Encryption](#transparent-column-encryption).  The view
+`pgsodium.valid_keys` filters the key table for only keys that are
+valid and not expired.
 
 # Security Roles
 
