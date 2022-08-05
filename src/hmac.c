@@ -15,7 +15,7 @@ Datum pgsodium_crypto_auth_hmacsha512(PG_FUNCTION_ARGS) {
     size_t result_size = VARHDRSZ + crypto_auth_hmacsha512_BYTES;
     bytea *result;
     ERRORIF(VARSIZE_ANY_EXHDR(key) != crypto_auth_hmacsha512_KEYBYTES,
-            "invalid key");
+            "%s: invalid key");
     result = _pgsodium_zalloc_bytea(result_size);
     crypto_auth_hmacsha512(PGSODIUM_UCHARDATA(result),
                            PGSODIUM_UCHARDATA(message),
@@ -35,7 +35,7 @@ Datum pgsodium_crypto_auth_hmacsha512_by_id(PG_FUNCTION_ARGS) {
     bytea *result;
 
     ERRORIF(VARSIZE_ANY_EXHDR(key) != crypto_auth_hmacsha512_KEYBYTES,
-            "invalid key");
+            "%s: invalid key");
     result = _pgsodium_zalloc_bytea(result_size);
     crypto_auth_hmacsha512(PGSODIUM_UCHARDATA(result),
                            PGSODIUM_UCHARDATA(message),
@@ -51,9 +51,9 @@ Datum pgsodium_crypto_auth_hmacsha512_verify(PG_FUNCTION_ARGS) {
     bytea *message = PG_GETARG_BYTEA_P(1);
     bytea *key = PG_GETARG_BYTEA_P(2);
     ERRORIF(VARSIZE_ANY_EXHDR(hash) != crypto_auth_hmacsha512_BYTES,
-            "invalid hash");
+            "%s: invalid hash");
     ERRORIF(VARSIZE_ANY_EXHDR(key) != crypto_auth_hmacsha512_KEYBYTES,
-            "invalid key");
+            "%s: invalid key");
     success = crypto_auth_hmacsha512_verify(PGSODIUM_UCHARDATA(hash),
                                             PGSODIUM_UCHARDATA(message),
                                             VARSIZE_ANY_EXHDR(message),
@@ -72,9 +72,9 @@ Datum pgsodium_crypto_auth_hmacsha512_verify_by_id(PG_FUNCTION_ARGS) {
         key_id, crypto_auth_hmacsha512_KEYBYTES, context);
 
     ERRORIF(VARSIZE_ANY_EXHDR(hash) != crypto_auth_hmacsha512_BYTES,
-            "invalid hash");
+            "%s: invalid hash");
     ERRORIF(VARSIZE_ANY_EXHDR(key) != crypto_auth_hmacsha512_KEYBYTES,
-            "invalid key");
+            "%s: invalid key");
     success = crypto_auth_hmacsha512_verify(PGSODIUM_UCHARDATA(hash),
                                             PGSODIUM_UCHARDATA(message),
                                             VARSIZE_ANY_EXHDR(message),
@@ -97,7 +97,7 @@ Datum pgsodium_crypto_auth_hmacsha256(PG_FUNCTION_ARGS) {
     size_t result_size = VARHDRSZ + crypto_auth_hmacsha256_BYTES;
     bytea *result;
     ERRORIF(VARSIZE_ANY_EXHDR(key) != crypto_auth_hmacsha256_KEYBYTES,
-            "invalid key");
+            "%s: invalid key");
     result = _pgsodium_zalloc_bytea(result_size);
     crypto_auth_hmacsha256(PGSODIUM_UCHARDATA(result),
                            PGSODIUM_UCHARDATA(message),
@@ -113,9 +113,9 @@ Datum pgsodium_crypto_auth_hmacsha256_verify(PG_FUNCTION_ARGS) {
     bytea *message = PG_GETARG_BYTEA_P(1);
     bytea *key = PG_GETARG_BYTEA_P(2);
     ERRORIF(VARSIZE_ANY_EXHDR(hash) != crypto_auth_hmacsha256_BYTES,
-            "invalid hash");
+            "%s: invalid hash");
     ERRORIF(VARSIZE_ANY_EXHDR(key) != crypto_auth_hmacsha256_KEYBYTES,
-            "invalid key");
+            "%s: invalid key");
     success = crypto_auth_hmacsha256_verify(PGSODIUM_UCHARDATA(hash),
                                             PGSODIUM_UCHARDATA(message),
                                             VARSIZE_ANY_EXHDR(message),
@@ -134,7 +134,7 @@ Datum pgsodium_crypto_auth_hmacsha256_by_id(PG_FUNCTION_ARGS) {
         key_id, crypto_auth_hmacsha256_KEYBYTES, context);
 
     ERRORIF(VARSIZE_ANY_EXHDR(key) != crypto_auth_hmacsha256_KEYBYTES,
-            "invalid key");
+            "%s: invalid key");
     result = _pgsodium_zalloc_bytea(result_size);
     crypto_auth_hmacsha256(PGSODIUM_UCHARDATA(result),
                            PGSODIUM_UCHARDATA(message),
@@ -154,9 +154,9 @@ Datum pgsodium_crypto_auth_hmacsha256_verify_by_id(PG_FUNCTION_ARGS) {
         key_id, crypto_auth_hmacsha256_KEYBYTES, context);
 
     ERRORIF(VARSIZE_ANY_EXHDR(hash) != crypto_auth_hmacsha256_BYTES,
-            "invalid hash");
+            "%s: invalid hash");
     ERRORIF(VARSIZE_ANY_EXHDR(key) != crypto_auth_hmacsha256_KEYBYTES,
-            "invalid key");
+            "%s: invalid key");
     success = crypto_auth_hmacsha256_verify(PGSODIUM_UCHARDATA(hash),
                                             PGSODIUM_UCHARDATA(message),
                                             VARSIZE_ANY_EXHDR(message),

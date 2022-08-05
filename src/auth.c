@@ -6,7 +6,7 @@ Datum pgsodium_crypto_auth(PG_FUNCTION_ARGS) {
     bytea *key = PG_GETARG_BYTEA_P(1);
     int result_size;
     bytea *result;
-    ERRORIF(VARSIZE_ANY_EXHDR(key) != crypto_auth_KEYBYTES, "invalid key");
+    ERRORIF(VARSIZE_ANY_EXHDR(key) != crypto_auth_KEYBYTES, "%s: invalid key");
     result_size = VARHDRSZ + crypto_auth_BYTES;
     result = _pgsodium_zalloc_bytea(result_size);
     crypto_auth(PGSODIUM_UCHARDATA(result),
@@ -24,7 +24,7 @@ Datum pgsodium_crypto_auth_by_id(PG_FUNCTION_ARGS) {
     bytea *key = pgsodium_derive_helper(key_id, crypto_auth_KEYBYTES, context);
     int result_size;
     bytea *result;
-    ERRORIF(VARSIZE_ANY_EXHDR(key) != crypto_auth_KEYBYTES, "invalid key");
+    ERRORIF(VARSIZE_ANY_EXHDR(key) != crypto_auth_KEYBYTES, "%s: invalid key");
     result_size = VARHDRSZ + crypto_auth_BYTES;
     result = _pgsodium_zalloc_bytea(result_size);
     crypto_auth(PGSODIUM_UCHARDATA(result),
@@ -40,8 +40,8 @@ Datum pgsodium_crypto_auth_verify(PG_FUNCTION_ARGS) {
     bytea *mac = PG_GETARG_BYTEA_P(0);
     bytea *message = PG_GETARG_BYTEA_P(1);
     bytea *key = PG_GETARG_BYTEA_P(2);
-    ERRORIF(VARSIZE_ANY_EXHDR(mac) != crypto_auth_BYTES, "invalid mac");
-    ERRORIF(VARSIZE_ANY_EXHDR(key) != crypto_auth_KEYBYTES, "invalid key");
+    ERRORIF(VARSIZE_ANY_EXHDR(mac) != crypto_auth_BYTES, "%s: invalid mac");
+    ERRORIF(VARSIZE_ANY_EXHDR(key) != crypto_auth_KEYBYTES, "%s: invalid key");
     success = crypto_auth_verify(PGSODIUM_UCHARDATA(mac),
                                  PGSODIUM_UCHARDATA(message),
                                  VARSIZE_ANY_EXHDR(message),
@@ -59,8 +59,8 @@ Datum pgsodium_crypto_auth_verify_by_id(PG_FUNCTION_ARGS) {
     bytea *key =
         pgsodium_derive_helper(key_id, crypto_secretbox_KEYBYTES, context);
 
-    ERRORIF(VARSIZE_ANY_EXHDR(mac) != crypto_auth_BYTES, "invalid mac");
-    ERRORIF(VARSIZE_ANY_EXHDR(key) != crypto_auth_KEYBYTES, "invalid key");
+    ERRORIF(VARSIZE_ANY_EXHDR(mac) != crypto_auth_BYTES, "%s: invalid mac");
+    ERRORIF(VARSIZE_ANY_EXHDR(key) != crypto_auth_KEYBYTES, "%s: invalid key");
     success = crypto_auth_verify(PGSODIUM_UCHARDATA(mac),
                                  PGSODIUM_UCHARDATA(message),
                                  VARSIZE_ANY_EXHDR(message),

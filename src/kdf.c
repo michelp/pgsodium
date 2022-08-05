@@ -17,12 +17,12 @@ Datum pgsodium_crypto_kdf_derive_from_key(PG_FUNCTION_ARGS) {
     bytea *primary_key = PG_GETARG_BYTEA_P(3);
     bytea *result;
     ERRORIF(VARSIZE_ANY_EXHDR(primary_key) != crypto_kdf_KEYBYTES,
-            "invalid derivation key");
+            "%s: invalid derivation key");
     ERRORIF(subkey_size < crypto_kdf_BYTES_MIN ||
                 subkey_size > crypto_kdf_BYTES_MAX,
-            "crypto_kdf_derive_from_key: invalid key size requested");
+            "%s: invalid key size requested");
     ERRORIF(VARSIZE_ANY_EXHDR(context) != 8,
-            "crypto_kdf_derive_from_key: context must be 8 bytes");
+            "%s: context must be 8 bytes");
     result = _pgsodium_zalloc_bytea(result_size);
     crypto_kdf_derive_from_key(PGSODIUM_UCHARDATA(result),
                                subkey_size,

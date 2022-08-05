@@ -69,7 +69,7 @@ Datum pgsodium_crypto_signcrypt_sign_before(PG_FUNCTION_ARGS) {
                                            NULL,
                                            0);
 
-    ERRORIF(success != 0, "sign_before failed");
+    ERRORIF(success != 0, "%s: sign_before failed");
     values[0] = PointerGetDatum(state);
     values[1] = PointerGetDatum(shared_key);
     tuple = heap_form_tuple(tupdesc, values, nulls);
@@ -92,7 +92,7 @@ Datum pgsodium_crypto_signcrypt_sign_after(PG_FUNCTION_ARGS) {
                                                 PGSODIUM_UCHARDATA(ciphertext),
                                                 VARSIZE_ANY_EXHDR(ciphertext));
 
-    ERRORIF(success != 0, "sign_after failed");
+    ERRORIF(success != 0, "%s: sign_after failed");
     PG_RETURN_BYTEA_P(signature);
 }
 
@@ -136,7 +136,7 @@ Datum pgsodium_crypto_signcrypt_verify_before(PG_FUNCTION_ARGS) {
                                              VARSIZE_ANY_EXHDR(additional),
                                              PGSODIUM_UCHARDATA(sender_pk),
                                              PGSODIUM_UCHARDATA(recipient_sk));
-    ERRORIF(success != 0, "verify_before failed");
+    ERRORIF(success != 0, "%s: verify_before failed");
     values[0] = PointerGetDatum(state);
     values[1] = PointerGetDatum(shared_key);
     tuple = heap_form_tuple(tupdesc, values, nulls);
@@ -159,7 +159,7 @@ Datum pgsodium_crypto_signcrypt_verify_after(PG_FUNCTION_ARGS) {
                                             PGSODIUM_UCHARDATA(ciphertext),
                                             VARSIZE_ANY_EXHDR(ciphertext));
 
-    ERRORIF(success != 0, "verify_after failed");
+    ERRORIF(success != 0, "%s: verify_after failed");
     PG_RETURN_BOOL(success == 0);
 }
 
@@ -185,6 +185,6 @@ Datum pgsodium_crypto_signcrypt_verify_public(PG_FUNCTION_ARGS) {
                                             PGSODIUM_UCHARDATA(ciphertext),
                                             VARSIZE_ANY_EXHDR(ciphertext));
 
-    ERRORIF(success != 0, "verify_public failed");
+    ERRORIF(success != 0, "%s: verify_public failed");
     PG_RETURN_BOOL(success == 0);
 }

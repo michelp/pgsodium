@@ -8,6 +8,7 @@
 #include <stdlib.h>
 
 #include "postgres.h"
+#include "commands/seclabel.h"
 #include "utils/builtins.h"
 #include "libpq/pqformat.h"
 #include "funcapi.h"
@@ -16,6 +17,9 @@
 #include "storage/ipc.h"
 #include "utils/guc.h"
 #include "port.h"
+#include "catalog/pg_class.h"
+#include "catalog/pg_namespace.h"
+#include "catalog/pg_authid.h"
 #include "miscadmin.h"
 
 #include "crypto_aead_det_xchacha20.h"
@@ -31,7 +35,7 @@
 
 #define ERRORIF(B, msg)                                                        \
     if ((B))                                                                   \
-    ereport(ERROR, (errcode(ERRCODE_DATA_EXCEPTION), errmsg(msg)))
+        ereport(ERROR, (errcode(ERRCODE_DATA_EXCEPTION), errmsg(msg, __func__)))
 
 typedef struct _pgsodium_cb {
     void *ptr;
@@ -61,7 +65,7 @@ static inline bytea *_pgsodium_zalloc_bytea(size_t allocation_size) {
     d->size = allocation_size;
     ctxcb->func = context_cb_zero_buff;
     ctxcb->arg = d;
-    MemoryContextRegisterResetCallback(CurrentMemoryContext, ctxcb);
+    MemoryContextRegisterResetCallback(CurrentMemoryContext, ctxcb); // verify where this cb fires
     SET_VARSIZE(result, allocation_size);
     return result;
 }
@@ -86,12 +90,12 @@ static inline bytea *pgsodium_derive_helper(unsigned long long subkey_id,
     size_t result_size;
     bytea *result;
     ERRORIF(pgsodium_secret_key == NULL,
-            "pgsodium_derive: no server secret key defined.");
+            "%s: pgsodium_derive: no server secret key defined.");
     ERRORIF(subkey_size < crypto_kdf_BYTES_MIN ||
                 subkey_size > crypto_kdf_BYTES_MAX,
-            "crypto_kdf_derive_from_key: invalid key size requested");
+            "%s: crypto_kdf_derive_from_key: invalid key size requested");
     ERRORIF(VARSIZE_ANY_EXHDR(context) != 8,
-            "crypto_kdf_derive_from_key: context must be 8 bytes");
+            "%s: crypto_kdf_derive_from_key: context must be 8 bytes");
     result_size = VARHDRSZ + subkey_size;
     result = _pgsodium_zalloc_bytea(result_size);
     crypto_kdf_derive_from_key(PGSODIUM_UCHARDATA(result),

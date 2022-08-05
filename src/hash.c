@@ -23,7 +23,7 @@ Datum pgsodium_crypto_generichash(PG_FUNCTION_ARGS) {
         keylen = VARSIZE_ANY_EXHDR(keyarg);
         ERRORIF(keylen < crypto_generichash_KEYBYTES_MIN ||
                     keylen > crypto_generichash_KEYBYTES_MAX,
-                "invalid key");
+                "%s: invalid key");
     }
     result_size = VARHDRSZ + crypto_generichash_BYTES;
     result = _pgsodium_zalloc_bytea(result_size);
@@ -52,7 +52,7 @@ Datum pgsodium_crypto_shorthash(PG_FUNCTION_ARGS) {
     int result_size = VARHDRSZ + crypto_shorthash_BYTES;
     data = PG_GETARG_BYTEA_P(0);
     key = PG_GETARG_BYTEA_P(1);
-    ERRORIF(VARSIZE_ANY_EXHDR(key) != crypto_shorthash_KEYBYTES, "invalid key");
+    ERRORIF(VARSIZE_ANY_EXHDR(key) != crypto_shorthash_KEYBYTES, "%s: invalid key");
     result = _pgsodium_zalloc_bytea(result_size);
     crypto_shorthash(PGSODIUM_UCHARDATA(result),
                      PGSODIUM_UCHARDATA(data),
@@ -80,7 +80,7 @@ Datum pgsodium_crypto_generichash_by_id(PG_FUNCTION_ARGS) {
         keylen = VARSIZE_ANY_EXHDR(keyarg);
         ERRORIF(keylen < crypto_generichash_KEYBYTES_MIN ||
                     keylen > crypto_generichash_KEYBYTES_MAX,
-                "invalid key");
+                "%s: invalid key");
     }
     result_size = VARHDRSZ + crypto_generichash_BYTES;
     result = _pgsodium_zalloc_bytea(result_size);

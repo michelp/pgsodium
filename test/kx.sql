@@ -29,4 +29,3 @@ SELECT is(crypto_secretbox_open(:'alice_to_bob', :'secretboxnonce', :'session_bo
 
 SELECT * FROM finish();
 ROLLBACK;
-

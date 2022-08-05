@@ -12,17 +12,16 @@ SELECT is(crypto_kdf_derive_from_key(32, 2, '__auth__', :'kdfkey'),
     crypto_kdf_derive_from_key(32, 2, '__auth__', :'kdfkey'), 'kdf subkeys are deterministic.');
 
 SELECT throws_ok(format($$SELECT crypto_kdf_derive_from_key(32, 2, '__aut__', %L)$$, :'kdfkey'),
-    '22000', 'crypto_kdf_derive_from_key: context must be 8 bytes',
+    '22000', 'pgsodium_crypto_kdf_derive_from_key: context must be 8 bytes',
     'kdf context must be 8 bytes.');
 
 SELECT throws_ok(format($$SELECT crypto_kdf_derive_from_key(15, 2, '__auth__', %L)$$, :'kdfkey'),
-    '22000', 'crypto_kdf_derive_from_key: invalid key size requested',
+    '22000', 'pgsodium_crypto_kdf_derive_from_key: invalid key size requested',
     'kdf keysize must be >= 16');
 
 SELECT throws_ok(format($$SELECT crypto_kdf_derive_from_key(65, 2, '__auth__', %L)$$, :'kdfkey'),
-    '22000', 'crypto_kdf_derive_from_key: invalid key size requested',
+    '22000', 'pgsodium_crypto_kdf_derive_from_key: invalid key size requested',
     'kdf keysize must be <= 64');
 
 SELECT * FROM finish();
 ROLLBACK;
-

@@ -24,8 +24,8 @@ Datum pgsodium_crypto_secretbox(PG_FUNCTION_ARGS) {
     size_t result_size;
     bytea *result;
     ERRORIF(VARSIZE_ANY_EXHDR(nonce) != crypto_secretbox_NONCEBYTES,
-            "invalid nonce");
-    ERRORIF(VARSIZE_ANY_EXHDR(key) != crypto_secretbox_KEYBYTES, "invalid key");
+            "%s: invalid nonce");
+    ERRORIF(VARSIZE_ANY_EXHDR(key) != crypto_secretbox_KEYBYTES, "%s: invalid key");
     result_size = crypto_secretbox_MACBYTES + VARSIZE_ANY(message);
     result = _pgsodium_zalloc_bytea(result_size);
     crypto_secretbox_easy(PGSODIUM_UCHARDATA(result),
@@ -65,10 +65,10 @@ Datum pgsodium_crypto_secretbox_open(PG_FUNCTION_ARGS) {
     bytea *result;
 
     ERRORIF(VARSIZE_ANY_EXHDR(message) <= crypto_secretbox_MACBYTES,
-            "invalid message");
+            "%s: invalid message");
     ERRORIF(VARSIZE_ANY_EXHDR(nonce) != crypto_secretbox_NONCEBYTES,
-            "invalid nonce");
-    ERRORIF(VARSIZE_ANY_EXHDR(key) != crypto_secretbox_KEYBYTES, "invalid key");
+            "%s: invalid nonce");
+    ERRORIF(VARSIZE_ANY_EXHDR(key) != crypto_secretbox_KEYBYTES, "%s: invalid key");
 
     message_size = VARSIZE_ANY_EXHDR(message) - crypto_secretbox_MACBYTES;
     result_size = VARHDRSZ + message_size;
@@ -79,7 +79,7 @@ Datum pgsodium_crypto_secretbox_open(PG_FUNCTION_ARGS) {
                                          VARSIZE_ANY_EXHDR(message),
                                          PGSODIUM_UCHARDATA(nonce),
                                          PGSODIUM_UCHARDATA(key));
-    ERRORIF(success != 0, "invalid message");
+    ERRORIF(success != 0, "%s: invalid message");
     PG_RETURN_BYTEA_P(result);
 }
 
@@ -97,9 +97,9 @@ Datum pgsodium_crypto_secretbox_open_by_id(PG_FUNCTION_ARGS) {
     bytea *result;
 
     ERRORIF(VARSIZE_ANY_EXHDR(message) <= crypto_secretbox_MACBYTES,
-            "invalid message");
+            "%s: invalid message");
     ERRORIF(VARSIZE_ANY_EXHDR(nonce) != crypto_secretbox_NONCEBYTES,
-            "invalid nonce");
+            "%s: invalid nonce");
 
     message_size = VARSIZE_ANY_EXHDR(message) - crypto_secretbox_MACBYTES;
     result_size = VARHDRSZ + message_size;
@@ -110,6 +110,6 @@ Datum pgsodium_crypto_secretbox_open_by_id(PG_FUNCTION_ARGS) {
                                          VARSIZE_ANY_EXHDR(message),
                                          PGSODIUM_UCHARDATA(nonce),
                                          PGSODIUM_UCHARDATA(key));
-    ERRORIF(success != 0, "invalid message");
+    ERRORIF(success != 0, "%s: invalid message");
     PG_RETURN_BYTEA_P(result);
 }

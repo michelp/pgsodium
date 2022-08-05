@@ -7,12 +7,14 @@ SU="postgres"
 EXEC="docker exec $DB_HOST"
 TAG="pgsodium/test-$version"
 CONFIG="-c shared_preload_libraries=pgsodium -c pgsodium.getkey_script=/getkey"
+EXPORT=6789
 
 echo building test image $DB_HOST
 docker build . -t $TAG --build-arg "version=$version"
 
 echo running test container
 docker run \
+       -p $EXPORT:5432 \
 	   -v `pwd`/example:/pgsodium/example \
 	   -e POSTGRES_HOST_AUTH_METHOD=trust \
 	   -d --name "$DB_HOST" $TAG $CONFIG

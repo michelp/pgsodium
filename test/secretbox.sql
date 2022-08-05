@@ -7,22 +7,22 @@ SELECT crypto_secretbox_noncegen() secretboxnonce \gset
 SELECT crypto_secretbox('bob is your uncle', :'secretboxnonce', :'boxkey'::bytea) secretbox \gset
 
 SELECT throws_ok(format($$select crypto_secretbox(%L, 'bad nonce', %L::bytea)$$, :'secretbox', :'boxkey'),
-	   	         '22000', 'invalid nonce', 'crypto_secretbox invalid nonce');
+                 '22000', 'pgsodium_crypto_secretbox: invalid nonce', 'crypto_secretbox invalid nonce');
 
 SELECT throws_ok(format($$select crypto_secretbox(%L, %L, 'bad_key'::bytea)$$, :'secretbox', :'secretboxnonce'),
-	   	         '22000', 'invalid key', 'crypto_secretbox invalid key');
+                 '22000', 'pgsodium_crypto_secretbox: invalid key', 'crypto_secretbox invalid key');
 
 SELECT is(crypto_secretbox_open(:'secretbox', :'secretboxnonce', :'boxkey'::bytea),
           'bob is your uncle', 'secretbox_open');
 
 SELECT throws_ok(format($$select crypto_secretbox_open(%L, 'bad nonce', %L::bytea)$$, :'secretbox', :'boxkey'),
-	   	         '22000', 'invalid nonce', 'crypto_secretbox_open invalid nonce');
+                 '22000', 'pgsodium_crypto_secretbox_open: invalid nonce', 'crypto_secretbox_open invalid nonce');
 
 SELECT throws_ok(format($$select crypto_secretbox_open(%L, %L, 'bad_key'::bytea)$$, :'secretbox', :'secretboxnonce'),
-	   	         '22000', 'invalid key', 'crypto_secretbox_open invalid key');
+                 '22000', 'pgsodium_crypto_secretbox_open: invalid key', 'crypto_secretbox_open invalid key');
 
 SELECT throws_ok(format($$select crypto_secretbox_open('foo', %L, %L::bytea)$$, :'secretboxnonce', :'boxkey'),
-	   	         '22000', 'invalid message', 'crypto_secretbox_open invalid message');
+                 '22000', 'pgsodium_crypto_secretbox_open: invalid message', 'crypto_secretbox_open invalid message');
 
 SELECT * FROM finish();
 ROLLBACK;
@@ -39,10 +39,10 @@ SELECT is(crypto_secretbox_open(:'secretbox', :'secretboxnonce', 1),
           'bob is your uncle', 'secretbox_open by id');
 
 SELECT throws_ok($$select crypto_secretbox('secretbox', 'secretboxnonce', 'whatever'::bytea)$$,
-	   	         '42501', 'permission denied for function crypto_secretbox', 'crypto_secretbox denied');
+                 '42501', 'permission denied for function crypto_secretbox', 'crypto_secretbox denied');
 
 SELECT throws_ok($$select crypto_secretbox_open('secretbox', 'secretboxnonce', 'whatever'::bytea)$$,
-	   	         '42501', 'permission denied for function crypto_secretbox_open', 'crypto_secretbox_open denied');
+                 '42501', 'permission denied for function crypto_secretbox_open', 'crypto_secretbox_open denied');
 RESET ROLE;
 SELECT * FROM finish();
 ROLLBACK;
