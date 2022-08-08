@@ -17,7 +17,7 @@ CREATE TABLE test2 (
 
 CREATE ROLE bob with login password 'foo';
 
-SECURITY LABEL FOR pgsodium ON ROLE bob is 'ACCESS public.test2';
+SECURITY LABEL FOR pgsodium ON ROLE bob is 'ACCESS public.test, public.test2';
 
 SELECT format('ENCRYPT WITH KEY ID %s', (pgsodium.create_key('Optional Comment for Secret Key')).id) AS seclabel \gset
 
@@ -33,6 +33,8 @@ SECURITY LABEL FOR pgsodium	ON COLUMN test2.secret2 IS 'ENCRYPT WITH KEY COLUMN 
 
 SELECT pgsodium.crypto_aead_det_noncegen() aead_nonce \gset
 SELECT pgsodium.crypto_aead_det_noncegen() aead_nonce2 \gset
+
+\c postgres bob
 
 INSERT INTO public.test (secret) VALUES ('noice');
 
