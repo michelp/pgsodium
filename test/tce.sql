@@ -12,11 +12,16 @@ SELECT throws_ok(
   'pgsodium provider does not support labels on this object',
   'schemas cannot be labled');
 
+CREATE TABLE private.foo(
+  secret text,
+  associated text
+);
+
 CREATE TABLE private.bar(
   secret text,
   associated text,
-  secret2 text,
   nonce bytea,
+  secret2 text,
   associated2 text,
   secret2_key_id uuid,
   nonce2 bytea
@@ -39,6 +44,13 @@ SELECT id AS secret2_key_id
 
 SELECT lives_ok(
   format($test$
+         SECURITY LABEL FOR pgsodium ON COLUMN private.foo.secret
+         IS 'ENCRYPT WITH KEY ID %s'
+         $test$, :'secret_key_id'),
+  'can label column for encryption');
+
+SELECT lives_ok(
+  format($test$
          SECURITY LABEL FOR pgsodium ON COLUMN private.bar.secret
          IS 'ENCRYPT WITH KEY ID %s ASSOCIATED associated NONCE nonce'
          $test$, :'secret_key_id'),
@@ -47,11 +59,12 @@ SELECT lives_ok(
 CREATE ROLE bobo with login password 'foo';
 
 GRANT USAGE ON SCHEMA private to bobo;
+GRANT SELECT ON TABLE private.foo to bobo;
 GRANT SELECT ON TABLE private.bar to bobo;
 
 SELECT lives_ok(
   $test$
-  SECURITY LABEL FOR pgsodium ON ROLE bobo is 'ACCESS private.bar'
+  SECURITY LABEL FOR pgsodium ON ROLE bobo is 'ACCESS private.foo, private.bar'
   $test$,
   'can label roles ACCESS');
 
@@ -68,10 +81,17 @@ COMMIT;
 \c postgres bobo
   
 BEGIN;
-SELECT plan(2);
+SELECT plan(4);
 
 SELECT pgsodium.crypto_aead_det_noncegen() nonce \gset
 SELECT pgsodium.crypto_aead_det_noncegen() nonce2 \gset
+
+SELECT lives_ok(
+  format(
+    $test$
+    INSERT INTO foo (secret) VALUES ('s3kr3t');
+    $test$),
+    'can insert into foo table');
 
 SELECT lives_ok(
   format(
@@ -82,7 +102,12 @@ SELECT lives_ok(
     :'nonce',
     :'nonce2',
     :'secret2_key_id'),
-    'can insert into base table');
+    'can insert into bar table');
+
+SELECT results_eq(
+    $$SELECT decrypted_secret = 's3kr3t' FROM foo$$,
+    $$VALUES (true)$$,
+    'can select from masking view');
 
 SELECT results_eq(
     $$SELECT decrypted_secret = 's3kr3t' FROM bar$$,

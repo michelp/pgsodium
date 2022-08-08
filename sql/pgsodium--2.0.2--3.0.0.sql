@@ -285,7 +285,7 @@ CREATE FUNCTION @extschema@.has_mask(role regrole, source_name text)
       FROM pg_shseclabel
      WHERE  objoid = role
        AND provider = 'pgsodium'
-       AND label SIMILAR TO 'ACCESS +' || source_name)
+       AND label ilike 'ACCESS%' || source_name || '%')
   );
 
 -- Display all columns of the relation with the masking function (if any)
