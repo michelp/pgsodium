@@ -16,6 +16,7 @@ CREATE TABLE test2 (
 );
 
 CREATE ROLE bob with login password 'foo';
+GRANT INSERT ON public.test, public.test2 to bob;
 
 SECURITY LABEL FOR pgsodium ON ROLE bob is 'ACCESS public.test, public.test2';
 
@@ -36,7 +37,7 @@ SELECT pgsodium.crypto_aead_det_noncegen() aead_nonce2 \gset
 
 \c postgres bob
 
-INSERT INTO public.test (secret) VALUES ('noice');
+INSERT INTO test (secret) VALUES ('noice');
 
-INSERT INTO public.test2 (secret, associated, nonce, secret2, associated2, nonce2, secret2_key_id) VALUES ('sssh', 'bob was here', :'aead_nonce', 'aaahh', 'alice association', :'aead_nonce2', :'secret2_key_id'::uuid);
+INSERT INTO test2 (secret, associated, nonce, secret2, associated2, nonce2, secret2_key_id) VALUES ('sssh', 'bob was here', :'aead_nonce', 'aaahh', 'alice association', :'aead_nonce2', :'secret2_key_id'::uuid);
 

@@ -1,5 +1,4 @@
 # pgsodium extension
 comment = 'Postgres extension for libsodium functions'
-default_version = '3.0.2'
+default_version = '3.0.3'
 relocatable = false
-requires = '"uuid-ossp"'
