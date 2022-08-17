@@ -18,8 +18,8 @@ CREATE TABLE private.foo(
 );
 
 CREATE TABLE private.bar(
+  id bigserial primary key,
   secret text,
-  associated text,
   nonce bytea,
   secret2 text,
   associated2 text,
@@ -52,7 +52,7 @@ SELECT lives_ok(
 SELECT lives_ok(
   format($test$
          SECURITY LABEL FOR pgsodium ON COLUMN private.bar.secret
-         IS 'ENCRYPT WITH KEY ID %s ASSOCIATED associated NONCE nonce'
+         IS 'ENCRYPT WITH KEY ID %s ASSOCIATED id NONCE nonce'
          $test$, :'secret_key_id'),
   'can label column for encryption');
 
@@ -61,6 +61,7 @@ CREATE ROLE bobo with login password 'foo';
 GRANT USAGE ON SCHEMA private to bobo;
 GRANT SELECT ON TABLE private.foo to bobo;
 GRANT SELECT ON TABLE private.bar to bobo;
+GRANT USAGE ON ALL SEQUENCES IN SCHEMA private TO bobo;
 
 SELECT lives_ok(
   $test$
@@ -96,8 +97,8 @@ SELECT lives_ok(
 SELECT lives_ok(
   format(
     $test$
-    INSERT INTO bar (secret, associated, nonce, secret2, associated2, nonce2, secret2_key_id)
-    VALUES ('s3kr3t', 'alice was here', %L, 'shhh', 'bob was here', %L, %L::uuid);
+    INSERT INTO bar (secret, nonce, secret2, associated2, nonce2, secret2_key_id)
+    VALUES ('s3kr3t', %L, 'shhh', 'bob was here', %L, %L::uuid);
     $test$,
     :'nonce',
     :'nonce2',
