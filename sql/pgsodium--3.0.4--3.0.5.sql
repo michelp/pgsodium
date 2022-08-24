@@ -82,11 +82,14 @@ SET search_path = '';
 ALTER FUNCTION pgsodium.create_key OWNER TO pgsodium_keyholder;
   GRANT EXECUTE ON FUNCTION pgsodium.create_key TO pgsodium_keyiduser;
 
-ALTER VIEW pgsodium.valid_key RENAME COLUMN comment TO name;
+DROP VIEW pgsodium.valid_key;
 CREATE OR REPLACE VIEW pgsodium.valid_key AS
-  SELECT * FROM pgsodium.key
+  SELECT id, name, status, key_type, key_id, key_context, created, expires, user_data
+    FROM pgsodium.key
    WHERE  status IN ('valid', 'default')
      AND CASE WHEN expires IS NULL THEN true ELSE expires < now() END;
+
+GRANT SELECT ON pgsodium.valid_key TO pgsodium_keyiduser;
 
 -- HMAC external key support
 
