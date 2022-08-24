@@ -118,4 +118,5 @@ SELECT * FROM finish();
 
 \c postgres postgres
 DROP SCHEMA private CASCADE;
+COMMIT;
 \endif
