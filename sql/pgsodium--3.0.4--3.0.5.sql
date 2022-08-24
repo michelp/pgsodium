@@ -1,7 +1,7 @@
 
-ALTER DEFAULT PRIVILEGES IN SCHEMA @extschema@_masks GRANT ALL ON TABLES TO pgsodium_keyiduser;
-ALTER DEFAULT PRIVILEGES IN SCHEMA @extschema@_masks GRANT ALL ON SEQUENCES TO pgsodium_keyiduser;
-ALTER DEFAULT PRIVILEGES IN SCHEMA @extschema@_masks GRANT ALL ON FUNCTIONS TO pgsodium_keyiduser;
+ALTER DEFAULT PRIVILEGES IN SCHEMA pgsodium_masks GRANT ALL ON TABLES TO pgsodium_keyiduser;
+ALTER DEFAULT PRIVILEGES IN SCHEMA pgsodium_masks GRANT ALL ON SEQUENCES TO pgsodium_keyiduser;
+ALTER DEFAULT PRIVILEGES IN SCHEMA pgsodium_masks GRANT ALL ON FUNCTIONS TO pgsodium_keyiduser;
 
 -- pgsodium_keyiduser can use all tables and sequences (functions are granted individually)
 ALTER DEFAULT PRIVILEGES IN SCHEMA pgsodium REVOKE ALL ON TABLES FROM pgsodium_keyiduser;
@@ -29,33 +29,32 @@ ALTER TABLE pgsodium.key ALTER COLUMN key_id DROP NOT NULL;
 ALTER TABLE pgsodium.key ALTER COLUMN key_context DROP NOT NULL;
 ALTER TABLE pgsodium.key ADD CONSTRAINT pgsodium_key_unique_name UNIQUE (name);
 ALTER TABLE pgsodium.key ADD CONSTRAINT pgsodium_raw CHECK (
-  CASE WHEN
-        raw_key IS NOT NULL
+  CASE WHEN raw_key IS NOT NULL
     THEN key_id IS NULL     AND key_context IS NULL     AND parent_key IS NOT NULL
     ELSE key_id IS NOT NULL AND key_context IS NOT NULL AND parent_key IS NULL
   END);
 
 DROP FUNCTION pgsodium.create_key(text, pgsodium.key_type, bigint, bytea, timestamp, jsonb);
 
-CREATE FUNCTION @extschema@.create_key (
+CREATE FUNCTION pgsodium.create_key (
   name text = NULL,
-  key_type @extschema@.key_type = 'aead-det',
+  key_type pgsodium.key_type = 'aead-det',
   raw_key bytea = NULL,
   raw_key_nonce bytea = NULL,
   key_context bytea = 'pgsodium',
   parent_key uuid = NULL,
   expires timestamp = NULL,
   user_data jsonb = NULL
-) RETURNS @extschema@.key
+) RETURNS pgsodium.key
 AS $$
 DECLARE
   new_key pgsodium.key;
 BEGIN
-    INSERT INTO @extschema@.key (key_id, key_context, key_type, raw_key,
+    INSERT INTO pgsodium.key (key_id, key_context, key_type, raw_key,
 	raw_key_nonce, parent_key, expires, name, user_data)
         VALUES (
             CASE WHEN raw_key IS NULL THEN
-                NEXTVAL('@extschema@.key_key_id_seq'::REGCLASS)
+                NEXTVAL('pgsodium.key_key_id_seq'::REGCLASS)
             ELSE NULL END,
             CASE WHEN raw_key IS NULL THEN
                 key_context
@@ -247,7 +246,7 @@ CREATE VIEW pgsodium.mask_columns AS SELECT
   m.nonce_column,
   m.format_type
   FROM pg_attribute a
-  LEFT JOIN  @extschema@.masking_rule m
+  LEFT JOIN  pgsodium.masking_rule m
   ON m.attrelid = a.attrelid
   AND m.attname = a.attname
   WHERE  a.attnum > 0 -- exclude ctid, cmin, cmax
@@ -266,7 +265,7 @@ DECLARE
 BEGIN
   expression := '';
   comma := E'        ';
-  FOR m IN SELECT * FROM @extschema@.mask_columns where attrelid = relid LOOP
+  FOR m IN SELECT * FROM pgsodium.mask_columns where attrelid = relid LOOP
     IF m.key_id IS NULL AND m.key_id_column is NULL THEN
       CONTINUE;
     ELSE
@@ -274,7 +273,7 @@ BEGIN
       IF m.format_type = 'text' THEN
           expression := expression || format(
             $f$%s = CASE WHEN %s IS NULL THEN NULL ELSE pg_catalog.encode(
-              @extschema@.crypto_aead_det_encrypt(
+              pgsodium.crypto_aead_det_encrypt(
                 pg_catalog.convert_to(%s, 'utf8'),
                 pg_catalog.convert_to(%s::text, 'utf8'),
                 %s::uuid,
@@ -290,7 +289,7 @@ BEGIN
           );
       ELSIF m.format_type = 'bytea' THEN
           expression := expression || format(
-            $f$%s = CASE WHEN %s IS NULL THEN NULL ELSE @extschema@.crypto_aead_det_encrypt(%s::bytea, pg_catalog.convert_to(%s::text, 'utf8'),
+            $f$%s = CASE WHEN %s IS NULL THEN NULL ELSE pgsodium.crypto_aead_det_encrypt(%s::bytea, pg_catalog.convert_to(%s::text, 'utf8'),
                 %s::uuid,
                 %s
               ) END
@@ -327,7 +326,7 @@ DECLARE
 BEGIN
   expression := E'\n';
   comma := padding;
-  FOR m IN SELECT * FROM @extschema@.mask_columns where attrelid = relid LOOP
+  FOR m IN SELECT * FROM pgsodium.mask_columns where attrelid = relid LOOP
     expression := expression || comma;
     IF m.key_id IS NULL AND m.key_id_column IS NULL THEN
       expression := expression || padding || quote_ident(m.attname);
@@ -337,7 +336,7 @@ BEGIN
           expression := expression || format(
             $f$
             CASE WHEN %s IS NULL THEN NULL ELSE pg_catalog.convert_from(
-              @extschema@.crypto_aead_det_decrypt(
+              pgsodium.crypto_aead_det_decrypt(
                 pg_catalog.decode(%s, 'base64'),
                 pg_catalog.convert_to(%s::text, 'utf8'),
                 %s::uuid,
@@ -354,7 +353,7 @@ BEGIN
       ELSIF m.format_type = 'bytea' THEN
           expression := expression || format(
             $f$
-            CASE WHEN %s IS NULL THEN NULL ELSE @extschema@.crypto_aead_det_decrypt(
+            CASE WHEN %s IS NULL THEN NULL ELSE pgsodium.crypto_aead_det_decrypt(
                 %s::bytea,
                 pg_catalog.convert_to(%s::text, 'utf8'),
                 %s::uuid,
@@ -379,7 +378,7 @@ $$
   SET search_path=''
 ;
 
-CREATE OR REPLACE FUNCTION @extschema@.mask_role(masked_role regrole, source_name text, view_name text)
+CREATE OR REPLACE FUNCTION pgsodium.mask_role(masked_role regrole, source_name text, view_name text)
   RETURNS void AS
   $$
 BEGIN
@@ -392,12 +391,12 @@ $$
   SET search_path='pg_catalog'
 ;
 
-CREATE OR REPLACE FUNCTION @extschema@.create_mask_view(relid oid, subid integer, debug boolean = false) RETURNS void AS
+CREATE OR REPLACE FUNCTION pgsodium.create_mask_view(relid oid, subid integer, debug boolean = false) RETURNS void AS
   $$
 DECLARE
   body text;
   source_name text;
-  rule @extschema@.masking_rule;
+  rule pgsodium.masking_rule;
 BEGIN
   SELECT * INTO STRICT rule FROM pgsodium.masking_rule WHERE attrelid = relid and attnum = subid ;
 
@@ -411,7 +410,7 @@ BEGIN
     $c$,
     rule.view_name,
     rule.view_name,
-    @extschema@.decrypted_columns(relid),
+    pgsodium.decrypted_columns(relid),
     source_name
   );
   IF debug THEN
@@ -440,7 +439,7 @@ BEGIN
       $c$,
     rule.relnamespace,
     rule.relname,
-    @extschema@.encrypted_columns(relid),
+    pgsodium.encrypted_columns(relid),
     rule.relname,
     rule.relnamespace,
     rule.relname,
@@ -454,8 +453,8 @@ BEGIN
   END IF;
   EXECUTE body;
 
-  PERFORM @extschema@.mask_role(oid::regrole, source_name, rule.view_name)
-  FROM pg_roles WHERE @extschema@.has_mask(oid::regrole, source_name);
+  PERFORM pgsodium.mask_role(oid::regrole, source_name, rule.view_name)
+  FROM pg_roles WHERE pgsodium.has_mask(oid::regrole, source_name);
 
   RETURN;
 END
@@ -510,8 +509,8 @@ END
 $$;
 
 SECURITY LABEL FOR pgsodium ON COLUMN pgsodium.key.raw_key
-                 IS 'ENCRYPT WITH KEY COLUMN parent_key ASSOCIATED id NONCE raw_key_nonce';
+    IS 'ENCRYPT WITH KEY COLUMN parent_key ASSOCIATED id NONCE raw_key_nonce';
 
-ALTER EXTENSION pgsodium DROP VIEW pgsodium.decrypted_key;  -- so the view can be recreated
+ALTER EXTENSION pgsodium DROP VIEW pgsodium.decrypted_key;
 
 DELETE FROM pgsodium.key where status = 'default';
