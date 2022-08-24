@@ -19,10 +19,8 @@ pgsodium_object_relabel(const ObjectAddress *object, const char *seclabel)
     case RelationRelationId:
 
       /* SECURITY LABEL FOR pgsodium ON TABLE ...' */
-      if (object->objectSubId == 0)
-        ereport(ERROR,
-          (errcode(ERRCODE_FEATURE_NOT_SUPPORTED),
-           errmsg("pgsodium provider does not support labels on this object")));
+      if (object->objectSubId == 0 && pg_strncasecmp(seclabel, "DECRYPT WITH VIEW", 17) == 0)
+          return;
 
       /* SECURITY LABEL FOR pgsodium ON COLUMN t.i IS '...' */
       if ( pg_strncasecmp(seclabel, "ENCRYPT WITH", 12) == 0)

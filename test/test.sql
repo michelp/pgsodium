@@ -1,17 +1,26 @@
--- \set ECHO none
--- \set QUIET 1
+\set ECHO none
+\set QUIET 1
 
--- \pset format unaligned
--- \pset tuples_only true
--- \pset pager
+\pset format unaligned
+\pset tuples_only true
+\pset pager
 
--- \set ON_ERROR_ROLLBACK 1
-\set ON_ERROR_STOP true
+\set ON_ERROR_ROLLBACK 1
+\set ON_ERROR_STOP on
 -- \set QUIET 1
 
 CREATE EXTENSION IF NOT EXISTS pgtap;
-CREATE SCHEMA pgsodium;
-CREATE EXTENSION IF NOT EXISTS pgsodium WITH SCHEMA pgsodium CASCADE;
+
+BEGIN;
+SELECT plan(1);
+CREATE SCHEMA bogus;
+SELECT throws_ok($$CREATE EXTENSION pgsodium WITH SCHEMA bogus$$,
+                 '0A000', 'extension "pgsodium" must be installed in schema "pgsodium"',
+                 'cannot install pgsodium in any other schema');
+SELECT * FROM finish();
+ROLLBACK;
+
+CREATE EXTENSION pgsodium;
 
 SET search_path = pgsodium, public;
 
