@@ -485,44 +485,6 @@ $$
   SET search_path=''
 ;
 
--- -- pgsodium_keymaker
-
--- DO $$
--- DECLARE
--- 	func text;
--- BEGIN
--- 	FOREACH func IN ARRAY
--- 	ARRAY[
---     ]
--- 	LOOP
--- 		EXECUTE format($i$
--- 			REVOKE ALL ON FUNCTION %s FROM PUBLIC;
--- 			GRANT EXECUTE ON FUNCTION %s TO pgsodium_keymaker;
--- 		$i$, func, func);
--- 	END LOOP;
--- END
--- $$;
-
--- -- pgsodium_keyholder
-
--- DO $$
--- DECLARE
--- 	func text;
--- BEGIN
--- 	FOREACH func IN ARRAY
--- 	ARRAY[
--- 	]
--- 	LOOP
--- 		EXECUTE format($i$
--- 			REVOKE ALL ON FUNCTION %s FROM PUBLIC;
--- 			GRANT EXECUTE ON FUNCTION %s TO pgsodium_keyholder;
--- 		$i$, func, func);
--- 	END LOOP;
--- END
--- $$;
-
--- -- pgsodium_keyiduser
-
 DO $$
 DECLARE
 	func text;
