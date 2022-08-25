@@ -30,7 +30,7 @@ ROLLBACK;
 \if :serverkeys
 
 BEGIN;
-SELECT plan(3);
+SELECT plan(4);
 SET ROLE pgsodium_keyiduser;
 
 SELECT crypto_secretbox('bob is your uncle', :'secretboxnonce', 1) secretbox \gset
@@ -43,6 +43,13 @@ SELECT throws_ok($$select crypto_secretbox('secretbox', 'secretboxnonce', 'whate
 
 SELECT throws_ok($$select crypto_secretbox_open('secretbox', 'secretboxnonce', 'whatever'::bytea)$$,
                  '42501', 'permission denied for function crypto_secretbox_open', 'crypto_secretbox_open denied');
+
+SELECT id as secretbox_key_id from create_key('secretbox') \gset
+SELECT crypto_secretbox('bob is your uncle', :'secretboxnonce', :'secretbox_key_id'::uuid) secretbox \gset
+
+SELECT is(crypto_secretbox_open(:'secretbox', :'secretboxnonce', :'secretbox_key_id'::uuid),
+          'bob is your uncle', 'secretbox_open by id');
+
 RESET ROLE;
 SELECT * FROM finish();
 ROLLBACK;

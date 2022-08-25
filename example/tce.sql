@@ -22,13 +22,13 @@ GRANT INSERT ON public.test, public.test2 to bob;
 
 SECURITY LABEL FOR pgsodium ON ROLE bob is 'ACCESS public.test, public.test2';
 
-SELECT format('ENCRYPT WITH KEY ID %s', (pgsodium.create_key()).id)
+SELECT format('ENCRYPT WITH KEY ID %s', (pgsodium.create_key('aead-det')).id)
     AS seclabel \gset
 
 SELECT format('ENCRYPT WITH KEY ID %s ASSOCIATED associated NONCE nonce', (
-    pgsodium.create_key()).id) AS seclabel2 \gset
+    pgsodium.create_key('aead-det')).id) AS seclabel2 \gset
 
-SELECT id AS secret2_key_id FROM pgsodium.create_key('foo_key') \gset
+SELECT id AS secret2_key_id FROM pgsodium.create_key('aead-det', 'foo_key') \gset
 
 SECURITY LABEL FOR pgsodium	ON COLUMN test.secret IS :'seclabel';
 

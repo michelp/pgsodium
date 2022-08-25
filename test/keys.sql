@@ -2,7 +2,7 @@
 BEGIN;
 SELECT plan(3);
 
-select * from pgsodium.create_key() \gset anon_det_key_
+select * from pgsodium.create_key('aead-det') \gset anon_det_key_
 
 select results_eq(
   format($$select
@@ -16,7 +16,7 @@ select results_eq(
   'values (true, true, true, true, true, true)',
   'anon det key asserts');
 
-select * from pgsodium.create_key('foo') \gset foo_det_key_
+select * from pgsodium.create_key('aead-det', 'foo') \gset foo_det_key_
 
 select results_eq(
   format($$select
@@ -32,7 +32,7 @@ select results_eq(
 
 
 select * from pgsodium.crypto_auth_hmacsha256_keygen() as ext_hmac256_key \gset
-select * from pgsodium.create_key('stripe', raw_key:=:'ext_hmac256_key', key_type:='hmacsha256') \gset stripe_hmac256_key_
+select * from pgsodium.create_key('hmacsha256', 'stripe', raw_key:=:'ext_hmac256_key') \gset stripe_hmac256_key_
 
 select results_eq(
   format($$select

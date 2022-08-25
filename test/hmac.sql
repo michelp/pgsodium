@@ -32,10 +32,10 @@ select is(crypto_auth_hmacsha256_verify(:'hmac256', 'food', 42), true, 'hmac256 
 select is(crypto_auth_hmacsha256_verify(:'hmac256', 'fo0d', 42), false, 'hmac256 not verified');
 
 select crypto_auth_hmacsha256_keygen() extkey256 \gset
-select * from pgsodium.create_key('extkey256', raw_key:=:'extkey256', key_type:='hmacsha256') \gset extkey256_
+select * from pgsodium.create_key('hmacsha256', raw_key:=:'extkey256') \gset extkey256_
 
 select crypto_auth_hmacsha512_keygen() extkey512 \gset
-select * from pgsodium.create_key('extkey512', raw_key:=:'extkey512', key_type:='hmacsha512') \gset extkey512_
+select * from pgsodium.create_key('hmacsha512', raw_key:=:'extkey512') \gset extkey512_
 
 select crypto_auth_hmacsha512('food', :'extkey512_id'::uuid) hmac512 \gset
 

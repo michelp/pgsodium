@@ -63,8 +63,8 @@ SELECT is(crypto_aead_det_decrypt(:'detaeadid', 'and also your friend', 32),
 RESET ROLE;
 
 SET ROLE pgsodium_keymaker;
-select id as det_key_uuid from create_key('det Test Key') \gset
-select id as ietf_key_uuid from create_key('ietf Test Key', key_type:='aead-ietf') \gset
+select id as det_key_uuid from create_key('aead-det', 'det Test Key') \gset
+select id as ietf_key_uuid from create_key('aead-ietf', 'ietf Test Key') \gset
 RESET ROLE;
 
 SET ROLE pgsodium_keyiduser;

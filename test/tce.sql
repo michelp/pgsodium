@@ -35,11 +35,11 @@ SELECT lives_ok(
 
 
 -- Create a key id to use in the tests below
-SELECT id AS secret_key_id FROM pgsodium.create_key('Optional Comment') \gset
+SELECT id AS secret_key_id FROM pgsodium.create_key('aead-det', 'OPTIONAL_NAME') \gset
 
 -- Create a key id to use in the tests below
 SELECT id AS secret2_key_id
-  FROM pgsodium.create_key('Optional Comment 2') \gset
+  FROM pgsodium.create_key('aead-det', 'Optional Name 2') \gset
 
 SELECT lives_ok(
   format($test$
