@@ -540,8 +540,8 @@ CREATE OR REPLACE VIEW pgsodium.masking_rule AS
         AS pattern_key_id,
       'encrypt +with +key +column +(\w+)'
         AS pattern_key_id_column,
-      '(?<=associated) +(\w+)'
-        AS pattern_associated_column,
+      '(?<=associated) +\(([\w, ]+)\)'
+        AS pattern_associated_columns,
       '(?<=nonce) +(\w+)'
         AS pattern_nonce_column,
       '(?<=decrypt with view) +(\w+\.\w+)'
@@ -558,7 +558,7 @@ CREATE OR REPLACE VIEW pgsodium.masking_rule AS
       sl.label AS col_description,
       (regexp_match(sl.label, k.pattern_key_id_column, 'i'))[1] AS key_id_column,
       (regexp_match(sl.label, k.pattern_key_id, 'i'))[1] AS key_id,
-      (regexp_match(sl.label, k.pattern_associated_column, 'i'))[1] AS associated_column,
+      (regexp_match(sl.label, k.pattern_associated_columns, 'i'))[1] AS associated_columns,
       (regexp_match(sl.label, k.pattern_nonce_column, 'i'))[1] AS nonce_column,
       coalesce((regexp_match(sl2.label, k.pattern_view_name, 'i'))[1],
                c.relnamespace::regnamespace || '.' || quote_ident('decrypted_' || c.relname)) AS view_name,
@@ -584,7 +584,7 @@ CREATE VIEW pgsodium.mask_columns AS SELECT
   a.attrelid,
   m.key_id,
   m.key_id_column,
-  m.associated_column,
+  m.associated_columns,
   m.nonce_column,
   m.format_type
   FROM pg_attribute a
@@ -594,6 +594,13 @@ CREATE VIEW pgsodium.mask_columns AS SELECT
   WHERE  a.attnum > 0 -- exclude ctid, cmin, cmax
   AND    NOT a.attisdropped
   ORDER BY a.attnum;
+
+CREATE OR REPLACE FUNCTION pgsodium.quote_assoc(text, boolean = false) RETURNS text
+BEGIN ATOMIC
+        WITH a AS (SELECT array_agg(CASE WHEN $2 THEN 'new.' || quote_ident(trim(v)) ELSE quote_ident(trim(v)) END) as r
+                     FROM string_to_table($1, ',') as v)
+        SELECT array_to_string(a.r, '::text || ') || '::text' FROM a;
+END;
 
 CREATE OR REPLACE FUNCTION pgsodium.encrypted_columns(
   relid OID
@@ -617,7 +624,7 @@ BEGIN
             $f$%s = CASE WHEN %s IS NULL THEN NULL ELSE pg_catalog.encode(
               pgsodium.crypto_aead_det_encrypt(
                 pg_catalog.convert_to(%s, 'utf8'),
-                pg_catalog.convert_to(%s::text, 'utf8'),
+                pg_catalog.convert_to((%s)::text, 'utf8'),
                 %s::uuid,
                 %s
               ),
@@ -625,13 +632,14 @@ BEGIN
                 'new.' || quote_ident(m.attname),
                 COALESCE('new.' || quote_ident(m.key_id_column), quote_literal(m.key_id)),
                 'new.' || quote_ident(m.attname),
-                COALESCE('new.' || quote_ident(m.associated_column), quote_literal('')),
+                COALESCE(pgsodium.quote_assoc(m.associated_columns, true), quote_literal('')),
                 COALESCE('new.' || quote_ident(m.key_id_column), quote_literal(m.key_id)),
                 COALESCE('new.' || quote_ident(m.nonce_column), 'NULL')
           );
       ELSIF m.format_type = 'bytea' THEN
           expression := expression || format(
-            $f$%s = CASE WHEN %s IS NULL THEN NULL ELSE pgsodium.crypto_aead_det_encrypt(%s::bytea, pg_catalog.convert_to(%s::text, 'utf8'),
+            $f$%s = CASE WHEN %s IS NULL THEN NULL ELSE
+                        pgsodium.crypto_aead_det_encrypt(%s::bytea, pg_catalog.convert_to((%s)::text, 'utf8'),
                 %s::uuid,
                 %s
               ) END
@@ -639,7 +647,7 @@ BEGIN
                 'new.' || quote_ident(m.attname),
                 COALESCE('new.' || quote_ident(m.key_id_column), quote_literal(m.key_id)),
                 'new.' || quote_ident(m.attname),
-                COALESCE('new.' || quote_ident(m.associated_column), quote_literal('')),
+                COALESCE(pgsodium.quote_assoc(m.associated_columns, true), quote_literal('')),
                 COALESCE('new.' || quote_ident(m.key_id_column), quote_literal(m.key_id)),
                 COALESCE('new.' || quote_ident(m.nonce_column), 'NULL')
           );
@@ -680,14 +688,14 @@ BEGIN
             CASE WHEN %s IS NULL THEN NULL ELSE pg_catalog.convert_from(
               pgsodium.crypto_aead_det_decrypt(
                 pg_catalog.decode(%s, 'base64'),
-                pg_catalog.convert_to(%s::text, 'utf8'),
+                pg_catalog.convert_to((%s)::text, 'utf8'),
                 %s::uuid,
                 %s
               ),
                 'utf8') END AS %s$f$,
                 coalesce(quote_ident(m.key_id_column), quote_literal(m.key_id)),
                 quote_ident(m.attname),
-                coalesce(quote_ident(m.associated_column), quote_literal('')),
+                coalesce(pgsodium.quote_assoc(m.associated_columns), quote_literal('')),
                 coalesce(quote_ident(m.key_id_column), quote_literal(m.key_id)),
                 coalesce(quote_ident(m.nonce_column), 'NULL'),
                 'decrypted_' || quote_ident(m.attname)
@@ -697,13 +705,13 @@ BEGIN
             $f$
             CASE WHEN %s IS NULL THEN NULL ELSE pgsodium.crypto_aead_det_decrypt(
                 %s::bytea,
-                pg_catalog.convert_to(%s::text, 'utf8'),
+                pg_catalog.convert_to((%s)::text, 'utf8'),
                 %s::uuid,
                 %s
               ) END AS %s$f$,
                 coalesce(quote_ident(m.key_id_column), quote_literal(m.key_id)),
                 quote_ident(m.attname),
-                coalesce(quote_ident(m.associated_column), quote_literal('')),
+                coalesce(pgsodium.quote_assoc(m.associated_columns), quote_literal('')),
                 coalesce(quote_ident(m.key_id_column), quote_literal(m.key_id)),
                 coalesce(quote_ident(m.nonce_column), 'NULL'),
                 'decrypted_' || quote_ident(m.attname)
@@ -864,7 +872,7 @@ END
 $$;
 
 SECURITY LABEL FOR pgsodium ON COLUMN pgsodium.key.raw_key
-    IS 'ENCRYPT WITH KEY COLUMN parent_key ASSOCIATED id NONCE raw_key_nonce';
+    IS 'ENCRYPT WITH KEY COLUMN parent_key ASSOCIATED (id) NONCE raw_key_nonce';
 
 ALTER EXTENSION pgsodium DROP VIEW pgsodium.decrypted_key;
 GRANT SELECT ON pgsodium.decrypted_key TO pgsodium_keymaker;

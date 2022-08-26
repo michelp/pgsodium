@@ -28,4 +28,4 @@ until
 do sleep 1;
 done
 
-docker exec -it $DB_HOST psql -U "$SU" $@
+docker exec -it $DB_HOST psql -U "$SU" -c '\i example/tce.sql'

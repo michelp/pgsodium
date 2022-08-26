@@ -51,7 +51,7 @@ SELECT lives_ok(
 SELECT lives_ok(
   format($test$
          SECURITY LABEL FOR pgsodium ON COLUMN private.bar.secret
-         IS 'ENCRYPT WITH KEY ID %s ASSOCIATED id NONCE nonce'
+         IS 'ENCRYPT WITH KEY ID %s ASSOCIATED (id) NONCE nonce'
          $test$, :'secret_key_id'),
   'can label column for encryption');
 
@@ -71,7 +71,7 @@ SELECT lives_ok(
 SELECT lives_ok(
   format($test$
          SECURITY LABEL FOR pgsodium ON COLUMN private.bar.secret2
-         IS 'ENCRYPT WITH KEY COLUMN secret2_key_id ASSOCIATED associated2 NONCE nonce2'
+         IS 'ENCRYPT WITH KEY COLUMN secret2_key_id ASSOCIATED (id, associated2) NONCE nonce2'
   $test$),
   'can label another column for encryption');
 
