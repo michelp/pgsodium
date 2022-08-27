@@ -44,10 +44,10 @@ select results_eq(
   parent_key is not null,
   raw_key_nonce is not null,
   name = 'stripe',
-  key_type = 'aead-det'
+  key_type = 'hmacsha256'
   from pgsodium.key where id = %L$$,:'stripe_hmac256_key_id'),
   'values (true, true, true, true, true, true, true)',
-  'ext key asserts');
+  'named ext key asserts');
 
 select * from pgsodium.create_key(
      'hmacsha256', 'stripe2', parent_key:=:'anon_det_key_id', raw_key:=:'ext_hmac256_key') \gset stripe_hmac256_key_
@@ -59,8 +59,8 @@ select results_eq(
   raw_key is not null,
   parent_key = %L,
   raw_key_nonce is not null,
-  name = 'stripe',
-  key_type = 'aead-det'
+  name = 'stripe2',
+  key_type = 'hmacsha256'
   from pgsodium.key where id = %L$$, :'anon_det_key_id', :'stripe_hmac256_key_id'),
   'values (true, true, true, true, true, true, true)',
   'ext key asserts');

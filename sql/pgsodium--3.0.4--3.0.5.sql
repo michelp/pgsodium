@@ -595,16 +595,17 @@ CREATE VIEW pgsodium.mask_columns AS SELECT
   AND    NOT a.attisdropped
   ORDER BY a.attnum;
 
-CREATE OR REPLACE FUNCTION pgsodium.quote_assoc(text, boolean = false) RETURNS text
+CREATE OR REPLACE FUNCTION pgsodium.quote_assoc(text, boolean = false)
+RETURNS text
 BEGIN ATOMIC
-        WITH a AS (SELECT array_agg(CASE WHEN $2 THEN 'new.' || quote_ident(trim(v)) ELSE quote_ident(trim(v)) END) as r
-                     FROM string_to_table($1, ',') as v)
-        SELECT array_to_string(a.r, '::text || ') || '::text' FROM a;
+    WITH a AS (SELECT array_agg(CASE WHEN $2 THEN
+                                    'new.' || quote_ident(trim(v))
+                                ELSE quote_ident(trim(v)) END) as r
+               FROM string_to_table($1, ',') as v)
+    SELECT array_to_string(a.r, '::text || ') || '::text' FROM a;
 END;
 
-CREATE OR REPLACE FUNCTION pgsodium.encrypted_columns(
-  relid OID
-)
+CREATE OR REPLACE FUNCTION pgsodium.encrypted_columns(relid OID)
 RETURNS TEXT AS
 $$
 DECLARE
@@ -663,9 +664,7 @@ $$
   SET search_path=''
   ;
 
-CREATE OR REPLACE FUNCTION pgsodium.decrypted_columns(
-  relid OID
-)
+CREATE OR REPLACE FUNCTION pgsodium.decrypted_columns(relid OID)
 RETURNS TEXT AS
 $$
 DECLARE
@@ -737,8 +736,8 @@ BEGIN
   RETURN;
 END
 $$
-  LANGUAGE plpgsql
-  SET search_path='pg_catalog'
+LANGUAGE plpgsql
+SET search_path=''
 ;
 
 CREATE OR REPLACE FUNCTION pgsodium.create_mask_view(relid oid, subid integer, debug boolean = false) RETURNS void AS
