@@ -1,7 +1,7 @@
 version=$1
 shift
 
-DB_HOST="pgsodium-example-db-$version"
+DB_HOST="pgsodium-notebook-db-$version"
 DB_NAME="postgres"
 SU="postgres"
 EXEC="docker exec $DB_HOST"

@@ -20,6 +20,10 @@ GRANT ALL ON ALL SEQUENCES IN SCHEMA pgsodium TO pgsodium_keymaker;
 
 GRANT SELECT ON pgsodium.valid_key TO pgsodium_keyiduser;
 
+DROP VIEW pgsodium.valid_key;
+DROP FUNCTION pgsodium.create_key(text, pgsodium.key_type, bigint, bytea, timestamp, jsonb);
+DELETE FROM pgsodium.key where status = 'default';
+
 ALTER TYPE pgsodium.key_type ADD VALUE 'hmacsha512';
 ALTER TYPE pgsodium.key_type ADD VALUE 'hmacsha256';
 ALTER TYPE pgsodium.key_type ADD VALUE 'auth';
@@ -34,8 +38,14 @@ ALTER TABLE pgsodium.key ADD COLUMN raw_key bytea;
 ALTER TABLE pgsodium.key ADD COLUMN raw_key_nonce bytea;
 ALTER TABLE pgsodium.key ADD COLUMN parent_key uuid REFERENCES pgsodium.key(id);
 ALTER TABLE pgsodium.key RENAME comment TO name;
+ALTER TABLE pgsodium.key RENAME user_data TO associated_data;
+ALTER TABLE pgsodium.key ALTER COLUMN associated_data TYPE text USING '';
+ALTER TABLE pgsodium.key ALTER COLUMN associated_data SET DEFAULT 'associated';
 ALTER TABLE pgsodium.key ALTER COLUMN key_id DROP NOT NULL;
 ALTER TABLE pgsodium.key ALTER COLUMN key_context DROP NOT NULL;
+ALTER TABLE pgsodium.key ALTER COLUMN expires TYPE timestamptz USING expires at time zone 'utc';
+ALTER TABLE pgsodium.key ALTER COLUMN created TYPE timestamptz USING created at time zone 'utc';
+
 ALTER TABLE pgsodium.key ADD CONSTRAINT pgsodium_key_unique_name UNIQUE (name);
 ALTER TABLE pgsodium.key ADD CONSTRAINT pgsodium_raw CHECK (
   CASE WHEN raw_key IS NOT NULL
@@ -43,11 +53,8 @@ ALTER TABLE pgsodium.key ADD CONSTRAINT pgsodium_raw CHECK (
     ELSE key_id IS NOT NULL AND key_context IS NOT NULL AND parent_key IS NULL
   END);
 
-DROP FUNCTION pgsodium.create_key(text, pgsodium.key_type, bigint, bytea, timestamp, jsonb);
-
-DROP VIEW pgsodium.valid_key;
 CREATE OR REPLACE VIEW pgsodium.valid_key AS
-  SELECT id, name, status, key_type, key_id, key_context, created, expires, user_data
+  SELECT id, name, status, key_type, key_id, key_context, created, expires, associated_data
     FROM pgsodium.key
    WHERE  status IN ('valid', 'default')
      AND CASE WHEN expires IS NULL THEN true ELSE expires < now() END;
@@ -61,35 +68,35 @@ CREATE FUNCTION pgsodium.create_key(
   raw_key_nonce bytea = NULL,
   key_context bytea = 'pgsodium',
   parent_key uuid = NULL,
-  expires timestamp = NULL,
-  user_data jsonb = NULL
+  expires timestamptz = NULL,
+  associated_data text = ''
 ) RETURNS pgsodium.valid_key
 AS $$
 DECLARE
   new_key pgsodium.key;
   valid_key pgsodium.valid_key;
 BEGIN
-    INSERT INTO pgsodium.key (key_id, key_context, key_type, raw_key,
-	raw_key_nonce, parent_key, expires, name, user_data)
-        VALUES (
-            CASE WHEN raw_key IS NULL THEN
-                NEXTVAL('pgsodium.key_key_id_seq'::REGCLASS)
-            ELSE NULL END,
-            CASE WHEN raw_key IS NULL THEN
-                key_context
-            ELSE NULL END,
-            key_type,
-            raw_key,
-            CASE WHEN raw_key IS NOT NULL THEN
-                COALESCE(raw_key_nonce, pgsodium.crypto_aead_det_noncegen())
-            ELSE NULL END,
-            CASE WHEN parent_key IS NULL and raw_key IS NOT NULL THEN
-                (pgsodium.create_key('aead-det')).id
-            ELSE parent_key END,
-            expires,
-            name,
-            user_data)
-      RETURNING * INTO new_key;
+  INSERT INTO pgsodium.key (key_id, key_context, key_type, raw_key,
+  raw_key_nonce, parent_key, expires, name, associated_data)
+      VALUES (
+        CASE WHEN raw_key IS NULL THEN
+            NEXTVAL('pgsodium.key_key_id_seq'::REGCLASS)
+        ELSE NULL END,
+        CASE WHEN raw_key IS NULL THEN
+            key_context
+        ELSE NULL END,
+        key_type,
+        raw_key,
+        CASE WHEN raw_key IS NOT NULL THEN
+            COALESCE(raw_key_nonce, pgsodium.crypto_aead_det_noncegen())
+        ELSE NULL END,
+        CASE WHEN parent_key IS NULL and raw_key IS NOT NULL THEN
+            (pgsodium.create_key('aead-det')).id
+        ELSE parent_key END,
+        expires,
+        name,
+        associated_data)
+    RETURNING * INTO new_key;
   SELECT * INTO valid_key FROM pgsodium.valid_key WHERE id = new_key.id;
   RETURN valid_key;
 END;
@@ -247,7 +254,7 @@ STRICT STABLE
 SECURITY DEFINER
 SET search_path = '';
 
-  ALTER FUNCTION pgsodium.crypto_auth_verify(bytea, bytea, uuid) OWNER TO pgsodium_keymaker;
+ALTER FUNCTION pgsodium.crypto_auth_verify(bytea, bytea, uuid) OWNER TO pgsodium_keymaker;
 
 -- Hash
 
@@ -533,6 +540,7 @@ GRANT EXECUTE ON FUNCTION
 -- bytea and extended associated data support for encrypted columns
 
 DROP VIEW pgsodium.masking_rule CASCADE;
+
 CREATE OR REPLACE VIEW pgsodium.masking_rule AS
   WITH const AS (
     SELECT
@@ -835,10 +843,10 @@ $$
 
 DO $$
 DECLARE
-	func text;
+  func text;
 BEGIN
-	FOREACH func IN ARRAY
-	  ARRAY[
+    FOREACH func IN ARRAY
+      ARRAY[
         'pgsodium.crypto_auth_hmacsha256(bytea, bigint, bytea)',
         'pgsodium.crypto_auth_hmacsha256_verify(bytea, bytea, bigint, bytea)',
         'pgsodium.crypto_auth_hmacsha512(bytea, bigint, bytea)',
@@ -860,20 +868,18 @@ BEGIN
         'pgsodium.crypto_aead_det_decrypt(bytea, bytea, uuid, bytea)',
         'pgsodium.crypto_aead_ietf_encrypt(bytea, bytea, bytea, uuid)',
         'pgsodium.crypto_aead_ietf_decrypt(bytea, bytea, bytea, uuid)'
-	]
-	LOOP
-		EXECUTE format($i$
-			REVOKE ALL ON FUNCTION %s FROM PUBLIC;
-			GRANT EXECUTE ON FUNCTION %s TO pgsodium_keyiduser;
-		$i$, func, func);
-	END LOOP;
+    ]
+    LOOP
+        EXECUTE format($i$
+            REVOKE ALL ON FUNCTION %s FROM PUBLIC;
+            GRANT EXECUTE ON FUNCTION %s TO pgsodium_keyiduser;
+        $i$, func, func);
+    END LOOP;
 END
 $$;
 
 SECURITY LABEL FOR pgsodium ON COLUMN pgsodium.key.raw_key
-    IS 'ENCRYPT WITH KEY COLUMN parent_key ASSOCIATED (id) NONCE raw_key_nonce';
+    IS 'ENCRYPT WITH KEY COLUMN parent_key ASSOCIATED (id, associated_data) NONCE raw_key_nonce';
 
 ALTER EXTENSION pgsodium DROP VIEW pgsodium.decrypted_key;
 GRANT SELECT ON pgsodium.decrypted_key TO pgsodium_keymaker;
-
-DELETE FROM pgsodium.key where status = 'default';
