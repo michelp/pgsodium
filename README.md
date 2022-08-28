@@ -277,7 +277,9 @@ user_data   |
 optional:
 
   - `key_type pgsodium.key_type = 'aead-det'`: The type of key to
-     create.  Possible values are:
+     create.If you do not specify a `raw_key` argument, a new derived
+     key_id of the correct type will be automatically generated in
+     `key_context` argument context.  Possible values are:
      - `aead-det`
      - `aead-ietf`
      - `hmacsha512`
@@ -290,8 +292,6 @@ optional:
      - `kdf`
      - `secretbox`
      - `secretstream`
-     If you do not specify a `raw_key` argument, a new derived key_id
-     will be automatically generated in `key_context` argument context.
   - `name text = null`: The optional unique name of the key.
   - `raw_key bytea = null`: A raw key to store encrypted, if not
     specified, the raw key is derived from `key_id` and `key_context`.
@@ -308,34 +308,22 @@ optional:
     UUID, and mixed into the encryption signature and can be
     authenticated with it.
 
-This key can now be used for [Transparent Column
+Keys of the type `aead-det` can be used for [Transparent Column
 Encryption](#transparent-column-encryption).  The view
 `pgsodium.valid_keys` filters the key table for only keys that are
 valid and not expired.
 
 # Security Roles
 
-The pgsodium API has three nested layers of security roles:
+The pgsodium API has two nested layers of security roles:
 
-  - `pgsodium_keyiduser` Is the least privileged role, it cannot
-    create or use raw `bytea` keys, it can only create
-    `crypto_secretkey` nonces and access the `crypto_secretkey`,
-    `crypto_auth` and `crypto_aead` API functions that accept key ids
-    only.  This role can also access the `randombytes` API.  This is
-    the role you would typically give to a user facing application.
+  - `pgsodium_keyiduser` Is the less privileged role that can only
+    access keys by their UUID.  This is the role you would typically
+    give to a user facing application.
 
-  - `pgsodium_keyholder` Is the next more privileged layer, it can do
-    everything `pgsodium_keyiduser` can do, but it can also use, but
-    not create, raw `bytea` encryption keys.  This role can use public
-    key APIs like `crypto_box` and `crypto_sign`, but it cannot create
-    keypairs.  This role is useful for when keys come from external
-    sources and must be passed as `bytea` to API functions.
-
-  - `pgsodium_keymaker` is the most privileged role, it can do
-    everything the previous roles can do, but it can also create keys,
-    keypairs and key seeds and derive keys from key ids.  Be very
-    careful how you grant access to this role, as it can create valid
-    secret keys derived from the root key.
+  - `pgsodium_keymaker` is the more privileged role and can work with
+    raw `bytea` And managed server keys.  You would not typically give
+    this role to a user facing application.
 
 Note that public key apis like `crypto_box` and `crypto_sign` do not
 have "key id" variants, because they work with a combination of four
@@ -366,17 +354,17 @@ UUIDs for use with the internal encryption functions used by the TCE
 functionality.  Creating a key to use is the first step:
 
 ```
-# select * from pgsodium.create_key('Optional Comment');
+# select * from pgsodium.create_key();
 -[ RECORD 1 ]-------------------------------------
-id          | dfc44293-fa78-4a1a-9ef9-7e600e63e101
-status      | valid
-created     | 2022-08-03 18:50:53.355099
-expires     | 
-key_type    | aead-det
-key_id      | 5
-key_context | \x7067736f6469756d
-comment     | Optional Comment
-user_data   | 
+id                | dfc44293-fa78-4a1a-9ef9-7e600e63e101
+status            | valid
+created           | 2022-08-03 18:50:53.355099
+expires           | 
+key_type          | aead-det
+key_id            | 5
+key_context       | \x7067736f6469756d
+comment           | 
+associated_data   | 
 ```
 
 This key is now stored in the `pgsodium.key` table, and can be
@@ -428,7 +416,7 @@ CREATE TABLE private.users (
 
 SECURITY LABEL FOR pgsodium
 	ON COLUMN private.users.secret
-  IS 'ENCRYPT WITH KEY COLUMN key_id NONCE COLUMN nonce';
+  IS 'ENCRYPT WITH KEY COLUMN key_id;
 ```
 
 This approach ensures that “cracking” the key for one row does not
@@ -455,13 +443,38 @@ CREATE TABLE private.users (
 	id bigserial primary key,
 	secret text,
 	key_id uuid not null,
-  nonce bytea
+    nonce bytea
 );
 
 SECURITY LABEL FOR pgsodium
 	ON COLUMN private.users.secret
-  IS 'ENCRYPT WITH KEY COLUMN key_id NONCE COLUMN nonce';
+  IS 'ENCRYPT WITH KEY COLUMN key_id NONCE nonce';
 ```
+## One Key ID per Row with Nonce Support and Associated Data
+
+The `aead-det` algorithm can mix user provided data into the
+authentication signature for the encrypted secret.  This
+"authenticates" the plaintext and ensures that it has not been altered
+(or the decryption will fail).  This is useful for associated useful
+metadata with your secrets:
+
+```sql
+CREATE TABLE private.users (
+	id bigserial primary key,
+	secret text,
+	key_id uuid not null,
+    nonce bytea,
+    associated_data text
+);
+
+SECURITY LABEL FOR pgsodium
+	ON COLUMN private.users.secret
+  IS 'ENCRYPT WITH KEY COLUMN key_id NONCE nonce ASSOCIATED (id, associated_data)';
+```
+
+You can specify multiple columns as shown above with both the id and
+associated data column.  Columns used for associated data must be
+*deterministicly* castable to `text`.
 
 # Simple public key encryption with `crypto_box()`
 
