@@ -45,7 +45,7 @@ encrypt and decrypt one or more columns of data in a table.
       * [Key Derivation](#key-derivation)
       * [Key Exchange](#key-exchange)
       * [HMAC512](#hmac512)
-      * [Advanced Stream API](#stream)
+      * [Advanced Stream API](#advanced-stream-api)
       * [XChaCha20-SIV](#xchacha20-siv)
       * [Signcryption](#signcryption)
 
