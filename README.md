@@ -125,7 +125,7 @@ pgsodium also comes with example scripts for:
   - [Google Cloud's Cloud Key
     Management](getkey_scripts/pgsodium_getkey_gcp.sh).
 
-  - [Doppler SecretOps Platform](getkey_scripts/pgsodium_getkey_aws.sh).
+  - [Doppler SecretOps Platform](getkey_scripts/pgsodium_getkey_doppler.sh).
 
   - [Zymbit Zymkey 4i Hardware Security
     Module](getkey_scripts/pgsodium_getkey_zmk.sh).
