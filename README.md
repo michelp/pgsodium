@@ -125,6 +125,8 @@ pgsodium also comes with example scripts for:
   - [Google Cloud's Cloud Key
     Management](getkey_scripts/pgsodium_getkey_gcp.sh).
 
+  - [Doppler SecretOps Platform](getkey_scripts/pgsodium_getkey_doppler.sh).
+
   - [Zymbit Zymkey 4i Hardware Security
     Module](getkey_scripts/pgsodium_getkey_zmk.sh).
 
@@ -1046,3 +1048,4 @@ The Toorani-Beheshti signcryption scheme achieves this using a single
 key pair per device, with forward security and public verifiability.
 
 [C API Documentation](https://github.com/jedisct1/libsodium-signcryption)
+
