@@ -22,4 +22,4 @@ until
 do sleep 1;
 done
 
-docker exec -u postgres -e NB_UID=$(id -u) -e NB_GID=$(id -g) -it $DB_HOST jupyter-lab
+docker exec --user root -e NB_UID=$(id -u) -e NB_GID=$(id -g) -it $DB_HOST jupyter-lab --allow-root
