@@ -22,10 +22,16 @@ ROLLBACK;
 
 \if :serverkeys
 BEGIN;
-SELECT plan(2);
+SELECT plan(4);
 
 SELECT lives_ok(format($$select crypto_shorthash('bob is your uncle', 42)$$), 'crypto_shorthash_by_id');
-SELECT lives_ok(format($$select crypto_shorthash('bob is your uncle', 42, '12345678')$$), 'crypto_shorthash_by_id_context');
+SELECT lives_ok(format($$select crypto_shorthash('bob is your uncle', 42, '12345678')$$), 'crypto_shorthash by id context');
+
+select id as shorthash_key_id from create_key('shorthash') \gset
+SELECT lives_ok(format($$select crypto_shorthash('bob is your uncle', %L::uuid)$$, :'shorthash_key_id'), 'crypto_shorthash by uuid');
+
+select id as generichash_key_id from create_key('generichash') \gset
+SELECT lives_ok(format($$select crypto_generichash('bob is your uncle', %L::uuid)$$, :'generichash_key_id'), 'crypto_generichash by uuid');
 
 SELECT * FROM finish();
 ROLLBACK;

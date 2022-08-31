@@ -6,7 +6,7 @@ versions=${1:-14}
 
 for version in $versions
 do
-	for config in '' '-c shared_preload_libraries=pgsodium' '-c shared_preload_libraries=pgsodium -c pgsodium.getkey_script=/getkey'
+	for config in '-c shared_preload_libraries=pgsodium' '-c shared_preload_libraries=pgsodium -c pgsodium.getkey_script=/getkey' ''
 	do
 		DB_HOST="pgsodium-test-db-$version"
 		DB_NAME="postgres"

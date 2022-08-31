@@ -27,20 +27,19 @@ CREATE TABLE private.bar(
   nonce2 bytea
 );
 
-SELECT throws_ok(
+SELECT lives_ok(
   $test$
-  SECURITY LABEL FOR pgsodium ON TABLE private.bar IS 'nope'
+  SECURITY LABEL FOR pgsodium ON TABLE private.bar IS 'DECRYPT WITH VIEW private.other_bar'
   $test$,
-  '0A000',
-  'pgsodium provider does not support labels on this object',
-  'tables cannot be labeled');
+  'tables can be labeled with alternate view');
+
 
 -- Create a key id to use in the tests below
-SELECT id AS secret_key_id FROM pgsodium.create_key('Optional Comment') \gset
+SELECT id AS secret_key_id FROM pgsodium.create_key('aead-det', 'OPTIONAL_NAME') \gset
 
 -- Create a key id to use in the tests below
 SELECT id AS secret2_key_id
-  FROM pgsodium.create_key('Optional Comment 2') \gset
+  FROM pgsodium.create_key('aead-det', 'Optional Name 2') \gset
 
 SELECT lives_ok(
   format($test$
@@ -52,7 +51,7 @@ SELECT lives_ok(
 SELECT lives_ok(
   format($test$
          SECURITY LABEL FOR pgsodium ON COLUMN private.bar.secret
-         IS 'ENCRYPT WITH KEY ID %s ASSOCIATED id NONCE nonce'
+         IS 'ENCRYPT WITH KEY ID %s ASSOCIATED (id) NONCE nonce'
          $test$, :'secret_key_id'),
   'can label column for encryption');
 
@@ -72,7 +71,7 @@ SELECT lives_ok(
 SELECT lives_ok(
   format($test$
          SECURITY LABEL FOR pgsodium ON COLUMN private.bar.secret2
-         IS 'ENCRYPT WITH KEY COLUMN secret2_key_id ASSOCIATED associated2 NONCE nonce2'
+         IS 'ENCRYPT WITH KEY COLUMN secret2_key_id ASSOCIATED (id, associated2) NONCE nonce2'
   $test$),
   'can label another column for encryption');
 
@@ -80,7 +79,7 @@ SELECT * FROM finish();
 COMMIT;
 
 \c postgres bobo
-  
+
 BEGIN;
 SELECT plan(4);
 
@@ -90,14 +89,14 @@ SELECT pgsodium.crypto_aead_det_noncegen() nonce2 \gset
 SELECT lives_ok(
   format(
     $test$
-    INSERT INTO foo (secret) VALUES ('s3kr3t');
+    INSERT INTO private.decrypted_foo (secret) VALUES ('s3kr3t');
     $test$),
     'can insert into foo table');
 
 SELECT lives_ok(
   format(
     $test$
-    INSERT INTO bar (secret, nonce, secret2, associated2, nonce2, secret2_key_id)
+    INSERT INTO private.other_bar (secret, nonce, secret2, associated2, nonce2, secret2_key_id)
     VALUES ('s3kr3t', %L, 'shhh', 'bob was here', %L, %L::uuid);
     $test$,
     :'nonce',
@@ -106,12 +105,12 @@ SELECT lives_ok(
     'can insert into bar table');
 
 SELECT results_eq(
-    $$SELECT decrypted_secret = 's3kr3t' FROM foo$$,
+    $$SELECT decrypted_secret = 's3kr3t' FROM private.decrypted_foo$$,
     $$VALUES (true)$$,
     'can select from masking view');
 
 SELECT results_eq(
-    $$SELECT decrypted_secret = 's3kr3t' FROM bar$$,
+    $$SELECT decrypted_secret = 's3kr3t' FROM private.other_bar$$,
     $$VALUES (true)$$,
     'can select from masking view');
 
@@ -119,4 +118,5 @@ SELECT * FROM finish();
 
 \c postgres postgres
 DROP SCHEMA private CASCADE;
+COMMIT;
 \endif
