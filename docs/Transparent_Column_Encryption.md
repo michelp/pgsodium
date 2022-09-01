@@ -50,20 +50,24 @@ TRUNCATE my_secrets;  -- so the notebook is repeatable with a new key each time
 ```python
 key = %sql SELECT * FROM pgsodium.create_key();
 key = key[0][0]
-print('The new key id is: ', key)
-```
-
-    The new key id is:  a7a0449c-0cf6-4563-ac76-934e08508a3d
-
-
-
-```python
 label = 'ENCRYPT WITH KEY ID ' + str(key)
-%sql SECURITY LABEL FOR pgsodium ON COLUMN my_secrets.secret IS :label;
-print(label)
+print('The security label will be: ', label)
 ```
 
-    ENCRYPT WITH KEY ID a7a0449c-0cf6-4563-ac76-934e08508a3d
+    The security label will be:  ENCRYPT WITH KEY ID e5e6de31-8a2a-49ca-a2eb-12bd5d218922
+
+
+
+```sql
+%%sql 
+SECURITY LABEL FOR pgsodium ON COLUMN my_secrets.secret IS :label;
+```
+
+
+
+
+    []
+
 
 
 
@@ -93,13 +97,13 @@ SELECT * FROM my_secrets;
         <th>secret</th>
     </tr>
     <tr>
-        <td>cflsdTEru3ieFMc+L8ywWcyWqQUHI8a04L37n26deRxMmY6WxnZl</td>
+        <td>5Zzj/xmBZBLRBZQAOXMC4zuxMLqVH+GlsPH3eFZxzO1hx9eg2sx4</td>
     </tr>
     <tr>
-        <td>+SLLU++WIxM34zMW/usqxNKr4p8+Oj4EkVzBv2WO/5qS9plvNkma</td>
+        <td>EVjCD2qJTDKMi58/8DGiaOZrFWuqFpznA17yKBJUQT9IAEMQvlT7</td>
     </tr>
     <tr>
-        <td>uMkNgXpvfce5DaMK98AEvXkK7xZQ8hEu5PSq9Vkz9SKq7e7N</td>
+        <td>Jc1/2ONBhpsq5FSntN3ZmXXDMNmOAH5VzLVRCjKrk5KaqUk0</td>
     </tr>
 </table>
 
@@ -120,15 +124,15 @@ SELECT * FROM decrypted_my_secrets;
         <th>decrypted_secret</th>
     </tr>
     <tr>
-        <td>cflsdTEru3ieFMc+L8ywWcyWqQUHI8a04L37n26deRxMmY6WxnZl</td>
+        <td>5Zzj/xmBZBLRBZQAOXMC4zuxMLqVH+GlsPH3eFZxzO1hx9eg2sx4</td>
         <td>sekert1</td>
     </tr>
     <tr>
-        <td>+SLLU++WIxM34zMW/usqxNKr4p8+Oj4EkVzBv2WO/5qS9plvNkma</td>
+        <td>EVjCD2qJTDKMi58/8DGiaOZrFWuqFpznA17yKBJUQT9IAEMQvlT7</td>
         <td>1234567</td>
     </tr>
     <tr>
-        <td>uMkNgXpvfce5DaMK98AEvXkK7xZQ8hEu5PSq9Vkz9SKq7e7N</td>
+        <td>Jc1/2ONBhpsq5FSntN3ZmXXDMNmOAH5VzLVRCjKrk5KaqUk0</td>
         <td>9999</td>
     </tr>
 </table>
