@@ -30,6 +30,8 @@ To use TCE, first create the extension:
 
 ## Encrypt Whole Column with One Key ID
 
+To encrypt a column, the first step is to create a table.  Here is a simple table with one `text` column that will be encrypted.
+
 
 ```sql
 %%sql
@@ -46,16 +48,24 @@ TRUNCATE my_secrets;  -- so the notebook is repeatable with a new key each time
 
 
 
+## Create a new Key ID
+
+The next step is create a single key id that will be used to encrypt the column with the `pgsodium.create_key()` function.  This new key is used to create a label for the column with a `SECURITY LABEL` command that says which key id should be used to encrypt the table.
+
 
 ```python
 key = %sql SELECT * FROM pgsodium.create_key();
 key = key[0][0]
 label = 'ENCRYPT WITH KEY ID ' + str(key)
-print('The security label will be: ', label)
+print('The security label will be:', label)
 ```
 
-    The security label will be:  ENCRYPT WITH KEY ID e5e6de31-8a2a-49ca-a2eb-12bd5d218922
+    The security label will be: ENCRYPT WITH KEY ID 1cfaecf3-c2dc-483a-96c9-8eb98e8743a5
 
+
+## Label a column
+
+Now apply that label to the column:
 
 
 ```sql
@@ -70,6 +80,10 @@ SECURITY LABEL FOR pgsodium ON COLUMN my_secrets.secret IS :label;
 
 
 
+## Insert test data
+
+Here are some test rows for the table.  Note that the inserted secret values are *plaintext*.
+
 
 ```sql
 %%sql
@@ -82,6 +96,10 @@ INSERT INTO my_secrets (secret) VALUES ('sekert1'), ('1234567'), ('9999');
     []
 
 
+
+## How Secrets are Stored
+
+Now that there are some secrets in the table, selecting on the table will show that the data is stored in an authenticated encrypted form.  The "signature" for authenticated the secret is appended to the value, which is why each value is 32 bytes longer.
 
 
 ```sql
@@ -97,17 +115,21 @@ SELECT * FROM my_secrets;
         <th>secret</th>
     </tr>
     <tr>
-        <td>5Zzj/xmBZBLRBZQAOXMC4zuxMLqVH+GlsPH3eFZxzO1hx9eg2sx4</td>
+        <td>27KzhM6v2qg6UjCHXDfdXirDEKTbpXEUsGnEvgkSPfsc5PnDiwau</td>
     </tr>
     <tr>
-        <td>EVjCD2qJTDKMi58/8DGiaOZrFWuqFpznA17yKBJUQT9IAEMQvlT7</td>
+        <td>/10jpUIdj54uLgvBL0cSlCNmXdV5I5HvvsPLD2Hbin7cdxvWg1Mc</td>
     </tr>
     <tr>
-        <td>Jc1/2ONBhpsq5FSntN3ZmXXDMNmOAH5VzLVRCjKrk5KaqUk0</td>
+        <td>C1hQcfwVa/mIYf0udv/tMegOoPuBdkKqb0/K9USLgutJ1Whg</td>
     </tr>
 </table>
 
 
+
+## Accessing Decrypted Values
+
+When a column is labled with TCE using `SECURITY LABEL`, pgsodium dynamically generate a view that can decrypt rows on the fly.  By default this view is named `decrypted_<table_name>` for the table with any labeled columns.
 
 
 ```sql
@@ -124,15 +146,15 @@ SELECT * FROM decrypted_my_secrets;
         <th>decrypted_secret</th>
     </tr>
     <tr>
-        <td>5Zzj/xmBZBLRBZQAOXMC4zuxMLqVH+GlsPH3eFZxzO1hx9eg2sx4</td>
+        <td>27KzhM6v2qg6UjCHXDfdXirDEKTbpXEUsGnEvgkSPfsc5PnDiwau</td>
         <td>sekert1</td>
     </tr>
     <tr>
-        <td>EVjCD2qJTDKMi58/8DGiaOZrFWuqFpznA17yKBJUQT9IAEMQvlT7</td>
+        <td>/10jpUIdj54uLgvBL0cSlCNmXdV5I5HvvsPLD2Hbin7cdxvWg1Mc</td>
         <td>1234567</td>
     </tr>
     <tr>
-        <td>Jc1/2ONBhpsq5FSntN3ZmXXDMNmOAH5VzLVRCjKrk5KaqUk0</td>
+        <td>C1hQcfwVa/mIYf0udv/tMegOoPuBdkKqb0/K9USLgutJ1Whg</td>
         <td>9999</td>
     </tr>
 </table>
