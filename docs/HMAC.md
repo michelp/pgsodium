@@ -1,4 +1,4 @@
-## HMAC512/256
+## Hash-based Message Authentication Codes
 
 [https://en.wikipedia.org/wiki/HMAC]
 

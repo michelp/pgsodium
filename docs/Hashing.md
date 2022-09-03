@@ -1,3 +1,1 @@
-```python
-
-```
+# Generic and Short Hashing
