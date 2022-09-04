@@ -17,8 +17,9 @@ Transparent Column Encryption (TCE) lets you encrypt a column for storage to dis
 To use TCE, first create the extension:
 
 
-```python
-%sql CREATE EXTENSION IF NOT EXISTS pgsodium;
+```sql
+%%sql 
+CREATE EXTENSION IF NOT EXISTS pgsodium;
 ```
 
 
@@ -59,7 +60,7 @@ label = 'ENCRYPT WITH KEY ID ' + str(key[0].id)
 print('The security label will be:', label)
 ```
 
-    The security label will be: ENCRYPT WITH KEY ID 00b27f02-be79-4083-aacd-29d60ad520ab
+    The security label will be: ENCRYPT WITH KEY ID 7dff7a77-1b3a-47e4-97d1-43d0c5c971d4
 
 
 ## Label a column
@@ -104,17 +105,17 @@ SELECT objoid::regclass, provider, label FROM pg_seclabel WHERE provider = 'pgso
     <tr>
         <td>my_customer_secrets</td>
         <td>pgsodium</td>
-        <td>ENCRYPT WITH KEY COLUMN key_id ASSOCIATED (id, associated_data, owner) NONCE nonce</td>
+        <td>DECRYPT WITH VIEW public.other_name_view</td>
     </tr>
     <tr>
         <td>my_customer_secrets</td>
         <td>pgsodium</td>
-        <td>DECRYPT WITH VIEW public.other_name_view</td>
+        <td>ENCRYPT WITH KEY COLUMN key_id ASSOCIATED (id, associated_data, owner) NONCE nonce</td>
     </tr>
     <tr>
         <td>my_secrets</td>
         <td>pgsodium</td>
-        <td>ENCRYPT WITH KEY ID 00b27f02-be79-4083-aacd-29d60ad520ab</td>
+        <td>ENCRYPT WITH KEY ID 7dff7a77-1b3a-47e4-97d1-43d0c5c971d4</td>
     </tr>
 </table>
 
@@ -125,8 +126,9 @@ SELECT objoid::regclass, provider, label FROM pg_seclabel WHERE provider = 'pgso
 TCE works by dynamically creating an INSERT trigger for the labled table and a view that wraps the table and decrypts the column.  To explain, here are some test rows for the table.  Note that the inserted secret values are *plaintext*.
 
 
-```python
-%sql INSERT INTO my_secrets (secret) VALUES ('sekert1'), ('shhhhh'), ('0xABC_my_payment_processor_key');
+```sql
+%%sql 
+INSERT INTO my_secrets (secret) VALUES ('sekert1'), ('shhhhh'), ('0xABC_my_payment_processor_key');
 ```
 
 
@@ -141,8 +143,9 @@ TCE works by dynamically creating an INSERT trigger for the labled table and a v
 Now that there are some secrets in the table, selecting on the table will show that the data is stored in an authenticated encrypted form.  The "signature" for authenticated the secret is appended to the value, which is why each value is 32 bytes longer.
 
 
-```python
-%sql SELECT * FROM my_secrets;
+```sql
+%%sql 
+SELECT * FROM my_secrets;
 ```
 
 
@@ -153,13 +156,13 @@ Now that there are some secrets in the table, selecting on the table will show t
         <th>secret</th>
     </tr>
     <tr>
-        <td>kU3aImiltQk+UsVBvNFd7NRN3lQutqyQvhzyMmUNtkqC9apvAAKj</td>
+        <td>UPLO9S0j5JNynLxsXusXka5lIAGNYlRVqWWu4l8OcqbqrEitWXvp</td>
     </tr>
     <tr>
-        <td>fXDPJean7UQGYiYClQfgXdw0X4bxqgiuDaReddQaI1347oTtKIk=</td>
+        <td>XJi1+Q8V/BH1awvprPKu7JKC9ImCrk+E5/Ro/3DIIkjyFsUhBWc=</td>
     </tr>
     <tr>
-        <td>/cc70FtpmMz36SzsU7qeaOsGw4kLOE2g1dOIfEbRmanCst8HROWQq6EgssVVUQfi7XndpjQ7c4r5<br>4WrkkEs=</td>
+        <td>28fPDid2nuAYkCh49ZvrI8pXQHMF98FAKjscsYiq67hlWxsAGFiSjf9/PRAhEz1oxdhvQqOIN9qR<br>PUMetCs=</td>
     </tr>
 </table>
 
@@ -170,8 +173,9 @@ Now that there are some secrets in the table, selecting on the table will show t
 When a column is labled with TCE using `SECURITY LABEL`, pgsodium dynamically generate a view that can decrypt rows on the fly.  By default this view is named `decrypted_<table_name>` for the table with any labeled columns.
 
 
-```python
-%sql SELECT * FROM decrypted_my_secrets;
+```sql
+%%sql 
+SELECT * FROM decrypted_my_secrets;
 ```
 
 
@@ -183,15 +187,15 @@ When a column is labled with TCE using `SECURITY LABEL`, pgsodium dynamically ge
         <th>decrypted_secret</th>
     </tr>
     <tr>
-        <td>kU3aImiltQk+UsVBvNFd7NRN3lQutqyQvhzyMmUNtkqC9apvAAKj</td>
+        <td>UPLO9S0j5JNynLxsXusXka5lIAGNYlRVqWWu4l8OcqbqrEitWXvp</td>
         <td>sekert1</td>
     </tr>
     <tr>
-        <td>fXDPJean7UQGYiYClQfgXdw0X4bxqgiuDaReddQaI1347oTtKIk=</td>
+        <td>XJi1+Q8V/BH1awvprPKu7JKC9ImCrk+E5/Ro/3DIIkjyFsUhBWc=</td>
         <td>shhhhh</td>
     </tr>
     <tr>
-        <td>/cc70FtpmMz36SzsU7qeaOsGw4kLOE2g1dOIfEbRmanCst8HROWQq6EgssVVUQfi7XndpjQ7c4r5<br>4WrkkEs=</td>
+        <td>28fPDid2nuAYkCh49ZvrI8pXQHMF98FAKjscsYiq67hlWxsAGFiSjf9/PRAhEz1oxdhvQqOIN9qR<br>PUMetCs=</td>
         <td>0xABC_my_payment_processor_key</td>
     </tr>
 </table>
@@ -229,8 +233,9 @@ CREATE TABLE my_customer_secrets (
 
 
 
-```python
-%sql SECURITY LABEL FOR pgsodium ON TABLE my_customer_secrets IS 'DECRYPT WITH VIEW public.other_name_view';
+```sql
+%%sql 
+SECURITY LABEL FOR pgsodium ON TABLE my_customer_secrets IS 'DECRYPT WITH VIEW public.other_name_view';
 ```
 
 
@@ -279,8 +284,9 @@ INSERT INTO my_customer_secrets (secret, associated_data, owner)
 As above, secret is now stored en anthenticated encrypted form.  The `id`, `associated_data`, and `owner` columns are "mixed in" to the signature that is stored with the secret, so they cannot be forged.  Any atttempt to decrypt the secret with inauthentic associated data will fail.
 
 
-```python
-%sql SELECT secret, associated_data, owner, key_id FROM my_customer_secrets;
+```sql
+%%sql 
+SELECT secret, associated_data, owner, key_id FROM my_customer_secrets;
 ```
 
 
@@ -294,22 +300,22 @@ As above, secret is now stored en anthenticated encrypted form.  The `id`, `asso
         <th>key_id</th>
     </tr>
     <tr>
-        <td>wXmJsarHnYeDFS5bfkipBJny8/3CwM6YIxVbonkIoES/Oeqe</td>
+        <td>nUxRwiQhhxFZlBxTkldF8ff3N3XnPrTIZWMqyZ+aliwGygGp</td>
         <td>{&#x27;type&#x27;: &#x27;color&#x27;}</td>
         <td>bob</td>
-        <td>bb4c5512-2eed-4254-a262-b3a53b16e795</td>
+        <td>a42a4267-0fb1-4d83-8982-e33814010bae</td>
     </tr>
     <tr>
-        <td>d9hUv3oA2n0HtydyWLae1IAtcYP/nOH2i8tm1xTMlKLECMSk</td>
+        <td>0Agh3PJefpohSVYtMDxWdzCl765erewje0a40L50hw7SDm2Y</td>
         <td>{&#x27;type&#x27;: &#x27;food&#x27;}</td>
         <td>alice</td>
-        <td>1a7b37b1-f8a2-4a83-b410-da115c51a1db</td>
+        <td>6f4e4275-64e9-4de9-a3ae-f263a07645a8</td>
     </tr>
     <tr>
-        <td>/nJpnMbrh7me5KwwLWHC0+rvLV8J6SEDI3LNsM5qmZN6VNgF</td>
+        <td>4yNi9vag6yOttKIR7ZETJjrtin+WRRdKHKZGqH9xavBzV6Cp</td>
         <td>{&#x27;type&#x27;: &#x27;car&#x27;}</td>
         <td>mallory</td>
-        <td>e580cf08-3d15-4425-8520-91ea66142a22</td>
+        <td>2df9c696-3e31-4517-b12e-1c0b629db0f9</td>
     </tr>
 </table>
 
@@ -318,8 +324,9 @@ As above, secret is now stored en anthenticated encrypted form.  The `id`, `asso
 Decrypted secret access the view by the name specified in the table label above.
 
 
-```python
-%sql SELECT decrypted_secret, associated_data, owner, key_id FROM other_name_view;
+```sql
+%%sql 
+SELECT decrypted_secret, associated_data, owner, key_id FROM other_name_view;
 ```
 
 
@@ -336,19 +343,19 @@ Decrypted secret access the view by the name specified in the table label above.
         <td>blue</td>
         <td>{&#x27;type&#x27;: &#x27;color&#x27;}</td>
         <td>bob</td>
-        <td>bb4c5512-2eed-4254-a262-b3a53b16e795</td>
+        <td>a42a4267-0fb1-4d83-8982-e33814010bae</td>
     </tr>
     <tr>
         <td>nuts</td>
         <td>{&#x27;type&#x27;: &#x27;food&#x27;}</td>
         <td>alice</td>
-        <td>1a7b37b1-f8a2-4a83-b410-da115c51a1db</td>
+        <td>6f4e4275-64e9-4de9-a3ae-f263a07645a8</td>
     </tr>
     <tr>
         <td>fast</td>
         <td>{&#x27;type&#x27;: &#x27;car&#x27;}</td>
         <td>mallory</td>
-        <td>e580cf08-3d15-4425-8520-91ea66142a22</td>
+        <td>2df9c696-3e31-4517-b12e-1c0b629db0f9</td>
     </tr>
 </table>
 
