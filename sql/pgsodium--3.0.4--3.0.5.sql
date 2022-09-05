@@ -66,8 +66,8 @@ CREATE FUNCTION pgsodium.create_key(
   name text = NULL,
   raw_key bytea = NULL,
   raw_key_nonce bytea = NULL,
-  key_context bytea = 'pgsodium',
   parent_key uuid = NULL,
+  key_context bytea = 'pgsodium',
   expires timestamptz = NULL,
   associated_data text = ''
 ) RETURNS pgsodium.valid_key
