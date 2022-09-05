@@ -60,7 +60,7 @@ label = 'ENCRYPT WITH KEY ID ' + str(key[0].id)
 print('The security label will be:', label)
 ```
 
-    The security label will be: ENCRYPT WITH KEY ID 7dff7a77-1b3a-47e4-97d1-43d0c5c971d4
+    The security label will be: ENCRYPT WITH KEY ID 3b72130d-32c1-42a2-8ed4-c35086ca60e8
 
 
 ## Label a column
@@ -115,7 +115,7 @@ SELECT objoid::regclass, provider, label FROM pg_seclabel WHERE provider = 'pgso
     <tr>
         <td>my_secrets</td>
         <td>pgsodium</td>
-        <td>ENCRYPT WITH KEY ID 7dff7a77-1b3a-47e4-97d1-43d0c5c971d4</td>
+        <td>ENCRYPT WITH KEY ID 3b72130d-32c1-42a2-8ed4-c35086ca60e8</td>
     </tr>
 </table>
 
@@ -156,13 +156,13 @@ SELECT * FROM my_secrets;
         <th>secret</th>
     </tr>
     <tr>
-        <td>UPLO9S0j5JNynLxsXusXka5lIAGNYlRVqWWu4l8OcqbqrEitWXvp</td>
+        <td>ZpIusOfIP76sHzOTTWhPn6S0GNz14K2bmZFR2KRzHrYTRLCW8NO8</td>
     </tr>
     <tr>
-        <td>XJi1+Q8V/BH1awvprPKu7JKC9ImCrk+E5/Ro/3DIIkjyFsUhBWc=</td>
+        <td>V96NMLHu6nhnJHw1AXA/+zsDpk8Hq7NY7DbbtBQjqG9TQ6t9dF4=</td>
     </tr>
     <tr>
-        <td>28fPDid2nuAYkCh49ZvrI8pXQHMF98FAKjscsYiq67hlWxsAGFiSjf9/PRAhEz1oxdhvQqOIN9qR<br>PUMetCs=</td>
+        <td>9z2kXtIYOgSNl/fcZEXqz44baRpVyFhV/jH/yp/jP/FbpR1Qle0oDIZrMF0iCyomTtGsKEKPioWZ<br>wf64xVs=</td>
     </tr>
 </table>
 
@@ -187,15 +187,15 @@ SELECT * FROM decrypted_my_secrets;
         <th>decrypted_secret</th>
     </tr>
     <tr>
-        <td>UPLO9S0j5JNynLxsXusXka5lIAGNYlRVqWWu4l8OcqbqrEitWXvp</td>
+        <td>ZpIusOfIP76sHzOTTWhPn6S0GNz14K2bmZFR2KRzHrYTRLCW8NO8</td>
         <td>sekert1</td>
     </tr>
     <tr>
-        <td>XJi1+Q8V/BH1awvprPKu7JKC9ImCrk+E5/Ro/3DIIkjyFsUhBWc=</td>
+        <td>V96NMLHu6nhnJHw1AXA/+zsDpk8Hq7NY7DbbtBQjqG9TQ6t9dF4=</td>
         <td>shhhhh</td>
     </tr>
     <tr>
-        <td>28fPDid2nuAYkCh49ZvrI8pXQHMF98FAKjscsYiq67hlWxsAGFiSjf9/PRAhEz1oxdhvQqOIN9qR<br>PUMetCs=</td>
+        <td>9z2kXtIYOgSNl/fcZEXqz44baRpVyFhV/jH/yp/jP/FbpR1Qle0oDIZrMF0iCyomTtGsKEKPioWZ<br>wf64xVs=</td>
         <td>0xABC_my_payment_processor_key</td>
     </tr>
 </table>
@@ -300,22 +300,22 @@ SELECT secret, associated_data, owner, key_id FROM my_customer_secrets;
         <th>key_id</th>
     </tr>
     <tr>
-        <td>nUxRwiQhhxFZlBxTkldF8ff3N3XnPrTIZWMqyZ+aliwGygGp</td>
+        <td>GrDDDYZXzBvAjKWWeVrCBtt8ngVM3t+k4JFd37ll0EtGtREB</td>
         <td>{&#x27;type&#x27;: &#x27;color&#x27;}</td>
         <td>bob</td>
-        <td>a42a4267-0fb1-4d83-8982-e33814010bae</td>
+        <td>bb04c8f9-c9ff-4978-a39d-afe44ca98e9a</td>
     </tr>
     <tr>
-        <td>0Agh3PJefpohSVYtMDxWdzCl765erewje0a40L50hw7SDm2Y</td>
+        <td>N7427oX6/ENTnuYuk4FfGdo1tldjiZI/wF4Hk9nT97Um+xSm</td>
         <td>{&#x27;type&#x27;: &#x27;food&#x27;}</td>
         <td>alice</td>
-        <td>6f4e4275-64e9-4de9-a3ae-f263a07645a8</td>
+        <td>fa0050ed-2876-4f98-b677-0000cf5fffb4</td>
     </tr>
     <tr>
-        <td>4yNi9vag6yOttKIR7ZETJjrtin+WRRdKHKZGqH9xavBzV6Cp</td>
+        <td>AV2GSzBDgAO71TqCXUKJD4U3Bd7H55rfH3grNEElO6w3uajE</td>
         <td>{&#x27;type&#x27;: &#x27;car&#x27;}</td>
         <td>mallory</td>
-        <td>2df9c696-3e31-4517-b12e-1c0b629db0f9</td>
+        <td>eb9291a2-2cf2-4ce3-8e99-e002b47b9d57</td>
     </tr>
 </table>
 
@@ -343,19 +343,19 @@ SELECT decrypted_secret, associated_data, owner, key_id FROM other_name_view;
         <td>blue</td>
         <td>{&#x27;type&#x27;: &#x27;color&#x27;}</td>
         <td>bob</td>
-        <td>a42a4267-0fb1-4d83-8982-e33814010bae</td>
+        <td>bb04c8f9-c9ff-4978-a39d-afe44ca98e9a</td>
     </tr>
     <tr>
         <td>nuts</td>
         <td>{&#x27;type&#x27;: &#x27;food&#x27;}</td>
         <td>alice</td>
-        <td>6f4e4275-64e9-4de9-a3ae-f263a07645a8</td>
+        <td>fa0050ed-2876-4f98-b677-0000cf5fffb4</td>
     </tr>
     <tr>
         <td>fast</td>
         <td>{&#x27;type&#x27;: &#x27;car&#x27;}</td>
         <td>mallory</td>
-        <td>2df9c696-3e31-4517-b12e-1c0b629db0f9</td>
+        <td>eb9291a2-2cf2-4ce3-8e99-e002b47b9d57</td>
     </tr>
 </table>
 

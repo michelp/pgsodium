@@ -51,7 +51,7 @@ external_key = bytes(external_key[0][0])
 print(external_key)
 ```
 
-    b'.0\xb9l\xe2\x83ND\x83\xdf\xa2\x83\xff\x8f?\xaf\xde\xf5\xfb\xf9\x9c\xde)\x99\xec\xd6\xe2\xdc\x18\xdf\xab\xec'
+    b'\x1d\xa5\xf2\xa0a\xa8\x03 \x9b\x88J\xfe\xd2Xc\x0cG\xc5{\xc3W\xd7\x91KXp\x87\x15\x02"\xd6\xf6'
 
 
 
@@ -75,13 +75,13 @@ print(external_key)
         <th>associated_data</th>
     </tr>
     <tr>
-        <td>9fac7ff7-10d7-4139-966b-f7317e4486b2</td>
+        <td>92e24493-2df6-422b-8c75-00c82b1097c4</td>
         <td>None</td>
         <td>valid</td>
         <td>hmacsha256</td>
         <td>None</td>
         <td>None</td>
-        <td>2022-09-04 21:40:19.783942+00:00</td>
+        <td>2022-09-05 19:46:07.340760+00:00</td>
         <td>None</td>
         <td></td>
     </tr>
@@ -114,6 +114,12 @@ print(external_key)
         <td>9fac7ff7-10d7-4139-966b-f7317e4486b2</td>
         <td>hmacsha256</td>
         <td>a1f91b67-2793-4788-ab8e-4fca32e360da</td>
+        <td>32</td>
+    </tr>
+    <tr>
+        <td>92e24493-2df6-422b-8c75-00c82b1097c4</td>
+        <td>hmacsha256</td>
+        <td>cc815230-06c6-4d57-9780-ac2a2dc026bc</td>
         <td>32</td>
     </tr>
 </table>
