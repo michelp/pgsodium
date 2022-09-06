@@ -1,6 +1,5 @@
 #!/bin/bash
 
-HERE=`pwd`
 # KV Path in Vault where key is/should be stored.
 KEY_PATH=${KEY_PATH:-pgsodium/root}
 # Field within KV Path that has the key.
