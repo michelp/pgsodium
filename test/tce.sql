@@ -80,7 +80,7 @@ COMMIT;
 \c postgres bobo
 
 BEGIN;
-SELECT plan(7);
+SELECT plan(8);
 
 SELECT pgsodium.crypto_aead_det_noncegen() nonce \gset
 SELECT pgsodium.crypto_aead_det_noncegen() nonce2 \gset
@@ -140,6 +140,11 @@ SELECT lives_ok(
     $test$),
     'can insert into non extension owner table');
 
+SELECT results_eq(
+    $$SELECT decrypted_secret = 's3kr3t' FROM private.barbo$$,
+    $$VALUES (true)$$,
+    'non-extension owner role can select from masking view');
+    
 SELECT * FROM finish();
 
 \c postgres postgres
