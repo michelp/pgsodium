@@ -33,7 +33,6 @@ SELECT lives_ok(
   $test$,
   'tables can be labeled with alternate view');
 
-
 -- Create a key id to use in the tests below
 SELECT id AS secret_key_id FROM pgsodium.create_key('aead-det', 'OPTIONAL_NAME') \gset
 
@@ -57,9 +56,9 @@ SELECT lives_ok(
 
 CREATE ROLE bobo with login password 'foo';
 
-GRANT USAGE ON SCHEMA private to bobo;
-GRANT SELECT ON TABLE private.foo to bobo;
-GRANT SELECT ON TABLE private.bar to bobo;
+GRANT SELECT ON pgsodium.key TO pgsodium_keyholder;
+GRANT ALL ON SCHEMA private to bobo;
+GRANT SELECT ON ALL TABLES IN SCHEMA private to bobo;
 GRANT USAGE ON ALL SEQUENCES IN SCHEMA private TO bobo;
 
 SELECT lives_ok(
@@ -81,7 +80,7 @@ COMMIT;
 \c postgres bobo
 
 BEGIN;
-SELECT plan(4);
+SELECT plan(7);
 
 SELECT pgsodium.crypto_aead_det_noncegen() nonce \gset
 SELECT pgsodium.crypto_aead_det_noncegen() nonce2 \gset
@@ -114,9 +113,35 @@ SELECT results_eq(
     $$VALUES (true)$$,
     'can select from masking view');
 
+CREATE TABLE private.bobo(
+  secret text,
+  associated text
+);
+
+SELECT lives_ok(
+  $test$
+  SECURITY LABEL FOR pgsodium ON TABLE private.bobo IS 'DECRYPT WITH VIEW private.barbo'
+  $test$,
+  'non extension owner can label a table');
+
+SELECT id AS bobo_key_id FROM pgsodium.create_key('aead-det', 'Bobo key') \gset
+
+SELECT lives_ok(
+  format($test$
+         SECURITY LABEL FOR pgsodium ON COLUMN private.bobo.secret
+         IS 'ENCRYPT WITH KEY ID %s ASSOCIATED (associated)'
+         $test$, :'bobo_key_id'),
+  'non extension owner can label column for encryption');
+
+SELECT lives_ok(
+  format(
+    $test$
+    INSERT INTO private.barbo (secret, associated) VALUES ('s3kr3t', 'it really really is');
+    $test$),
+    'can insert into non extension owner table');
+
 SELECT * FROM finish();
 
 \c postgres postgres
 DROP SCHEMA private CASCADE;
-COMMIT;
 \endif

@@ -46,6 +46,8 @@ SECURITY LABEL FOR pgsodium	ON COLUMN public.test2.secret2 IS
 SELECT pgsodium.crypto_aead_det_noncegen() aead_nonce \gset
 SELECT pgsodium.crypto_aead_det_noncegen() aead_nonce2 \gset
 
+GRANT ALL ON SCHEMA public TO bob;
+
 \c postgres bob
 \x
          
@@ -53,3 +55,13 @@ INSERT INTO decrypted_test (secret) VALUES ('noice') RETURNING *;
 
 INSERT INTO other_test2 (secret, associated, nonce, secret2, associated2, nonce2, secret2_key_id)
     VALUES ('sssh', 'bob was here', :'aead_nonce', 'aaahh', 'alice association', :'aead_nonce2', :'secret2_key_id'::uuid) RETURNING *;
+
+CREATE TABLE bob_test (
+  secret text
+);
+
+SELECT format('ENCRYPT WITH KEY ID %s', (pgsodium.create_key('aead-det', 'bob_key')).id)
+    AS seclabel \gset
+
+SECURITY LABEL FOR pgsodium	ON COLUMN bob_test.secret IS :'seclabel';
+
