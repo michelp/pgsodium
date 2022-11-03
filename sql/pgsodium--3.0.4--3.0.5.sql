@@ -605,13 +605,13 @@ CREATE VIEW pgsodium.mask_columns AS SELECT
 
 CREATE OR REPLACE FUNCTION pgsodium.quote_assoc(text, boolean = false)
 RETURNS text
-BEGIN ATOMIC
+AS $$
     WITH a AS (SELECT array_agg(CASE WHEN $2 THEN
                                     'new.' || quote_ident(trim(v))
                                 ELSE quote_ident(trim(v)) END) as r
-               FROM string_to_table($1, ',') as v)
+               FROM regexp_split_to_table($1, '\s*,\s*') as v)
     SELECT array_to_string(a.r, '::text || ') || '::text' FROM a;
-END;
+$$ LANGUAGE sql;
 
 CREATE OR REPLACE FUNCTION pgsodium.encrypted_columns(relid OID)
 RETURNS TEXT AS

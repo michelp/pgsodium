@@ -29,7 +29,8 @@ GRANT USAGE ON SCHEMA @extschema@_masks TO pgsodium_keyiduser;
 
 CREATE OR REPLACE FUNCTION @extschema@.version()
   RETURNS text
-  RETURN (SELECT extversion FROM pg_extension WHERE extname = 'pgsodium');
+  AS $$ SELECT extversion FROM pg_extension WHERE extname = 'pgsodium') $$
+  LANGUAGE sql;
 
 -- Internal Key Management
 
@@ -90,7 +91,7 @@ CREATE FUNCTION @extschema@.create_key(
   key_context bytea = 'pgsodium',
   expires timestamp = null,
   user_data jsonb = null) RETURNS @extschema@.key
-        BEGIN ATOMIC
+        AS $$
         INSERT INTO @extschema@.key (key_id, key_context, key_type, expires, comment, user_data)
           VALUES (case when key_id is null then nextval('@extschema@.key_key_id_seq'::regclass) else key_id
                   end,
@@ -99,7 +100,7 @@ CREATE FUNCTION @extschema@.create_key(
                   expires,
                   comment,
                   user_data) RETURNING *;
-        END;
+        $$ LANGUAGE sql;
 
 -- Deterministic AEAD functions by key uuid
 
@@ -279,20 +280,20 @@ GRANT SELECT ON @extschema@.masking_rule TO PUBLIC;
 
 
 CREATE FUNCTION @extschema@.has_mask(role regrole, source_name text)
-  RETURNS BOOLEAN RETURN (
+  RETURNS boolean AS $$
   SELECT EXISTS(
     SELECT 1
       FROM pg_shseclabel
      WHERE  objoid = role
        AND provider = 'pgsodium'
        AND label ilike 'ACCESS%' || source_name || '%')
-  );
+  $$ LANGUAGE sql;
 
 -- Display all columns of the relation with the masking function (if any)
 CREATE FUNCTION @extschema@.mask_columns(source_relid oid)
   RETURNS TABLE (attname name, key_id text, key_id_column text,
                  associated_column text, nonce_column text, format_type text)
-BEGIN ATOMIC
+AS $$
   SELECT
   a.attname,
   m.key_id,
@@ -308,7 +309,7 @@ BEGIN ATOMIC
   AND    a.attnum > 0 -- exclude ctid, cmin, cmax
   AND    NOT a.attisdropped
   ORDER BY a.attnum;
-END;
+$$ LANGUAGE sql;
 
 -- get the "select filters" that will decrypt the real data of a table
 CREATE FUNCTION @extschema@.decrypted_columns(
