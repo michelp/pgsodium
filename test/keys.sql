@@ -65,6 +65,23 @@ select results_eq(
   'values (true, true, true, true, true, true, true)',
   'ext key asserts');
 
+select results_eq(
+    format($$select name = 'stripe2' from pgsodium.get_key_by_id(%L)$$, :'stripe_hmac256_key_id'),
+    'values (true)',
+    'get_key_by_id()');
+
+select results_eq($$select name = 'stripe2' from pgsodium.get_key_by_name('stripe2')$$,
+    'values (true)',
+    'get_key_by_name()');
+
+select set_eq($$select name from pgsodium.get_named_keys()$$,
+    ARRAY['foo', 'OPTIONAL_NAME', 'Optional Name 2', 'stripe', 'stripe2'],
+    'get_named_keys() no filter');
+
+select set_eq($$select name from pgsodium.get_named_keys('strip%')$$,
+    ARRAY['stripe', 'stripe2'],
+    'get_named_keys() with filter');
+
 SELECT * FROM finish();
 ROLLBACK;
 \endif

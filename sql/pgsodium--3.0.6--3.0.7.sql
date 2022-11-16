@@ -1,16 +1,27 @@
 
-CREATE FUNCTION pgsodium.lookup_key_by_id(id uuid) RETURNS pgsodium.valid_key
+-- This is for bw compat with old dumps that don't go through the UPDATE TO process
+ALTER TABLE pgsodium.key ADD COLUMN comment text;
+
+CREATE FUNCTION pgsodium.get_key_by_id(uuid) RETURNS pgsodium.valid_key
 AS $$
-    SELECT * from pgsodium.valid_key vk WHERE vk.id = id;
+    SELECT * from pgsodium.valid_key WHERE id = $1;
 $$
 SECURITY DEFINER
 LANGUAGE sql
 SET search_path = '';
 
 
-CREATE FUNCTION pgsodium.lookup_key_by_name(name text) RETURNS pgsodium.valid_key
+CREATE FUNCTION pgsodium.get_key_by_name(text) RETURNS pgsodium.valid_key
 AS $$
-    SELECT * from pgsodium.valid_key vk WHERE vk.name = name;
+    SELECT * from pgsodium.valid_key WHERE name = $1;
+$$
+SECURITY DEFINER
+LANGUAGE sql
+SET search_path = '';
+
+CREATE FUNCTION pgsodium.get_named_keys(filter text='%') RETURNS SETOF pgsodium.valid_key
+AS $$
+    SELECT * from pgsodium.valid_key vk WHERE vk.name ILIKE filter;
 $$
 SECURITY DEFINER
 LANGUAGE sql
@@ -104,18 +115,36 @@ END
   SET search_path='pg_catalog'
 ;
 
+CREATE FUNCTION pgsodium.enable_security_label_trigger() RETURNS void AS
+  $$
+    ALTER EVENT TRIGGER pgsodium_trg_mask_update ENABLE;
+  $$
+  LANGUAGE sql
+  SECURITY DEFINER
+  SET search_path=''
+;
+
+CREATE FUNCTION pgsodium.disable_security_label_trigger() RETURNS void AS
+  $$
+    ALTER EVENT TRIGGER pgsodium_trg_mask_update DISABLE;
+  $$
+  LANGUAGE sql
+  SECURITY DEFINER
+  SET search_path=''
+;
+
 DROP FUNCTION pgsodium.update_mask(oid, boolean);
 CREATE FUNCTION pgsodium.update_mask(target oid, debug boolean = false, view_owner name = current_user)
 RETURNS void AS
   $$
 BEGIN
-  ALTER EVENT TRIGGER pgsodium_trg_mask_update DISABLE;
+  PERFORM pgsodium.disable_security_label_trigger();
   PERFORM pgsodium.create_mask_view(objoid, objsubid, debug, view_owner)
     FROM pg_catalog.pg_seclabel
     WHERE objoid = target
         AND label ILIKE 'ENCRYPT%'
         AND provider = 'pgsodium';
-  ALTER EVENT TRIGGER pgsodium_trg_mask_update ENABLE;
+  PERFORM pgsodium.enable_security_label_trigger();
   RETURN;
 END
 $$
