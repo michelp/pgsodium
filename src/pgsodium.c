@@ -78,7 +78,7 @@ void
 _PG_init (void)
 {
 	FILE       *fp;
-	char       *secret_buf;
+	char       *secret_buf = NULL;
 	size_t      secret_len = 0;
 	size_t      char_read;
 	char       *path;
