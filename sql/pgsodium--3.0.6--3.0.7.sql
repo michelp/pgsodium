@@ -142,9 +142,7 @@ BEGIN
   PERFORM pgsodium.disable_security_label_trigger();
   PERFORM pgsodium.create_mask_view(objoid, objsubid, debug)
     FROM pg_catalog.pg_seclabel sl
-    JOIN pg_catalog.pg_class cl ON (cl.oid = sl.objoid)
     WHERE sl.objoid = target
-      AND cl.relowner = session_user::regrole::oid
       AND sl.label ILIKE 'ENCRYPT%'
       AND sl.provider = 'pgsodium';
   PERFORM pgsodium.enable_security_label_trigger();
@@ -162,8 +160,10 @@ RETURNS void AS
   $$
 BEGIN
   PERFORM pgsodium.update_mask(objoid, debug)
-    FROM pg_catalog.pg_seclabel
+    FROM pg_catalog.pg_seclabel sl
+    JOIN pg_catalog.pg_class cl ON (cl.oid = sl.objoid)
     WHERE label ilike 'ENCRYPT%'
+       AND cl.relowner = session_user::regrole::oid
        AND provider = 'pgsodium';
   RETURN;
 END
