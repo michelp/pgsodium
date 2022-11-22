@@ -80,7 +80,7 @@ COMMIT;
 \c postgres bobo
 
 BEGIN;
-SELECT plan(8);
+SELECT plan(9);
 
 SELECT pgsodium.crypto_aead_det_noncegen() nonce \gset
 SELECT pgsodium.crypto_aead_det_noncegen() nonce2 \gset
@@ -145,6 +145,12 @@ SELECT results_eq(
     $$VALUES (true)$$,
     'non-extension owner role can select from masking view');
     
+SELECT lives_ok(
+    $test$
+    select pgsodium.update_masks()
+    $test$,
+    'can update only objects owned by session user');
+
 SELECT * FROM finish();
 
 \c postgres postgres

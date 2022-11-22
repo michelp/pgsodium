@@ -29,12 +29,13 @@ SET search_path = '';
 
 
 DROP FUNCTION pgsodium.create_mask_view(oid, integer, boolean);
-CREATE FUNCTION pgsodium.create_mask_view(relid oid, subid integer, debug boolean = false, view_owner name = current_user)
+CREATE FUNCTION pgsodium.create_mask_view(relid oid, subid integer, debug boolean = false)
     RETURNS void AS
   $$
 DECLARE
   body text;
   source_name text;
+  view_owner text = session_user;
   rule pgsodium.masking_rule;
 BEGIN
   SELECT * INTO STRICT rule FROM pgsodium.masking_rule WHERE attrelid = relid and attnum = subid ;
@@ -134,16 +135,16 @@ CREATE FUNCTION pgsodium.disable_security_label_trigger() RETURNS void AS
 ;
 
 DROP FUNCTION pgsodium.update_mask(oid, boolean);
-CREATE FUNCTION pgsodium.update_mask(target oid, debug boolean = false, view_owner name = current_user)
+CREATE FUNCTION pgsodium.update_mask(target oid, debug boolean = false)
 RETURNS void AS
   $$
 BEGIN
   PERFORM pgsodium.disable_security_label_trigger();
-  PERFORM pgsodium.create_mask_view(objoid, objsubid, debug, view_owner)
-    FROM pg_catalog.pg_seclabel
-    WHERE objoid = target
-        AND label ILIKE 'ENCRYPT%'
-        AND provider = 'pgsodium';
+  PERFORM pgsodium.create_mask_view(objoid, objsubid, debug)
+    FROM pg_catalog.pg_seclabel sl
+    WHERE sl.objoid = target
+      AND sl.label ILIKE 'ENCRYPT%'
+      AND sl.provider = 'pgsodium';
   PERFORM pgsodium.enable_security_label_trigger();
   RETURN;
 END
@@ -154,13 +155,15 @@ $$
 ;
 
 DROP FUNCTION pgsodium.update_masks(boolean);
-CREATE FUNCTION pgsodium.update_masks(debug boolean = false, view_owner name = current_user)
+CREATE FUNCTION pgsodium.update_masks(debug boolean = false)
 RETURNS void AS
   $$
 BEGIN
-  PERFORM pgsodium.update_mask(objoid, debug, view_owner)
-    FROM pg_catalog.pg_seclabel
+  PERFORM pgsodium.update_mask(objoid, debug)
+    FROM pg_catalog.pg_seclabel sl
+    JOIN pg_catalog.pg_class cl ON (cl.oid = sl.objoid)
     WHERE label ilike 'ENCRYPT%'
+       AND cl.relowner = session_user::regrole::oid
        AND provider = 'pgsodium';
   RETURN;
 END

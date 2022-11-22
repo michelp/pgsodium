@@ -64,4 +64,3 @@ SELECT format('ENCRYPT WITH KEY ID %s', (pgsodium.create_key('aead-det', 'bob_ke
     AS seclabel \gset
 
 SECURITY LABEL FOR pgsodium	ON COLUMN bob_test.secret IS :'seclabel';
-
