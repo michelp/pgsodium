@@ -321,7 +321,7 @@ pgsodium_crypto_aead_det_decrypt_by_id (PG_FUNCTION_ARGS)
 		crypto_aead_det_xchacha20_ABYTES, "%s: invalid message");
 	result_len =
 		VARSIZE_ANY_EXHDR (ciphertext) - crypto_aead_det_xchacha20_ABYTES;
-	result = _pgsodium_zalloc_bytea (result_len);
+	result = _pgsodium_zalloc_bytea (result_len + VARHDRSZ);
 	key =
 		pgsodium_derive_helper (key_id, crypto_aead_det_xchacha20_KEYBYTES,
 		context);

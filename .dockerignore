@@ -1,0 +1,5 @@
+Dockerfile
+test.sh
+.dockerignore
+.git
+.cache
