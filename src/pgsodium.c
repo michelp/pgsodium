@@ -106,16 +106,27 @@ _PG_init (void)
 		"path to script that returns pgsodium root key",
 		NULL, &getkey_script, path, PGC_POSTMASTER, 0, NULL, NULL, NULL);
 
-	if (access (getkey_script, F_OK) == -1)
+	if (access (getkey_script, X_OK) == -1)
 	{
-		fprintf (stderr, "Permission denied for %s\n", getkey_script);
+		if (errno == ENOENT)
+			ereport(ERROR, (
+				errmsg("The getkey script \"%s\" does not exists.", getkey_script),
+				errdetail("The getkey script fetches the primary server secret key."),
+				errhint("You might want to create it and/or set \"pgsodium.getkey_script\" to the correct path.")));
+		else if (errno == EACCES)
+			ereport(ERROR,
+				errmsg("Permission denied for the getkey script \"%s\"",
+					getkey_script));
+		else
+			ereport(ERROR,
+				errmsg("Can not access getkey script \"%s\"", getkey_script));
 		proc_exit (1);
 	}
 
 	if ((fp = popen (getkey_script, "r")) == NULL)
 	{
-		fprintf (stderr,
-			"%s: could not launch shell command from\n", getkey_script);
+		ereport(ERROR,
+			errmsg("%s: could not launch shell command from", getkey_script));
 		proc_exit (1);
 	}
 
@@ -127,14 +138,14 @@ _PG_init (void)
 
 	if (secret_len != 64)
 	{
-		fprintf (stderr, "invalid secret key\n");
+		ereport(ERROR, errmsg("invalid secret key"));
 		proc_exit (1);
 	}
 
 	if (pclose (fp) != 0)
 	{
-		fprintf (stderr, "%s: could not close shell command\n",
-			PG_GETKEY_EXEC);
+		ereport(ERROR, errmsg( "%s: could not close shell command\n",
+			PG_GETKEY_EXEC));
 		proc_exit (1);
 	}
 	pgsodium_secret_key =
@@ -142,11 +153,12 @@ _PG_init (void)
 
 	if (pgsodium_secret_key == NULL)
 	{
-		fprintf (stderr, "%s: sodium_malloc() failed\n", PG_GETKEY_EXEC);
+		ereport(ERROR, errmsg( "%s: sodium_malloc() failed\n", PG_GETKEY_EXEC));
 		proc_exit (1);
 	}
 
 	hex_decode (secret_buf, secret_len, VARDATA (pgsodium_secret_key));
 	sodium_memzero (secret_buf, secret_len);
 	free (secret_buf);
+	elog (LOG, "pgsodium primary server secret key loaded");
 }
