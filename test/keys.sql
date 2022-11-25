@@ -2,7 +2,7 @@
 BEGIN;
 SELECT plan(4);
 
-select * from pgsodium.create_key() \gset anon_det_key_
+select * from :"extschema".create_key() \gset anon_det_key_
 
 select results_eq(
   format($$select
@@ -13,11 +13,11 @@ select results_eq(
   raw_key_nonce is null,
   name is null,
   key_type = 'aead-det'
-  from pgsodium.key where id = %L$$, :'anon_det_key_id'),
+  from %I.key where id = %L$$, :'extschema', :'anon_det_key_id'),
   'values (true, true, true, true, true, true, true)',
   'anon det key asserts');
 
-select * from pgsodium.create_key('aead-det', 'foo') \gset foo_det_key_
+select * from :"extschema".create_key('aead-det', 'foo') \gset foo_det_key_
 
 select results_eq(
   format($$select
@@ -28,13 +28,13 @@ select results_eq(
   raw_key_nonce is null,
   key_type = 'aead-det',
   name = 'foo'
-  from pgsodium.key where id = %L$$, :'foo_det_key_id'),
+  from %I.key where id = %L$$, :'extschema', :'foo_det_key_id'),
   'values (true, true, true, true, true, true, true)',
   'named det key asserts');
 
 
-select * from pgsodium.crypto_auth_hmacsha256_keygen() as ext_hmac256_key \gset
-select * from pgsodium.create_key('hmacsha256', 'stripe', raw_key:=:'ext_hmac256_key') \gset stripe_hmac256_key_
+select * from :"extschema".crypto_auth_hmacsha256_keygen() as ext_hmac256_key \gset
+select * from :"extschema".create_key('hmacsha256', 'stripe', raw_key:=:'ext_hmac256_key') \gset stripe_hmac256_key_
 
 select results_eq(
   format($$select
@@ -45,11 +45,11 @@ select results_eq(
   raw_key_nonce is not null,
   name = 'stripe',
   key_type = 'hmacsha256'
-  from pgsodium.key where id = %L$$,:'stripe_hmac256_key_id'),
+  from %I.key where id = %L$$, :'extschema', :'stripe_hmac256_key_id'),
   'values (true, true, true, true, true, true, true)',
   'named ext key asserts');
 
-select * from pgsodium.create_key(
+select * from :"extschema".create_key(
      'hmacsha256', 'stripe2', parent_key:=:'anon_det_key_id', raw_key:=:'ext_hmac256_key') \gset stripe_hmac256_key_
 
 select results_eq(
@@ -61,24 +61,24 @@ select results_eq(
   raw_key_nonce is not null,
   name = 'stripe2',
   key_type = 'hmacsha256'
-  from pgsodium.key where id = %L$$, :'anon_det_key_id', :'stripe_hmac256_key_id'),
+  from %I.key where id = %L$$, :'anon_det_key_id', :'extschema', :'stripe_hmac256_key_id'),
   'values (true, true, true, true, true, true, true)',
   'ext key asserts');
 
 select results_eq(
-    format($$select name = 'stripe2' from pgsodium.get_key_by_id(%L)$$, :'stripe_hmac256_key_id'),
+    format($$select name = 'stripe2' from %I.get_key_by_id(%L)$$, :'extschema', :'stripe_hmac256_key_id'),
     'values (true)',
     'get_key_by_id()');
 
-select results_eq($$select name = 'stripe2' from pgsodium.get_key_by_name('stripe2')$$,
+select results_eq(format($$select name = 'stripe2' from %I.get_key_by_name('stripe2')$$, :'extschema'),
     'values (true)',
     'get_key_by_name()');
 
-select set_eq($$select name from pgsodium.get_named_keys()$$,
+select set_eq(format($$select name from %I.get_named_keys()$$, :'extschema'),
     ARRAY['foo', 'OPTIONAL_NAME', 'Optional Name 2', 'stripe', 'stripe2'],
     'get_named_keys() no filter');
 
-select set_eq($$select name from pgsodium.get_named_keys('strip%')$$,
+select set_eq(format($$select name from %I.get_named_keys('strip%%')$$, :'extschema'),
     ARRAY['stripe', 'stripe2'],
     'get_named_keys() with filter');
 

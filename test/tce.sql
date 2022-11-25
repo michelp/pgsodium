@@ -2,7 +2,7 @@
 BEGIN;
 SELECT plan(6);
 
-CREATE SCHEMA private;
+CREATE SCHEMA IF NOT EXISTS private;
 
 SELECT throws_ok(
   $test$
@@ -34,11 +34,11 @@ SELECT lives_ok(
   'tables can be labeled with alternate view');
 
 -- Create a key id to use in the tests below
-SELECT id AS secret_key_id FROM pgsodium.create_key('aead-det', 'OPTIONAL_NAME') \gset
+SELECT id AS secret_key_id FROM :"extschema".create_key('aead-det', 'OPTIONAL_NAME') \gset
 
 -- Create a key id to use in the tests below
 SELECT id AS secret2_key_id
-  FROM pgsodium.create_key('aead-det', 'Optional Name 2') \gset
+  FROM :"extschema".create_key('aead-det', 'Optional Name 2') \gset
 
 SELECT lives_ok(
   format($test$
@@ -56,7 +56,7 @@ SELECT lives_ok(
 
 CREATE ROLE bobo with login password 'foo';
 
-GRANT SELECT ON pgsodium.key TO pgsodium_keyholder;
+GRANT SELECT ON :"extschema".key TO pgsodium_keyholder;
 GRANT ALL ON SCHEMA private to bobo;
 GRANT SELECT ON ALL TABLES IN SCHEMA private to bobo;
 GRANT USAGE ON ALL SEQUENCES IN SCHEMA private TO bobo;
@@ -77,13 +77,13 @@ SELECT lives_ok(
 SELECT * FROM finish();
 COMMIT;
 
-\c postgres bobo
+\c - bobo
 
 BEGIN;
 SELECT plan(9);
 
-SELECT pgsodium.crypto_aead_det_noncegen() nonce \gset
-SELECT pgsodium.crypto_aead_det_noncegen() nonce2 \gset
+SELECT :"extschema".crypto_aead_det_noncegen() nonce \gset
+SELECT :"extschema".crypto_aead_det_noncegen() nonce2 \gset
 
 SELECT lives_ok(
   format(
@@ -124,7 +124,7 @@ SELECT lives_ok(
   $test$,
   'non extension owner can label a table');
 
-SELECT id AS bobo_key_id FROM pgsodium.create_key('aead-det', 'Bobo key') \gset
+SELECT id AS bobo_key_id FROM :"extschema".create_key('aead-det', 'Bobo key') \gset
 
 SELECT lives_ok(
   format($test$
@@ -146,13 +146,11 @@ SELECT results_eq(
     'non-extension owner role can select from masking view');
     
 SELECT lives_ok(
-    $test$
-    select pgsodium.update_masks()
-    $test$,
+    format($test$ select %I.update_masks()$test$, :'extschema'),
     'can update only objects owned by session user');
 
 SELECT * FROM finish();
 
-\c postgres postgres
+\c - postgres
 DROP SCHEMA private CASCADE;
 \endif

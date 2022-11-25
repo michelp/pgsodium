@@ -539,7 +539,7 @@ $$
   SET search_path='pg_catalog'
 ;
 
-CREATE EVENT TRIGGER @extschema@_trg_mask_update
+CREATE EVENT TRIGGER pgsodium_trg_mask_update
   ON ddl_command_end
   WHEN TAG IN (
     'ALTER TABLE',

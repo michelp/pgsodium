@@ -1,44 +1,44 @@
 
 -- This is for bw compat with old dumps that don't go through the UPDATE TO process
-ALTER TABLE pgsodium.key ADD COLUMN comment text;
+ALTER TABLE @extschema@.key ADD COLUMN comment text;
 
-CREATE FUNCTION pgsodium.get_key_by_id(uuid) RETURNS pgsodium.valid_key
+CREATE FUNCTION @extschema@.get_key_by_id(uuid) RETURNS @extschema@.valid_key
 AS $$
-    SELECT * from pgsodium.valid_key WHERE id = $1;
+    SELECT * from @extschema@.valid_key WHERE id = $1;
 $$
 SECURITY DEFINER
 LANGUAGE sql
 SET search_path = '';
 
 
-CREATE FUNCTION pgsodium.get_key_by_name(text) RETURNS pgsodium.valid_key
+CREATE FUNCTION @extschema@.get_key_by_name(text) RETURNS @extschema@.valid_key
 AS $$
-    SELECT * from pgsodium.valid_key WHERE name = $1;
+    SELECT * from @extschema@.valid_key WHERE name = $1;
 $$
 SECURITY DEFINER
 LANGUAGE sql
 SET search_path = '';
 
-CREATE FUNCTION pgsodium.get_named_keys(filter text='%') RETURNS SETOF pgsodium.valid_key
+CREATE FUNCTION @extschema@.get_named_keys(filter text='%') RETURNS SETOF @extschema@.valid_key
 AS $$
-    SELECT * from pgsodium.valid_key vk WHERE vk.name ILIKE filter;
+    SELECT * from @extschema@.valid_key vk WHERE vk.name ILIKE filter;
 $$
 SECURITY DEFINER
 LANGUAGE sql
 SET search_path = '';
 
 
-DROP FUNCTION pgsodium.create_mask_view(oid, integer, boolean);
-CREATE FUNCTION pgsodium.create_mask_view(relid oid, subid integer, debug boolean = false)
+DROP FUNCTION @extschema@.create_mask_view(oid, integer, boolean);
+CREATE FUNCTION @extschema@.create_mask_view(relid oid, subid integer, debug boolean = false)
     RETURNS void AS
   $$
 DECLARE
   body text;
   source_name text;
   view_owner text = session_user;
-  rule pgsodium.masking_rule;
+  rule @extschema@.masking_rule;
 BEGIN
-  SELECT * INTO STRICT rule FROM pgsodium.masking_rule WHERE attrelid = relid and attnum = subid ;
+  SELECT * INTO STRICT rule FROM @extschema@.masking_rule WHERE attrelid = relid and attnum = subid ;
 
   source_name := relid::regclass;
 
@@ -51,7 +51,7 @@ BEGIN
     $c$,
     rule.view_name,
     rule.view_name,
-    pgsodium.decrypted_columns(relid),
+    @extschema@.decrypted_columns(relid),
     source_name,
     rule.view_name,
     view_owner
@@ -88,7 +88,7 @@ BEGIN
     rule.relname,
     rule.relnamespace,
     rule.relname,
-    pgsodium.encrypted_columns(relid),
+    @extschema@.encrypted_columns(relid),
     rule.relnamespace,
     rule.relname,
     view_owner,
@@ -105,8 +105,8 @@ BEGIN
   END IF;
   EXECUTE body;
 
-  PERFORM pgsodium.mask_role(oid::regrole, source_name, rule.view_name)
-  FROM pg_roles WHERE pgsodium.has_mask(oid::regrole, source_name);
+  PERFORM @extschema@.mask_role(oid::regrole, source_name, rule.view_name)
+  FROM pg_roles WHERE @extschema@.has_mask(oid::regrole, source_name);
 
   RETURN;
 END
@@ -116,7 +116,7 @@ END
   SET search_path='pg_catalog'
 ;
 
-CREATE FUNCTION pgsodium.enable_security_label_trigger() RETURNS void AS
+CREATE FUNCTION @extschema@.enable_security_label_trigger() RETURNS void AS
   $$
     ALTER EVENT TRIGGER pgsodium_trg_mask_update ENABLE;
   $$
@@ -125,7 +125,7 @@ CREATE FUNCTION pgsodium.enable_security_label_trigger() RETURNS void AS
   SET search_path=''
 ;
 
-CREATE FUNCTION pgsodium.disable_security_label_trigger() RETURNS void AS
+CREATE FUNCTION @extschema@.disable_security_label_trigger() RETURNS void AS
   $$
     ALTER EVENT TRIGGER pgsodium_trg_mask_update DISABLE;
   $$
@@ -134,18 +134,18 @@ CREATE FUNCTION pgsodium.disable_security_label_trigger() RETURNS void AS
   SET search_path=''
 ;
 
-DROP FUNCTION pgsodium.update_mask(oid, boolean);
-CREATE FUNCTION pgsodium.update_mask(target oid, debug boolean = false)
+DROP FUNCTION @extschema@.update_mask(oid, boolean);
+CREATE FUNCTION @extschema@.update_mask(target oid, debug boolean = false)
 RETURNS void AS
   $$
 BEGIN
-  PERFORM pgsodium.disable_security_label_trigger();
-  PERFORM pgsodium.create_mask_view(objoid, objsubid, debug)
+  PERFORM @extschema@.disable_security_label_trigger();
+  PERFORM @extschema@.create_mask_view(objoid, objsubid, debug)
     FROM pg_catalog.pg_seclabel sl
     WHERE sl.objoid = target
       AND sl.label ILIKE 'ENCRYPT%'
       AND sl.provider = 'pgsodium';
-  PERFORM pgsodium.enable_security_label_trigger();
+  PERFORM @extschema@.enable_security_label_trigger();
   RETURN;
 END
 $$
@@ -154,12 +154,12 @@ $$
   SET search_path=''
 ;
 
-DROP FUNCTION pgsodium.update_masks(boolean);
-CREATE FUNCTION pgsodium.update_masks(debug boolean = false)
+DROP FUNCTION @extschema@.update_masks(boolean);
+CREATE FUNCTION @extschema@.update_masks(debug boolean = false)
 RETURNS void AS
   $$
 BEGIN
-  PERFORM pgsodium.update_mask(objoid, debug)
+  PERFORM @extschema@.update_mask(objoid, debug)
     FROM pg_catalog.pg_seclabel sl
     JOIN pg_catalog.pg_class cl ON (cl.oid = sl.objoid)
     WHERE label ilike 'ENCRYPT%'
@@ -172,20 +172,20 @@ $$
   SET search_path=''
 ;
 
-CREATE OR REPLACE FUNCTION pgsodium.crypto_aead_det_encrypt(message bytea, additional bytea, key_uuid uuid, nonce bytea)
+CREATE OR REPLACE FUNCTION @extschema@.crypto_aead_det_encrypt(message bytea, additional bytea, key_uuid uuid, nonce bytea)
   RETURNS bytea AS
 $$
 DECLARE
-  key pgsodium.decrypted_key;
+  key @extschema@.decrypted_key;
 BEGIN
   SELECT * INTO STRICT key
-    FROM pgsodium.decrypted_key v
+    FROM @extschema@.decrypted_key v
   WHERE id = key_uuid AND key_type = 'aead-det';
 
   IF key.decrypted_raw_key IS NOT NULL THEN
-    RETURN pgsodium.crypto_aead_det_encrypt(message, additional, key.decrypted_raw_key, nonce);
+    RETURN @extschema@.crypto_aead_det_encrypt(message, additional, key.decrypted_raw_key, nonce);
   END IF;
-  RETURN pgsodium.crypto_aead_det_encrypt(message, additional, key.key_id, key.key_context, nonce);
+  RETURN @extschema@.crypto_aead_det_encrypt(message, additional, key.key_id, key.key_context, nonce);
 END;
   $$
   LANGUAGE plpgsql
@@ -202,7 +202,7 @@ CREATE OR REPLACE FUNCTION @extschema@.mask_role(masked_role regrole, source_nam
   source_schema REGNAMESPACE = (regexp_split_to_array(source_name, '\.'))[1];
 BEGIN
   EXECUTE format(
-    'GRANT SELECT ON pgsodium.key TO %s',
+    'GRANT SELECT ON @extschema@.key TO %s',
     masked_role);
 
   EXECUTE format(

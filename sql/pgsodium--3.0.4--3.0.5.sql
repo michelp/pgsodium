@@ -1,68 +1,68 @@
 
-ALTER DEFAULT PRIVILEGES IN SCHEMA pgsodium_masks GRANT ALL ON TABLES TO pgsodium_keyiduser;
-ALTER DEFAULT PRIVILEGES IN SCHEMA pgsodium_masks GRANT ALL ON SEQUENCES TO pgsodium_keyiduser;
-ALTER DEFAULT PRIVILEGES IN SCHEMA pgsodium_masks GRANT ALL ON FUNCTIONS TO pgsodium_keyiduser;
+ALTER DEFAULT PRIVILEGES IN SCHEMA @extschema@_masks GRANT ALL ON TABLES TO pgsodium_keyiduser;
+ALTER DEFAULT PRIVILEGES IN SCHEMA @extschema@_masks GRANT ALL ON SEQUENCES TO pgsodium_keyiduser;
+ALTER DEFAULT PRIVILEGES IN SCHEMA @extschema@_masks GRANT ALL ON FUNCTIONS TO pgsodium_keyiduser;
 
 -- pgsodium_keyiduser can use all tables and sequences (functions are granted individually)
-ALTER DEFAULT PRIVILEGES IN SCHEMA pgsodium REVOKE ALL ON TABLES FROM pgsodium_keyiduser;
-ALTER DEFAULT PRIVILEGES IN SCHEMA pgsodium REVOKE ALL ON SEQUENCES FROM pgsodium_keyiduser;
+ALTER DEFAULT PRIVILEGES IN SCHEMA @extschema@ REVOKE ALL ON TABLES FROM pgsodium_keyiduser;
+ALTER DEFAULT PRIVILEGES IN SCHEMA @extschema@ REVOKE ALL ON SEQUENCES FROM pgsodium_keyiduser;
 
-ALTER DEFAULT PRIVILEGES IN SCHEMA pgsodium GRANT ALL ON TABLES TO pgsodium_keyholder;
-ALTER DEFAULT PRIVILEGES IN SCHEMA pgsodium GRANT ALL ON SEQUENCES TO pgsodium_keyholder;
+ALTER DEFAULT PRIVILEGES IN SCHEMA @extschema@ GRANT ALL ON TABLES TO pgsodium_keyholder;
+ALTER DEFAULT PRIVILEGES IN SCHEMA @extschema@ GRANT ALL ON SEQUENCES TO pgsodium_keyholder;
 
-REVOKE ALL ON ALL TABLES IN SCHEMA pgsodium FROM pgsodium_keyiduser;
-REVOKE ALL ON ALL SEQUENCES IN SCHEMA pgsodium FROM pgsodium_keyiduser;
+REVOKE ALL ON ALL TABLES IN SCHEMA @extschema@ FROM pgsodium_keyiduser;
+REVOKE ALL ON ALL SEQUENCES IN SCHEMA @extschema@ FROM pgsodium_keyiduser;
 
 GRANT pgsodium_keyholder TO pgsodium_keymaker;  -- deprecating keyholder
 
-GRANT ALL ON ALL TABLES IN SCHEMA pgsodium TO pgsodium_keymaker;
-GRANT ALL ON ALL SEQUENCES IN SCHEMA pgsodium TO pgsodium_keymaker;
+GRANT ALL ON ALL TABLES IN SCHEMA @extschema@ TO pgsodium_keymaker;
+GRANT ALL ON ALL SEQUENCES IN SCHEMA @extschema@ TO pgsodium_keymaker;
 
-GRANT SELECT ON pgsodium.valid_key TO pgsodium_keyiduser;
+GRANT SELECT ON @extschema@.valid_key TO pgsodium_keyiduser;
 
-DROP VIEW pgsodium.valid_key;
-DROP FUNCTION pgsodium.create_key(text, pgsodium.key_type, bigint, bytea, timestamp, jsonb);
-DELETE FROM pgsodium.key where status = 'default';
+DROP VIEW @extschema@.valid_key;
+DROP FUNCTION @extschema@.create_key(text, @extschema@.key_type, bigint, bytea, timestamp, jsonb);
+DELETE FROM @extschema@.key where status = 'default';
 
-ALTER TYPE pgsodium.key_type ADD VALUE 'hmacsha512';
-ALTER TYPE pgsodium.key_type ADD VALUE 'hmacsha256';
-ALTER TYPE pgsodium.key_type ADD VALUE 'auth';
-ALTER TYPE pgsodium.key_type ADD VALUE 'shorthash';
-ALTER TYPE pgsodium.key_type ADD VALUE 'generichash';
-ALTER TYPE pgsodium.key_type ADD VALUE 'kdf';
-ALTER TYPE pgsodium.key_type ADD VALUE 'secretbox';
-ALTER TYPE pgsodium.key_type ADD VALUE 'secretstream';
-ALTER TYPE pgsodium.key_type ADD VALUE 'stream_xchacha20';
+ALTER TYPE @extschema@.key_type ADD VALUE 'hmacsha512';
+ALTER TYPE @extschema@.key_type ADD VALUE 'hmacsha256';
+ALTER TYPE @extschema@.key_type ADD VALUE 'auth';
+ALTER TYPE @extschema@.key_type ADD VALUE 'shorthash';
+ALTER TYPE @extschema@.key_type ADD VALUE 'generichash';
+ALTER TYPE @extschema@.key_type ADD VALUE 'kdf';
+ALTER TYPE @extschema@.key_type ADD VALUE 'secretbox';
+ALTER TYPE @extschema@.key_type ADD VALUE 'secretstream';
+ALTER TYPE @extschema@.key_type ADD VALUE 'stream_xchacha20';
 
-ALTER TABLE pgsodium.key ADD COLUMN raw_key bytea;
-ALTER TABLE pgsodium.key ADD COLUMN raw_key_nonce bytea;
-ALTER TABLE pgsodium.key ADD COLUMN parent_key uuid REFERENCES pgsodium.key(id);
-ALTER TABLE pgsodium.key RENAME comment TO name;
-ALTER TABLE pgsodium.key RENAME user_data TO associated_data;
-ALTER TABLE pgsodium.key ALTER COLUMN associated_data TYPE text USING '';
-ALTER TABLE pgsodium.key ALTER COLUMN associated_data SET DEFAULT 'associated';
-ALTER TABLE pgsodium.key ALTER COLUMN key_id DROP NOT NULL;
-ALTER TABLE pgsodium.key ALTER COLUMN key_context DROP NOT NULL;
-ALTER TABLE pgsodium.key ALTER COLUMN expires TYPE timestamptz USING expires at time zone 'utc';
-ALTER TABLE pgsodium.key ALTER COLUMN created TYPE timestamptz USING created at time zone 'utc';
+ALTER TABLE @extschema@.key ADD COLUMN raw_key bytea;
+ALTER TABLE @extschema@.key ADD COLUMN raw_key_nonce bytea;
+ALTER TABLE @extschema@.key ADD COLUMN parent_key uuid REFERENCES @extschema@.key(id);
+ALTER TABLE @extschema@.key RENAME comment TO name;
+ALTER TABLE @extschema@.key RENAME user_data TO associated_data;
+ALTER TABLE @extschema@.key ALTER COLUMN associated_data TYPE text USING '';
+ALTER TABLE @extschema@.key ALTER COLUMN associated_data SET DEFAULT 'associated';
+ALTER TABLE @extschema@.key ALTER COLUMN key_id DROP NOT NULL;
+ALTER TABLE @extschema@.key ALTER COLUMN key_context DROP NOT NULL;
+ALTER TABLE @extschema@.key ALTER COLUMN expires TYPE timestamptz USING expires at time zone 'utc';
+ALTER TABLE @extschema@.key ALTER COLUMN created TYPE timestamptz USING created at time zone 'utc';
 
-ALTER TABLE pgsodium.key ADD CONSTRAINT pgsodium_key_unique_name UNIQUE (name);
-ALTER TABLE pgsodium.key ADD CONSTRAINT pgsodium_raw CHECK (
+ALTER TABLE @extschema@.key ADD CONSTRAINT pgsodium_key_unique_name UNIQUE (name);
+ALTER TABLE @extschema@.key ADD CONSTRAINT pgsodium_raw CHECK (
   CASE WHEN raw_key IS NOT NULL
     THEN key_id IS NULL     AND key_context IS NULL     AND parent_key IS NOT NULL
     ELSE key_id IS NOT NULL AND key_context IS NOT NULL AND parent_key IS NULL
   END);
 
-CREATE OR REPLACE VIEW pgsodium.valid_key AS
+CREATE OR REPLACE VIEW @extschema@.valid_key AS
   SELECT id, name, status, key_type, key_id, key_context, created, expires, associated_data
-    FROM pgsodium.key
+    FROM @extschema@.key
    WHERE  status IN ('valid', 'default')
      AND CASE WHEN expires IS NULL THEN true ELSE expires < now() END;
 
-GRANT SELECT ON pgsodium.valid_key TO pgsodium_keyiduser;
+GRANT SELECT ON @extschema@.valid_key TO pgsodium_keyiduser;
 
-CREATE FUNCTION pgsodium.create_key(
-  key_type pgsodium.key_type = 'aead-det',
+CREATE FUNCTION @extschema@.create_key(
+  key_type @extschema@.key_type = 'aead-det',
   name text = NULL,
   raw_key bytea = NULL,
   raw_key_nonce bytea = NULL,
@@ -70,17 +70,17 @@ CREATE FUNCTION pgsodium.create_key(
   key_context bytea = 'pgsodium',
   expires timestamptz = NULL,
   associated_data text = ''
-) RETURNS pgsodium.valid_key
+) RETURNS @extschema@.valid_key
 AS $$
 DECLARE
-  new_key pgsodium.key;
-  valid_key pgsodium.valid_key;
+  new_key @extschema@.key;
+  valid_key @extschema@.valid_key;
 BEGIN
-  INSERT INTO pgsodium.key (key_id, key_context, key_type, raw_key,
+  INSERT INTO @extschema@.key (key_id, key_context, key_type, raw_key,
   raw_key_nonce, parent_key, expires, name, associated_data)
       VALUES (
         CASE WHEN raw_key IS NULL THEN
-            NEXTVAL('pgsodium.key_key_id_seq'::REGCLASS)
+            NEXTVAL('@extschema@.key_key_id_seq'::REGCLASS)
         ELSE NULL END,
         CASE WHEN raw_key IS NULL THEN
             key_context
@@ -88,16 +88,16 @@ BEGIN
         key_type,
         raw_key,
         CASE WHEN raw_key IS NOT NULL THEN
-            COALESCE(raw_key_nonce, pgsodium.crypto_aead_det_noncegen())
+            COALESCE(raw_key_nonce, @extschema@.crypto_aead_det_noncegen())
         ELSE NULL END,
         CASE WHEN parent_key IS NULL and raw_key IS NOT NULL THEN
-            (pgsodium.create_key('aead-det')).id
+            (@extschema@.create_key('aead-det')).id
         ELSE parent_key END,
         expires,
         name,
         associated_data)
     RETURNING * INTO new_key;
-  SELECT * INTO valid_key FROM pgsodium.valid_key WHERE id = new_key.id;
+  SELECT * INTO valid_key FROM @extschema@.valid_key WHERE id = new_key.id;
   RETURN valid_key;
 END;
 $$
@@ -105,25 +105,25 @@ LANGUAGE plpgsql
 SECURITY DEFINER
 SET search_path = '';
 
-ALTER FUNCTION pgsodium.create_key OWNER TO pgsodium_keymaker;
-GRANT EXECUTE ON FUNCTION pgsodium.create_key TO pgsodium_keyiduser;
+ALTER FUNCTION @extschema@.create_key OWNER TO pgsodium_keymaker;
+GRANT EXECUTE ON FUNCTION @extschema@.create_key TO pgsodium_keyiduser;
 
 -- HMAC external key support
 
-CREATE OR REPLACE FUNCTION pgsodium.crypto_auth_hmacsha256(message bytea, key_uuid uuid)
+CREATE OR REPLACE FUNCTION @extschema@.crypto_auth_hmacsha256(message bytea, key_uuid uuid)
   RETURNS bytea AS
 $$
 DECLARE
-  key pgsodium.decrypted_key;
+  key @extschema@.decrypted_key;
 BEGIN
   SELECT * INTO STRICT key
-    FROM pgsodium.decrypted_key v
+    FROM @extschema@.decrypted_key v
   WHERE id = key_uuid AND key_type = 'hmacsha256';
 
   IF key.decrypted_raw_key IS NOT NULL THEN
-    RETURN pgsodium.crypto_auth_hmacsha256(message, key.decrypted_raw_key);
+    RETURN @extschema@.crypto_auth_hmacsha256(message, key.decrypted_raw_key);
   END IF;
-  RETURN pgsodium.crypto_auth_hmacsha256(message, key.key_id, key.key_context);
+  RETURN @extschema@.crypto_auth_hmacsha256(message, key.key_id, key.key_context);
 END;
 
 $$
@@ -132,22 +132,22 @@ STRICT STABLE
 SECURITY DEFINER
 SET search_path = '';
 
-ALTER FUNCTION pgsodium.crypto_auth_hmacsha256(bytea, uuid) OWNER TO pgsodium_keymaker;
+ALTER FUNCTION @extschema@.crypto_auth_hmacsha256(bytea, uuid) OWNER TO pgsodium_keymaker;
 
-CREATE OR REPLACE FUNCTION pgsodium.crypto_auth_hmacsha256_verify(signature bytea, message bytea, key_uuid uuid)
+CREATE OR REPLACE FUNCTION @extschema@.crypto_auth_hmacsha256_verify(signature bytea, message bytea, key_uuid uuid)
   RETURNS boolean AS
 $$
 DECLARE
-  key pgsodium.decrypted_key;
+  key @extschema@.decrypted_key;
 BEGIN
   SELECT * INTO STRICT key
-    FROM pgsodium.decrypted_key v
+    FROM @extschema@.decrypted_key v
   WHERE id = key_uuid AND key_type = 'hmacsha256';
 
   IF key.decrypted_raw_key IS NOT NULL THEN
-    RETURN pgsodium.crypto_auth_hmacsha256_verify(signature, message, key.decrypted_raw_key);
+    RETURN @extschema@.crypto_auth_hmacsha256_verify(signature, message, key.decrypted_raw_key);
   END IF;
-  RETURN pgsodium.crypto_auth_hmacsha256_verify(signature, message, key.key_id, key.key_context);
+  RETURN @extschema@.crypto_auth_hmacsha256_verify(signature, message, key.key_id, key.key_context);
 END;
 
 $$
@@ -156,22 +156,22 @@ STRICT STABLE
 SECURITY DEFINER
 SET search_path = '';
 
-ALTER FUNCTION pgsodium.crypto_auth_hmacsha256_verify(bytea, bytea, uuid) OWNER TO pgsodium_keymaker;
+ALTER FUNCTION @extschema@.crypto_auth_hmacsha256_verify(bytea, bytea, uuid) OWNER TO pgsodium_keymaker;
 
-CREATE OR REPLACE FUNCTION pgsodium.crypto_auth_hmacsha512(message bytea, key_uuid uuid)
+CREATE OR REPLACE FUNCTION @extschema@.crypto_auth_hmacsha512(message bytea, key_uuid uuid)
   RETURNS bytea AS
 $$
 DECLARE
-  key pgsodium.decrypted_key;
+  key @extschema@.decrypted_key;
 BEGIN
   SELECT * INTO STRICT key
-    FROM pgsodium.decrypted_key v
+    FROM @extschema@.decrypted_key v
   WHERE id = key_uuid AND key_type = 'hmacsha512';
 
   IF key.decrypted_raw_key IS NOT NULL THEN
-    RETURN pgsodium.crypto_auth_hmacsha512(message, key.decrypted_raw_key);
+    RETURN @extschema@.crypto_auth_hmacsha512(message, key.decrypted_raw_key);
   END IF;
-  RETURN pgsodium.crypto_auth_hmacsha512(message, key.key_id, key.key_context);
+  RETURN @extschema@.crypto_auth_hmacsha512(message, key.key_id, key.key_context);
 END;
 
 $$
@@ -180,22 +180,22 @@ STRICT STABLE
 SECURITY DEFINER
 SET search_path = '';
 
-ALTER FUNCTION pgsodium.crypto_auth_hmacsha512(bytea, uuid) OWNER TO pgsodium_keymaker;
+ALTER FUNCTION @extschema@.crypto_auth_hmacsha512(bytea, uuid) OWNER TO pgsodium_keymaker;
 
-CREATE OR REPLACE FUNCTION pgsodium.crypto_auth_hmacsha512_verify(signature bytea, message bytea, key_uuid uuid)
+CREATE OR REPLACE FUNCTION @extschema@.crypto_auth_hmacsha512_verify(signature bytea, message bytea, key_uuid uuid)
   RETURNS boolean AS
 $$
 DECLARE
-  key pgsodium.decrypted_key;
+  key @extschema@.decrypted_key;
 BEGIN
   SELECT * INTO STRICT key
-    FROM pgsodium.decrypted_key v
+    FROM @extschema@.decrypted_key v
   WHERE id = key_uuid AND key_type = 'hmacsha512';
 
   IF key.decrypted_raw_key IS NOT NULL THEN
-    RETURN pgsodium.crypto_auth_hmacsha512_verify(signature, message, key.decrypted_raw_key);
+    RETURN @extschema@.crypto_auth_hmacsha512_verify(signature, message, key.decrypted_raw_key);
   END IF;
-  RETURN pgsodium.crypto_auth_hmacsha512_verify(signature, message, key.key_id, key.key_context);
+  RETURN @extschema@.crypto_auth_hmacsha512_verify(signature, message, key.key_id, key.key_context);
 END;
 
 $$
@@ -204,24 +204,24 @@ STRICT STABLE
 SECURITY DEFINER
 SET search_path = '';
 
-ALTER FUNCTION pgsodium.crypto_auth_hmacsha512_verify(bytea, bytea, uuid) OWNER TO pgsodium_keymaker;
+ALTER FUNCTION @extschema@.crypto_auth_hmacsha512_verify(bytea, bytea, uuid) OWNER TO pgsodium_keymaker;
 
 -- Auth
 
-CREATE FUNCTION pgsodium.crypto_auth(message bytea, key_uuid uuid)
+CREATE FUNCTION @extschema@.crypto_auth(message bytea, key_uuid uuid)
   RETURNS bytea AS
 $$
 DECLARE
-  key pgsodium.decrypted_key;
+  key @extschema@.decrypted_key;
 BEGIN
   SELECT * INTO STRICT key
-    FROM pgsodium.decrypted_key v
+    FROM @extschema@.decrypted_key v
   WHERE id = key_uuid AND key_type = 'auth';
 
   IF key.decrypted_raw_key IS NOT NULL THEN
-    RETURN pgsodium.crypto_auth(message, key.decrypted_raw_key);
+    RETURN @extschema@.crypto_auth(message, key.decrypted_raw_key);
   END IF;
-  RETURN pgsodium.crypto_auth(message, key.key_id, key.key_context);
+  RETURN @extschema@.crypto_auth(message, key.key_id, key.key_context);
 END;
 
 $$
@@ -230,22 +230,22 @@ STRICT STABLE
 SECURITY DEFINER
 SET search_path = '';
 
-ALTER FUNCTION pgsodium.crypto_auth(bytea, uuid) OWNER TO pgsodium_keymaker;
+ALTER FUNCTION @extschema@.crypto_auth(bytea, uuid) OWNER TO pgsodium_keymaker;
 
 CREATE FUNCTION crypto_auth_verify(mac bytea, message bytea, key_uuid uuid)
   RETURNS boolean AS
 $$
 DECLARE
-  key pgsodium.decrypted_key;
+  key @extschema@.decrypted_key;
 BEGIN
   SELECT * INTO STRICT key
-    FROM pgsodium.decrypted_key v
+    FROM @extschema@.decrypted_key v
   WHERE id = key_uuid AND key_type = 'auth';
 
   IF key.decrypted_raw_key IS NOT NULL THEN
-    RETURN pgsodium.crypto_auth_verify(mac, message, key.decrypted_raw_key);
+    RETURN @extschema@.crypto_auth_verify(mac, message, key.decrypted_raw_key);
   END IF;
-  RETURN pgsodium.crypto_auth_verify(mac, message, key.key_id, key.key_context);
+  RETURN @extschema@.crypto_auth_verify(mac, message, key.key_id, key.key_context);
 END;
 
 $$
@@ -254,24 +254,24 @@ STRICT STABLE
 SECURITY DEFINER
 SET search_path = '';
 
-ALTER FUNCTION pgsodium.crypto_auth_verify(bytea, bytea, uuid) OWNER TO pgsodium_keymaker;
+ALTER FUNCTION @extschema@.crypto_auth_verify(bytea, bytea, uuid) OWNER TO pgsodium_keymaker;
 
 -- Hash
 
-CREATE FUNCTION pgsodium.crypto_shorthash(message bytea, key_uuid uuid)
+CREATE FUNCTION @extschema@.crypto_shorthash(message bytea, key_uuid uuid)
   RETURNS bytea AS
 $$
 DECLARE
-  key pgsodium.decrypted_key;
+  key @extschema@.decrypted_key;
 BEGIN
   SELECT * INTO STRICT key
-    FROM pgsodium.decrypted_key v
+    FROM @extschema@.decrypted_key v
   WHERE id = key_uuid AND key_type = 'shorthash';
 
   IF key.decrypted_raw_key IS NOT NULL THEN
-    RETURN pgsodium.crypto_shorthash(message, key.decrypted_raw_key);
+    RETURN @extschema@.crypto_shorthash(message, key.decrypted_raw_key);
   END IF;
-  RETURN pgsodium.crypto_shorthash(message, key.key_id, key.key_context);
+  RETURN @extschema@.crypto_shorthash(message, key.key_id, key.key_context);
 END;
 
 $$
@@ -280,22 +280,22 @@ STRICT STABLE
 SECURITY DEFINER
 SET search_path = '';
 
-ALTER FUNCTION pgsodium.crypto_shorthash(bytea, uuid) OWNER TO pgsodium_keymaker;
+ALTER FUNCTION @extschema@.crypto_shorthash(bytea, uuid) OWNER TO pgsodium_keymaker;
 
-CREATE FUNCTION pgsodium.crypto_generichash(message bytea, key_uuid uuid)
+CREATE FUNCTION @extschema@.crypto_generichash(message bytea, key_uuid uuid)
   RETURNS bytea AS
 $$
 DECLARE
-  key pgsodium.decrypted_key;
+  key @extschema@.decrypted_key;
 BEGIN
   SELECT * INTO STRICT key
-    FROM pgsodium.decrypted_key v
+    FROM @extschema@.decrypted_key v
   WHERE id = key_uuid AND key_type = 'generichash';
 
   IF key.decrypted_raw_key IS NOT NULL THEN
-    RETURN pgsodium.crypto_generichash(message, key.decrypted_raw_key);
+    RETURN @extschema@.crypto_generichash(message, key.decrypted_raw_key);
   END IF;
-  RETURN pgsodium.crypto_generichash(message, key.key_id, key.key_context);
+  RETURN @extschema@.crypto_generichash(message, key.key_id, key.key_context);
 END;
 
 $$
@@ -304,7 +304,7 @@ STRICT STABLE
 SECURITY DEFINER
 SET search_path = '';
 
-ALTER FUNCTION pgsodium.crypto_generichash(bytea, uuid) OWNER TO pgsodium_keymaker;
+ALTER FUNCTION @extschema@.crypto_generichash(bytea, uuid) OWNER TO pgsodium_keymaker;
 
 -- kdf
 
@@ -312,16 +312,16 @@ CREATE FUNCTION crypto_kdf_derive_from_key(subkey_size integer, subkey_id bigint
 RETURNS bytea
 AS $$
 DECLARE
-  key pgsodium.decrypted_key;
+  key @extschema@.decrypted_key;
 BEGIN
   SELECT * INTO STRICT key
-    FROM pgsodium.decrypted_key v
+    FROM @extschema@.decrypted_key v
   WHERE id = primary_key AND key_type = 'kdf';
 
   IF key.decrypted_raw_key IS NOT NULL THEN
-    RETURN pgsodium.crypto_kdf_derive_from_key(subkey_size, subkey_id, context, key.decrypted_raw_key);
+    RETURN @extschema@.crypto_kdf_derive_from_key(subkey_size, subkey_id, context, key.decrypted_raw_key);
   END IF;
-  RETURN pgsodium.derive_key(key.key_id, subkey_size, key.key_context);
+  RETURN @extschema@.derive_key(key.key_id, subkey_size, key.key_context);
 END;
 
 $$
@@ -330,24 +330,24 @@ STRICT STABLE
 SECURITY DEFINER
 SET search_path = '';
 
-ALTER FUNCTION pgsodium.crypto_kdf_derive_from_key(integer, bigint, bytea, uuid) OWNER TO pgsodium_keymaker;
+ALTER FUNCTION @extschema@.crypto_kdf_derive_from_key(integer, bigint, bytea, uuid) OWNER TO pgsodium_keymaker;
 
   -- secretbox
 
-CREATE OR REPLACE FUNCTION pgsodium.crypto_secretbox(message bytea, nonce bytea, key_uuid uuid)
+CREATE OR REPLACE FUNCTION @extschema@.crypto_secretbox(message bytea, nonce bytea, key_uuid uuid)
   RETURNS bytea AS
 $$
 DECLARE
-  key pgsodium.decrypted_key;
+  key @extschema@.decrypted_key;
 BEGIN
   SELECT * INTO STRICT key
-    FROM pgsodium.decrypted_key v
+    FROM @extschema@.decrypted_key v
   WHERE id = key_uuid AND key_type = 'secretbox';
 
   IF key.decrypted_raw_key IS NOT NULL THEN
-    RETURN pgsodium.crypto_secretbox(message, nonce, key.decrypted_raw_key);
+    RETURN @extschema@.crypto_secretbox(message, nonce, key.decrypted_raw_key);
   END IF;
-  RETURN pgsodium.crypto_secretbox(message, nonce, key.key_id, key.key_context);
+  RETURN @extschema@.crypto_secretbox(message, nonce, key.key_id, key.key_context);
 END;
 $$
 LANGUAGE plpgsql
@@ -355,22 +355,22 @@ STRICT STABLE
 SECURITY DEFINER
 SET search_path = '';
 
-ALTER FUNCTION pgsodium.crypto_secretbox(bytea, bytea, uuid) OWNER TO pgsodium_keymaker;
+ALTER FUNCTION @extschema@.crypto_secretbox(bytea, bytea, uuid) OWNER TO pgsodium_keymaker;
 
-CREATE OR REPLACE FUNCTION pgsodium.crypto_secretbox_open(message bytea, nonce bytea, key_uuid uuid)
+CREATE OR REPLACE FUNCTION @extschema@.crypto_secretbox_open(message bytea, nonce bytea, key_uuid uuid)
   RETURNS bytea AS
 $$
 DECLARE
-  key pgsodium.decrypted_key;
+  key @extschema@.decrypted_key;
 BEGIN
   SELECT * INTO STRICT key
-    FROM pgsodium.decrypted_key v
+    FROM @extschema@.decrypted_key v
   WHERE id = key_uuid AND key_type = 'secretbox';
 
   IF key.decrypted_raw_key IS NOT NULL THEN
-    RETURN pgsodium.crypto_secretbox_open(message, nonce, key.decrypted_raw_key);
+    RETURN @extschema@.crypto_secretbox_open(message, nonce, key.decrypted_raw_key);
   END IF;
-  RETURN pgsodium.crypto_secretbox_open(message, nonce, key.key_id, key.key_context);
+  RETURN @extschema@.crypto_secretbox_open(message, nonce, key.key_id, key.key_context);
 END;
 $$
 LANGUAGE plpgsql
@@ -378,24 +378,24 @@ STRICT STABLE
 SECURITY DEFINER
 SET search_path = '';
 
-ALTER FUNCTION pgsodium.crypto_secretbox_open(bytea, bytea, uuid) OWNER TO pgsodium_keymaker;
+ALTER FUNCTION @extschema@.crypto_secretbox_open(bytea, bytea, uuid) OWNER TO pgsodium_keymaker;
 
 -- Ext key support for DET and IETF
 
-CREATE OR REPLACE FUNCTION pgsodium.crypto_aead_det_encrypt(message bytea, additional bytea, key_uuid uuid)
+CREATE OR REPLACE FUNCTION @extschema@.crypto_aead_det_encrypt(message bytea, additional bytea, key_uuid uuid)
   RETURNS bytea AS
 $$
 DECLARE
-  key pgsodium.decrypted_key;
+  key @extschema@.decrypted_key;
 BEGIN
   SELECT * INTO STRICT key
-    FROM pgsodium.decrypted_key v
+    FROM @extschema@.decrypted_key v
   WHERE id = key_uuid AND key_type = 'aead-det';
 
   IF key.decrypted_raw_key IS NOT NULL THEN
-    RETURN pgsodium.crypto_aead_det_encrypt(message, additional, key.decrypted_raw_key);
+    RETURN @extschema@.crypto_aead_det_encrypt(message, additional, key.decrypted_raw_key);
   END IF;
-  RETURN pgsodium.crypto_aead_det_encrypt(message, additional, key.key_id, key.key_context);
+  RETURN @extschema@.crypto_aead_det_encrypt(message, additional, key.key_id, key.key_context);
 END;
   $$
   LANGUAGE plpgsql
@@ -404,22 +404,22 @@ END;
   SET search_path=''
   ;
 
-ALTER FUNCTION pgsodium.crypto_aead_det_encrypt(bytea, bytea, uuid) OWNER TO pgsodium_keymaker;
+ALTER FUNCTION @extschema@.crypto_aead_det_encrypt(bytea, bytea, uuid) OWNER TO pgsodium_keymaker;
 
-CREATE OR REPLACE FUNCTION pgsodium.crypto_aead_det_decrypt(message bytea, additional bytea, key_uuid uuid)
+CREATE OR REPLACE FUNCTION @extschema@.crypto_aead_det_decrypt(message bytea, additional bytea, key_uuid uuid)
   RETURNS bytea AS
 $$
 DECLARE
-  key pgsodium.decrypted_key;
+  key @extschema@.decrypted_key;
 BEGIN
   SELECT * INTO STRICT key
-    FROM pgsodium.decrypted_key v
+    FROM @extschema@.decrypted_key v
   WHERE id = key_uuid AND key_type = 'aead-det';
 
   IF key.decrypted_raw_key IS NOT NULL THEN
-    RETURN pgsodium.crypto_aead_det_decrypt(message, additional, key.decrypted_raw_key);
+    RETURN @extschema@.crypto_aead_det_decrypt(message, additional, key.decrypted_raw_key);
   END IF;
-  RETURN pgsodium.crypto_aead_det_decrypt(message, additional, key.key_id, key.key_context);
+  RETURN @extschema@.crypto_aead_det_decrypt(message, additional, key.key_id, key.key_context);
 END;
   $$
   LANGUAGE plpgsql
@@ -427,24 +427,24 @@ END;
   STABLE
   SET search_path='';
 
-ALTER FUNCTION pgsodium.crypto_aead_det_decrypt(bytea, bytea, uuid) OWNER TO pgsodium_keymaker;
+ALTER FUNCTION @extschema@.crypto_aead_det_decrypt(bytea, bytea, uuid) OWNER TO pgsodium_keymaker;
 
 --- AEAD det with nonce
 
-CREATE OR REPLACE FUNCTION pgsodium.crypto_aead_det_encrypt(message bytea, additional bytea, key_uuid uuid, nonce bytea)
+CREATE OR REPLACE FUNCTION @extschema@.crypto_aead_det_encrypt(message bytea, additional bytea, key_uuid uuid, nonce bytea)
   RETURNS bytea AS
 $$
 DECLARE
-  key pgsodium.decrypted_key;
+  key @extschema@.decrypted_key;
 BEGIN
   SELECT * INTO STRICT key
-    FROM pgsodium.decrypted_key v
+    FROM @extschema@.decrypted_key v
   WHERE id = key_uuid AND key_type = 'aead-det';
 
   IF key.decrypted_raw_key IS NOT NULL THEN
-    RETURN pgsodium.crypto_aead_det_encrypt(message, additional, key.decrypted_raw_key, nonce);
+    RETURN @extschema@.crypto_aead_det_encrypt(message, additional, key.decrypted_raw_key, nonce);
   END IF;
-  RETURN pgsodium.crypto_aead_det_encrypt(message, additional, key.key_id, key.key_context, nonce);
+  RETURN @extschema@.crypto_aead_det_encrypt(message, additional, key.key_id, key.key_context, nonce);
 END;
   $$
   LANGUAGE plpgsql
@@ -453,22 +453,22 @@ END;
   SET search_path=''
   ;
 
-ALTER FUNCTION pgsodium.crypto_aead_det_encrypt(bytea, bytea, uuid, bytea) OWNER TO pgsodium_keymaker;
+ALTER FUNCTION @extschema@.crypto_aead_det_encrypt(bytea, bytea, uuid, bytea) OWNER TO pgsodium_keymaker;
 
-CREATE OR REPLACE FUNCTION pgsodium.crypto_aead_det_decrypt(message bytea, additional bytea, key_uuid uuid, nonce bytea)
+CREATE OR REPLACE FUNCTION @extschema@.crypto_aead_det_decrypt(message bytea, additional bytea, key_uuid uuid, nonce bytea)
   RETURNS bytea AS
   $$
 DECLARE
-  key pgsodium.decrypted_key;
+  key @extschema@.decrypted_key;
 BEGIN
   SELECT * INTO STRICT key
-    FROM pgsodium.decrypted_key v
+    FROM @extschema@.decrypted_key v
   WHERE id = key_uuid AND key_type = 'aead-det';
 
   IF key.decrypted_raw_key IS NOT NULL THEN
-    RETURN pgsodium.crypto_aead_det_decrypt(message, additional, key.decrypted_raw_key, nonce);
+    RETURN @extschema@.crypto_aead_det_decrypt(message, additional, key.decrypted_raw_key, nonce);
   END IF;
-  RETURN pgsodium.crypto_aead_det_decrypt(message, additional, key.key_id, key.key_context, nonce);
+  RETURN @extschema@.crypto_aead_det_decrypt(message, additional, key.key_id, key.key_context, nonce);
 END;
   $$
   LANGUAGE plpgsql
@@ -476,24 +476,24 @@ END;
   STABLE
   SET search_path='';
 
-ALTER FUNCTION pgsodium.crypto_aead_det_decrypt(bytea, bytea, uuid, bytea) OWNER TO pgsodium_keymaker;
+ALTER FUNCTION @extschema@.crypto_aead_det_decrypt(bytea, bytea, uuid, bytea) OWNER TO pgsodium_keymaker;
 
 -- IETF AEAD functions by key uuid
 
-CREATE OR REPLACE FUNCTION pgsodium.crypto_aead_ietf_encrypt(message bytea, additional bytea, nonce bytea, key_uuid uuid)
+CREATE OR REPLACE FUNCTION @extschema@.crypto_aead_ietf_encrypt(message bytea, additional bytea, nonce bytea, key_uuid uuid)
   RETURNS bytea AS
   $$
 DECLARE
-  key pgsodium.decrypted_key;
+  key @extschema@.decrypted_key;
 BEGIN
   SELECT * INTO STRICT key
-    FROM pgsodium.decrypted_key v
+    FROM @extschema@.decrypted_key v
   WHERE id = key_uuid AND key_type = 'aead-ietf';
 
   IF key.decrypted_raw_key IS NOT NULL THEN
-    RETURN pgsodium.crypto_aead_ietf_encrypt(message, additional, nonce, key.decrypted_raw_key);
+    RETURN @extschema@.crypto_aead_ietf_encrypt(message, additional, nonce, key.decrypted_raw_key);
   END IF;
-  RETURN pgsodium.crypto_aead_ietf_encrypt(message, additional, nonce, key.key_id, key.key_context);
+  RETURN @extschema@.crypto_aead_ietf_encrypt(message, additional, nonce, key.key_id, key.key_context);
 END;
   $$
   LANGUAGE plpgsql
@@ -503,26 +503,26 @@ END;
   SET search_path=''
 ;
 
-ALTER FUNCTION pgsodium.crypto_aead_ietf_encrypt(bytea, bytea, bytea, uuid) OWNER TO pgsodium_keymaker;
+ALTER FUNCTION @extschema@.crypto_aead_ietf_encrypt(bytea, bytea, bytea, uuid) OWNER TO pgsodium_keymaker;
 
 GRANT EXECUTE ON FUNCTION
-  pgsodium.crypto_aead_ietf_encrypt(message bytea, additional bytea, nonce bytea, key_uuid uuid)
+  @extschema@.crypto_aead_ietf_encrypt(message bytea, additional bytea, nonce bytea, key_uuid uuid)
   TO pgsodium_keyiduser;
 
-CREATE OR REPLACE FUNCTION pgsodium.crypto_aead_ietf_decrypt(message bytea, additional bytea, nonce bytea, key_uuid uuid)
+CREATE OR REPLACE FUNCTION @extschema@.crypto_aead_ietf_decrypt(message bytea, additional bytea, nonce bytea, key_uuid uuid)
   RETURNS bytea AS
   $$
 DECLARE
-  key pgsodium.decrypted_key;
+  key @extschema@.decrypted_key;
 BEGIN
   SELECT * INTO STRICT key
-    FROM pgsodium.decrypted_key v
+    FROM @extschema@.decrypted_key v
   WHERE id = key_uuid AND key_type = 'aead-ietf';
 
   IF key.decrypted_raw_key IS NOT NULL THEN
-    RETURN pgsodium.crypto_aead_ietf_decrypt(message, additional, nonce, key.decrypted_raw_key);
+    RETURN @extschema@.crypto_aead_ietf_decrypt(message, additional, nonce, key.decrypted_raw_key);
   END IF;
-  RETURN pgsodium.crypto_aead_ietf_decrypt(message, additional, nonce, key.key_id, key.key_context);
+  RETURN @extschema@.crypto_aead_ietf_decrypt(message, additional, nonce, key.key_id, key.key_context);
 END;
   $$
   LANGUAGE plpgsql
@@ -531,17 +531,17 @@ END;
   STABLE
   SET search_path='';
 
-ALTER FUNCTION pgsodium.crypto_aead_ietf_decrypt(bytea, bytea, bytea, uuid) OWNER TO pgsodium_keymaker;
+ALTER FUNCTION @extschema@.crypto_aead_ietf_decrypt(bytea, bytea, bytea, uuid) OWNER TO pgsodium_keymaker;
 
 GRANT EXECUTE ON FUNCTION
-  pgsodium.crypto_aead_ietf_decrypt(message bytea, additional bytea, nonce bytea, key_uuid uuid)
+  @extschema@.crypto_aead_ietf_decrypt(message bytea, additional bytea, nonce bytea, key_uuid uuid)
   TO pgsodium_keyiduser;
 
 -- bytea and extended associated data support for encrypted columns
 
-DROP VIEW pgsodium.masking_rule CASCADE;
+DROP VIEW @extschema@.masking_rule CASCADE;
 
-CREATE OR REPLACE VIEW pgsodium.masking_rule AS
+CREATE OR REPLACE VIEW @extschema@.masking_rule AS
   WITH const AS (
     SELECT
       'encrypt +with +key +id +([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})'
@@ -587,7 +587,7 @@ CREATE OR REPLACE VIEW pgsodium.masking_rule AS
     FROM rules_from_seclabels
    ORDER BY attrelid, attnum, priority DESC;
 
-CREATE VIEW pgsodium.mask_columns AS SELECT
+CREATE VIEW @extschema@.mask_columns AS SELECT
   a.attname,
   a.attrelid,
   m.key_id,
@@ -596,14 +596,14 @@ CREATE VIEW pgsodium.mask_columns AS SELECT
   m.nonce_column,
   m.format_type
   FROM pg_attribute a
-  LEFT JOIN  pgsodium.masking_rule m
+  LEFT JOIN  @extschema@.masking_rule m
   ON m.attrelid = a.attrelid
   AND m.attname = a.attname
   WHERE  a.attnum > 0 -- exclude ctid, cmin, cmax
   AND    NOT a.attisdropped
   ORDER BY a.attnum;
 
-CREATE OR REPLACE FUNCTION pgsodium.quote_assoc(text, boolean = false)
+CREATE OR REPLACE FUNCTION @extschema@.quote_assoc(text, boolean = false)
 RETURNS text
 AS $$
     WITH a AS (SELECT array_agg(CASE WHEN $2 THEN
@@ -613,7 +613,7 @@ AS $$
     SELECT array_to_string(a.r, '::text || ') || '::text' FROM a;
 $$ LANGUAGE sql;
 
-CREATE OR REPLACE FUNCTION pgsodium.encrypted_columns(relid OID)
+CREATE OR REPLACE FUNCTION @extschema@.encrypted_columns(relid OID)
 RETURNS TEXT AS
 $$
 DECLARE
@@ -623,7 +623,7 @@ DECLARE
 BEGIN
   expression := '';
   comma := E'        ';
-  FOR m IN SELECT * FROM pgsodium.mask_columns where attrelid = relid LOOP
+  FOR m IN SELECT * FROM @extschema@.mask_columns where attrelid = relid LOOP
     IF m.key_id IS NULL AND m.key_id_column is NULL THEN
       CONTINUE;
     ELSE
@@ -631,7 +631,7 @@ BEGIN
       IF m.format_type = 'text' THEN
           expression := expression || format(
             $f$%s = CASE WHEN %s IS NULL THEN NULL ELSE pg_catalog.encode(
-              pgsodium.crypto_aead_det_encrypt(
+              @extschema@.crypto_aead_det_encrypt(
                 pg_catalog.convert_to(%s, 'utf8'),
                 pg_catalog.convert_to((%s)::text, 'utf8'),
                 %s::uuid,
@@ -641,14 +641,14 @@ BEGIN
                 'new.' || quote_ident(m.attname),
                 COALESCE('new.' || quote_ident(m.key_id_column), quote_literal(m.key_id)),
                 'new.' || quote_ident(m.attname),
-                COALESCE(pgsodium.quote_assoc(m.associated_columns, true), quote_literal('')),
+                COALESCE(@extschema@.quote_assoc(m.associated_columns, true), quote_literal('')),
                 COALESCE('new.' || quote_ident(m.key_id_column), quote_literal(m.key_id)),
                 COALESCE('new.' || quote_ident(m.nonce_column), 'NULL')
           );
       ELSIF m.format_type = 'bytea' THEN
           expression := expression || format(
             $f$%s = CASE WHEN %s IS NULL THEN NULL ELSE
-                        pgsodium.crypto_aead_det_encrypt(%s::bytea, pg_catalog.convert_to((%s)::text, 'utf8'),
+                        @extschema@.crypto_aead_det_encrypt(%s::bytea, pg_catalog.convert_to((%s)::text, 'utf8'),
                 %s::uuid,
                 %s
               ) END
@@ -656,7 +656,7 @@ BEGIN
                 'new.' || quote_ident(m.attname),
                 COALESCE('new.' || quote_ident(m.key_id_column), quote_literal(m.key_id)),
                 'new.' || quote_ident(m.attname),
-                COALESCE(pgsodium.quote_assoc(m.associated_columns, true), quote_literal('')),
+                COALESCE(@extschema@.quote_assoc(m.associated_columns, true), quote_literal('')),
                 COALESCE('new.' || quote_ident(m.key_id_column), quote_literal(m.key_id)),
                 COALESCE('new.' || quote_ident(m.nonce_column), 'NULL')
           );
@@ -672,7 +672,7 @@ $$
   SET search_path=''
   ;
 
-CREATE OR REPLACE FUNCTION pgsodium.decrypted_columns(relid OID)
+CREATE OR REPLACE FUNCTION @extschema@.decrypted_columns(relid OID)
 RETURNS TEXT AS
 $$
 DECLARE
@@ -683,7 +683,7 @@ DECLARE
 BEGIN
   expression := E'\n';
   comma := padding;
-  FOR m IN SELECT * FROM pgsodium.mask_columns where attrelid = relid LOOP
+  FOR m IN SELECT * FROM @extschema@.mask_columns where attrelid = relid LOOP
     expression := expression || comma;
     IF m.key_id IS NULL AND m.key_id_column IS NULL THEN
       expression := expression || padding || quote_ident(m.attname);
@@ -693,7 +693,7 @@ BEGIN
           expression := expression || format(
             $f$
             CASE WHEN %s IS NULL THEN NULL ELSE pg_catalog.convert_from(
-              pgsodium.crypto_aead_det_decrypt(
+              @extschema@.crypto_aead_det_decrypt(
                 pg_catalog.decode(%s, 'base64'),
                 pg_catalog.convert_to((%s)::text, 'utf8'),
                 %s::uuid,
@@ -702,7 +702,7 @@ BEGIN
                 'utf8') END AS %s$f$,
                 coalesce(quote_ident(m.key_id_column), quote_literal(m.key_id)),
                 quote_ident(m.attname),
-                coalesce(pgsodium.quote_assoc(m.associated_columns), quote_literal('')),
+                coalesce(@extschema@.quote_assoc(m.associated_columns), quote_literal('')),
                 coalesce(quote_ident(m.key_id_column), quote_literal(m.key_id)),
                 coalesce(quote_ident(m.nonce_column), 'NULL'),
                 'decrypted_' || quote_ident(m.attname)
@@ -710,7 +710,7 @@ BEGIN
       ELSIF m.format_type = 'bytea' THEN
           expression := expression || format(
             $f$
-            CASE WHEN %s IS NULL THEN NULL ELSE pgsodium.crypto_aead_det_decrypt(
+            CASE WHEN %s IS NULL THEN NULL ELSE @extschema@.crypto_aead_det_decrypt(
                 %s::bytea,
                 pg_catalog.convert_to((%s)::text, 'utf8'),
                 %s::uuid,
@@ -718,7 +718,7 @@ BEGIN
               ) END AS %s$f$,
                 coalesce(quote_ident(m.key_id_column), quote_literal(m.key_id)),
                 quote_ident(m.attname),
-                coalesce(pgsodium.quote_assoc(m.associated_columns), quote_literal('')),
+                coalesce(@extschema@.quote_assoc(m.associated_columns), quote_literal('')),
                 coalesce(quote_ident(m.key_id_column), quote_literal(m.key_id)),
                 coalesce(quote_ident(m.nonce_column), 'NULL'),
                 'decrypted_' || quote_ident(m.attname)
@@ -735,7 +735,7 @@ $$
   SET search_path=''
 ;
 
-CREATE OR REPLACE FUNCTION pgsodium.mask_role(masked_role regrole, source_name text, view_name text)
+CREATE OR REPLACE FUNCTION @extschema@.mask_role(masked_role regrole, source_name text, view_name text)
   RETURNS void AS
   $$
 BEGIN
@@ -748,14 +748,14 @@ LANGUAGE plpgsql
 SET search_path=''
 ;
 
-CREATE OR REPLACE FUNCTION pgsodium.create_mask_view(relid oid, subid integer, debug boolean = false) RETURNS void AS
+CREATE OR REPLACE FUNCTION @extschema@.create_mask_view(relid oid, subid integer, debug boolean = false) RETURNS void AS
   $$
 DECLARE
   body text;
   source_name text;
-  rule pgsodium.masking_rule;
+  rule @extschema@.masking_rule;
 BEGIN
-  SELECT * INTO STRICT rule FROM pgsodium.masking_rule WHERE attrelid = relid and attnum = subid ;
+  SELECT * INTO STRICT rule FROM @extschema@.masking_rule WHERE attrelid = relid and attnum = subid ;
 
   source_name := relid::regclass;
 
@@ -767,7 +767,7 @@ BEGIN
     $c$,
     rule.view_name,
     rule.view_name,
-    pgsodium.decrypted_columns(relid),
+    @extschema@.decrypted_columns(relid),
     source_name
   );
   IF debug THEN
@@ -796,7 +796,7 @@ BEGIN
       $c$,
     rule.relnamespace,
     rule.relname,
-    pgsodium.encrypted_columns(relid),
+    @extschema@.encrypted_columns(relid),
     rule.relname,
     rule.relnamespace,
     rule.relname,
@@ -810,8 +810,8 @@ BEGIN
   END IF;
   EXECUTE body;
 
-  PERFORM pgsodium.mask_role(oid::regrole, source_name, rule.view_name)
-  FROM pg_roles WHERE pgsodium.has_mask(oid::regrole, source_name);
+  PERFORM @extschema@.mask_role(oid::regrole, source_name, rule.view_name)
+  FROM pg_roles WHERE @extschema@.has_mask(oid::regrole, source_name);
 
   RETURN;
 END
@@ -821,11 +821,11 @@ END
   SET search_path='pg_catalog'
 ;
 
-CREATE OR REPLACE FUNCTION pgsodium.update_masks(debug boolean = false)
+CREATE OR REPLACE FUNCTION @extschema@.update_masks(debug boolean = false)
 RETURNS void AS
   $$
 BEGIN
-  PERFORM pgsodium.create_mask_view(objoid, objsubid, debug)
+  PERFORM @extschema@.create_mask_view(objoid, objsubid, debug)
     FROM (SELECT sl.objoid, sl.objsubid
             FROM pg_catalog.pg_seclabel sl, pg_catalog.pg_class cl, pg_catalog.pg_namespace ns
            WHERE sl.classoid = cl.oid
@@ -847,27 +847,27 @@ DECLARE
 BEGIN
     FOREACH func IN ARRAY
       ARRAY[
-        'pgsodium.crypto_auth_hmacsha256(bytea, bigint, bytea)',
-        'pgsodium.crypto_auth_hmacsha256_verify(bytea, bytea, bigint, bytea)',
-        'pgsodium.crypto_auth_hmacsha512(bytea, bigint, bytea)',
-        'pgsodium.crypto_auth_hmacsha512_verify(bytea, bytea, bigint, bytea)',
-        'pgsodium.crypto_auth_hmacsha256(bytea, uuid)',
-        'pgsodium.crypto_auth_hmacsha256_verify(bytea, bytea, uuid)',
-        'pgsodium.crypto_auth_hmacsha512(bytea, uuid)',
-        'pgsodium.crypto_auth_hmacsha512_verify(bytea, bytea, uuid)',
-        'pgsodium.crypto_auth(bytea, uuid)',
-        'pgsodium.crypto_auth_verify(bytea, bytea, uuid)',
-        'pgsodium.crypto_shorthash(bytea, uuid)',
-        'pgsodium.crypto_generichash(bytea, uuid)',
-        'pgsodium.crypto_kdf_derive_from_key(integer, bigint, bytea, uuid)',
-        'pgsodium.crypto_secretbox(bytea, bytea, uuid)',
-        'pgsodium.crypto_secretbox_open(bytea, bytea, uuid)',
-        'pgsodium.crypto_aead_det_encrypt(bytea, bytea, uuid)',
-        'pgsodium.crypto_aead_det_decrypt(bytea, bytea, uuid)',
-        'pgsodium.crypto_aead_det_encrypt(bytea, bytea, uuid, bytea)',
-        'pgsodium.crypto_aead_det_decrypt(bytea, bytea, uuid, bytea)',
-        'pgsodium.crypto_aead_ietf_encrypt(bytea, bytea, bytea, uuid)',
-        'pgsodium.crypto_aead_ietf_decrypt(bytea, bytea, bytea, uuid)'
+        '@extschema@.crypto_auth_hmacsha256(bytea, bigint, bytea)',
+        '@extschema@.crypto_auth_hmacsha256_verify(bytea, bytea, bigint, bytea)',
+        '@extschema@.crypto_auth_hmacsha512(bytea, bigint, bytea)',
+        '@extschema@.crypto_auth_hmacsha512_verify(bytea, bytea, bigint, bytea)',
+        '@extschema@.crypto_auth_hmacsha256(bytea, uuid)',
+        '@extschema@.crypto_auth_hmacsha256_verify(bytea, bytea, uuid)',
+        '@extschema@.crypto_auth_hmacsha512(bytea, uuid)',
+        '@extschema@.crypto_auth_hmacsha512_verify(bytea, bytea, uuid)',
+        '@extschema@.crypto_auth(bytea, uuid)',
+        '@extschema@.crypto_auth_verify(bytea, bytea, uuid)',
+        '@extschema@.crypto_shorthash(bytea, uuid)',
+        '@extschema@.crypto_generichash(bytea, uuid)',
+        '@extschema@.crypto_kdf_derive_from_key(integer, bigint, bytea, uuid)',
+        '@extschema@.crypto_secretbox(bytea, bytea, uuid)',
+        '@extschema@.crypto_secretbox_open(bytea, bytea, uuid)',
+        '@extschema@.crypto_aead_det_encrypt(bytea, bytea, uuid)',
+        '@extschema@.crypto_aead_det_decrypt(bytea, bytea, uuid)',
+        '@extschema@.crypto_aead_det_encrypt(bytea, bytea, uuid, bytea)',
+        '@extschema@.crypto_aead_det_decrypt(bytea, bytea, uuid, bytea)',
+        '@extschema@.crypto_aead_ietf_encrypt(bytea, bytea, bytea, uuid)',
+        '@extschema@.crypto_aead_ietf_decrypt(bytea, bytea, bytea, uuid)'
     ]
     LOOP
         EXECUTE format($i$
@@ -878,8 +878,8 @@ BEGIN
 END
 $$;
 
-SECURITY LABEL FOR pgsodium ON COLUMN pgsodium.key.raw_key
+SECURITY LABEL FOR pgsodium ON COLUMN @extschema@.key.raw_key
     IS 'ENCRYPT WITH KEY COLUMN parent_key ASSOCIATED (id, associated_data) NONCE raw_key_nonce';
 
-ALTER EXTENSION pgsodium DROP VIEW pgsodium.decrypted_key;
-GRANT SELECT ON pgsodium.decrypted_key TO pgsodium_keymaker;
+ALTER EXTENSION pgsodium DROP VIEW @extschema@.decrypted_key;
+GRANT SELECT ON @extschema@.decrypted_key TO pgsodium_keymaker;

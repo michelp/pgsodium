@@ -9,20 +9,19 @@
 \set ON_ERROR_STOP on
 -- \set QUIET 1
 
+\set extschema :extschema
+SELECT CASE WHEN :'extschema' = ':extschema'
+       THEN 'pgsodium'
+       ELSE :'extschema'
+       END AS extschema \gset
+
 CREATE EXTENSION IF NOT EXISTS pgtap;
+DROP ROLE IF EXISTS bobo;
 
-BEGIN;
-SELECT plan(1);
-CREATE SCHEMA bogus;
-SELECT throws_ok($$CREATE EXTENSION pgsodium WITH SCHEMA bogus$$,
-                 '0A000', 'extension "pgsodium" must be installed in schema "pgsodium"',
-                 'cannot install pgsodium in any other schema');
-SELECT * FROM finish();
-ROLLBACK;
+CREATE SCHEMA IF NOT EXISTS :"extschema";
+CREATE EXTENSION IF NOT EXISTS pgsodium SCHEMA :"extschema";
 
-CREATE EXTENSION pgsodium;
-
-SET search_path = pgsodium, public;
+SET search_path = :'extschema', public;
 
 SELECT EXISTS (SELECT * FROM pg_settings
     WHERE name = 'shared_preload_libraries'

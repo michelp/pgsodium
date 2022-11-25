@@ -1,6 +1,6 @@
-DROP EVENT TRIGGER  @extschema@_trg_mask_update;
+DROP EVENT TRIGGER  pgsodium_trg_mask_update;
 
-CREATE EVENT TRIGGER @extschema@_trg_mask_update
+CREATE EVENT TRIGGER pgsodium_trg_mask_update
   ON ddl_command_end
   WHEN TAG IN (
     'SECURITY LABEL'
@@ -8,14 +8,14 @@ CREATE EVENT TRIGGER @extschema@_trg_mask_update
   EXECUTE PROCEDURE @extschema@.trg_mask_update()
 ;
 
-ALTER EXTENSION pgsodium DROP FUNCTION pgsodium.key_encrypt_secret();
+ALTER EXTENSION pgsodium DROP FUNCTION @extschema@.key_encrypt_secret();
 
-CREATE FUNCTION pgsodium.update_mask(target oid, debug boolean = false)
+CREATE FUNCTION @extschema@.update_mask(target oid, debug boolean = false)
 RETURNS void AS
   $$
 BEGIN
   ALTER EVENT TRIGGER pgsodium_trg_mask_update DISABLE;
-  PERFORM pgsodium.create_mask_view(objoid, objsubid, debug)
+  PERFORM @extschema@.create_mask_view(objoid, objsubid, debug)
     FROM pg_catalog.pg_seclabel
     WHERE objoid = target
         AND label ILIKE 'ENCRYPT%'
@@ -29,11 +29,11 @@ $$
   SET search_path=''
 ;
 
-CREATE OR REPLACE FUNCTION pgsodium.update_masks(debug boolean = false)
+CREATE OR REPLACE FUNCTION @extschema@.update_masks(debug boolean = false)
 RETURNS void AS
   $$
 BEGIN
-  PERFORM pgsodium.update_mask(objoid, debug)
+  PERFORM @extschema@.update_mask(objoid, debug)
     FROM pg_catalog.pg_seclabel
     WHERE label ilike 'ENCRYPT%'
        AND provider = 'pgsodium';
@@ -44,14 +44,14 @@ $$
   SET search_path=''
 ;
 
-CREATE OR REPLACE FUNCTION pgsodium.create_mask_view(relid oid, subid integer, debug boolean = false) RETURNS void AS
+CREATE OR REPLACE FUNCTION @extschema@.create_mask_view(relid oid, subid integer, debug boolean = false) RETURNS void AS
   $$
 DECLARE
   body text;
   source_name text;
-  rule pgsodium.masking_rule;
+  rule @extschema@.masking_rule;
 BEGIN
-  SELECT * INTO STRICT rule FROM pgsodium.masking_rule WHERE attrelid = relid and attnum = subid ;
+  SELECT * INTO STRICT rule FROM @extschema@.masking_rule WHERE attrelid = relid and attnum = subid ;
 
   source_name := relid::regclass;
 
@@ -63,7 +63,7 @@ BEGIN
     $c$,
     rule.view_name,
     rule.view_name,
-    pgsodium.decrypted_columns(relid),
+    @extschema@.decrypted_columns(relid),
     source_name
   );
   IF debug THEN
@@ -96,7 +96,7 @@ BEGIN
     rule.relname,
     rule.relnamespace,
     rule.relname,
-    pgsodium.encrypted_columns(relid),
+    @extschema@.encrypted_columns(relid),
     rule.relname,
     rule.relnamespace,
     rule.relname,
@@ -110,8 +110,8 @@ BEGIN
   END IF;
   EXECUTE body;
 
-  PERFORM pgsodium.mask_role(oid::regrole, source_name, rule.view_name)
-  FROM pg_roles WHERE pgsodium.has_mask(oid::regrole, source_name);
+  PERFORM @extschema@.mask_role(oid::regrole, source_name, rule.view_name)
+  FROM pg_roles WHERE @extschema@.has_mask(oid::regrole, source_name);
 
   RETURN;
 END
