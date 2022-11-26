@@ -21,7 +21,8 @@ pgsodium_crypto_sign_keypair (PG_FUNCTION_ARGS)
 					"that cannot accept type record")));
 	publickey = _pgsodium_zalloc_bytea (public_size);
 	secretkey = _pgsodium_zalloc_bytea (secret_size);
-	crypto_sign_keypair (PGSODIUM_UCHARDATA (publickey),
+	crypto_sign_keypair (
+		PGSODIUM_UCHARDATA (publickey),
 		PGSODIUM_UCHARDATA (secretkey));
 	values[0] = PointerGetDatum (publickey);
 	values[1] = PointerGetDatum (secretkey);
@@ -51,7 +52,7 @@ pgsodium_crypto_sign_seed_keypair (PG_FUNCTION_ARGS)
 	Datum       result;
 	bytea      *publickey;
 	bytea      *secretkey;
-	bytea      *seed = PG_GETARG_BYTEA_P (0);
+	bytea      *seed = PG_GETARG_BYTEA_PP (0);
 	size_t      public_size = crypto_sign_PUBLICKEYBYTES + VARHDRSZ;
 	size_t      secret_size = crypto_sign_SECRETKEYBYTES + VARHDRSZ;
 	ERRORIF (VARSIZE_ANY_EXHDR (seed) != crypto_sign_SEEDBYTES,
@@ -65,8 +66,10 @@ pgsodium_crypto_sign_seed_keypair (PG_FUNCTION_ARGS)
 
 	publickey = _pgsodium_zalloc_bytea (public_size);
 	secretkey = _pgsodium_zalloc_bytea (secret_size);
-	crypto_sign_seed_keypair (PGSODIUM_UCHARDATA (publickey),
-		PGSODIUM_UCHARDATA (secretkey), PGSODIUM_UCHARDATA (seed));
+	crypto_sign_seed_keypair (
+		PGSODIUM_UCHARDATA (publickey),
+		PGSODIUM_UCHARDATA (secretkey),
+		PGSODIUM_UCHARDATA_ANY (seed));
 
 	values[0] = PointerGetDatum (publickey);
 	values[1] = PointerGetDatum (secretkey);
@@ -80,21 +83,21 @@ Datum
 pgsodium_crypto_sign (PG_FUNCTION_ARGS)
 {
 	int         success;
-	bytea      *message = PG_GETARG_BYTEA_P (0);
-	bytea      *secretkey = PG_GETARG_BYTEA_P (1);
+	bytea      *message = PG_GETARG_BYTEA_PP (0);
+	bytea      *secretkey = PG_GETARG_BYTEA_PP (1);
 	unsigned long long signed_message_len;
-	size_t      message_size;
 	size_t      result_size;
 	bytea      *result;
 	ERRORIF (VARSIZE_ANY_EXHDR (secretkey) != crypto_sign_SECRETKEYBYTES,
 		"%s: invalid secret key");
-	message_size = crypto_sign_BYTES + VARSIZE_ANY_EXHDR (message);
-	result_size = VARHDRSZ + message_size;
+	result_size = crypto_sign_BYTES + VARSIZE_ANY (message);
 	result = _pgsodium_zalloc_bytea (result_size);
-	success = crypto_sign (PGSODIUM_UCHARDATA (result),
+	success = crypto_sign (
+		PGSODIUM_UCHARDATA (result),
 		&signed_message_len,
-		PGSODIUM_UCHARDATA (message),
-		VARSIZE_ANY_EXHDR (message), PGSODIUM_UCHARDATA (secretkey));
+		PGSODIUM_UCHARDATA_ANY (message),
+		VARSIZE_ANY_EXHDR (message),
+		PGSODIUM_UCHARDATA_ANY (secretkey));
 	ERRORIF (success != 0, "%s: invalid message");
 	PG_RETURN_BYTEA_P (result);
 }
@@ -105,9 +108,8 @@ pgsodium_crypto_sign_open (PG_FUNCTION_ARGS)
 {
 	int         success;
 	unsigned long long unsigned_message_len;
-	bytea      *message = PG_GETARG_BYTEA_P (0);
-	bytea      *publickey = PG_GETARG_BYTEA_P (1);
-	size_t      message_size;
+	bytea      *message = PG_GETARG_BYTEA_PP (0);
+	bytea      *publickey = PG_GETARG_BYTEA_PP (1);
 	size_t      result_size;
 	bytea      *result;
 
@@ -116,13 +118,14 @@ pgsodium_crypto_sign_open (PG_FUNCTION_ARGS)
 	ERRORIF (VARSIZE_ANY_EXHDR (message) <= crypto_sign_BYTES,
 		"%s: invalid message");
 
-	message_size = VARSIZE_ANY_EXHDR (message) - crypto_sign_BYTES;
-	result_size = VARHDRSZ + message_size;
+	result_size = VARSIZE_ANY (message) - crypto_sign_BYTES;
 	result = _pgsodium_zalloc_bytea (result_size);
-	success = crypto_sign_open (PGSODIUM_UCHARDATA (result),
+	success = crypto_sign_open (
+		PGSODIUM_UCHARDATA (result),
 		&unsigned_message_len,
-		PGSODIUM_UCHARDATA (message),
-		VARSIZE_ANY_EXHDR (message), PGSODIUM_UCHARDATA (publickey));
+		PGSODIUM_UCHARDATA_ANY (message),
+		VARSIZE_ANY_EXHDR (message),
+		PGSODIUM_UCHARDATA_ANY (publickey));
 	ERRORIF (success != 0, "%s: invalid message");
 	PG_RETURN_BYTEA_P (result);
 }
@@ -132,17 +135,19 @@ Datum
 pgsodium_crypto_sign_detached (PG_FUNCTION_ARGS)
 {
 	int         success;
-	bytea      *message = PG_GETARG_BYTEA_P (0);
-	bytea      *secretkey = PG_GETARG_BYTEA_P (1);
+	bytea      *message = PG_GETARG_BYTEA_PP (0);
+	bytea      *secretkey = PG_GETARG_BYTEA_PP (1);
 	size_t      sig_size = crypto_sign_BYTES;
 	size_t      result_size = VARHDRSZ + sig_size;
 	bytea      *result = _pgsodium_zalloc_bytea (result_size);
 	ERRORIF (VARSIZE_ANY_EXHDR (secretkey) != crypto_sign_SECRETKEYBYTES,
 		"%s: invalid secret key");
-	success = crypto_sign_detached (PGSODIUM_UCHARDATA (result),
+	success = crypto_sign_detached (
+		PGSODIUM_UCHARDATA (result),
 		NULL,
-		PGSODIUM_UCHARDATA (message),
-		VARSIZE_ANY_EXHDR (message), PGSODIUM_UCHARDATA (secretkey));
+		PGSODIUM_UCHARDATA_ANY (message),
+		VARSIZE_ANY_EXHDR (message),
+		PGSODIUM_UCHARDATA_ANY (secretkey));
 	ERRORIF (success != 0, "%s: invalid message");
 	PG_RETURN_BYTEA_P (result);
 }
@@ -152,14 +157,16 @@ Datum
 pgsodium_crypto_sign_verify_detached (PG_FUNCTION_ARGS)
 {
 	int         success;
-	bytea      *sig = PG_GETARG_BYTEA_P (0);
-	bytea      *message = PG_GETARG_BYTEA_P (1);
-	bytea      *publickey = PG_GETARG_BYTEA_P (2);
+	bytea      *sig       = PG_GETARG_BYTEA_PP (0);
+	bytea      *message   = PG_GETARG_BYTEA_PP (1);
+	bytea      *publickey = PG_GETARG_BYTEA_PP (2);
 	ERRORIF (VARSIZE_ANY_EXHDR (publickey) != crypto_sign_PUBLICKEYBYTES,
 		"%s: invalid public key");
-	success = crypto_sign_verify_detached (PGSODIUM_UCHARDATA (sig),
-		PGSODIUM_UCHARDATA (message),
-		VARSIZE_ANY_EXHDR (message), PGSODIUM_UCHARDATA (publickey));
+	success = crypto_sign_verify_detached (
+		PGSODIUM_UCHARDATA_ANY (sig),
+		PGSODIUM_UCHARDATA_ANY (message),
+		VARSIZE_ANY_EXHDR (message),
+		PGSODIUM_UCHARDATA_ANY (publickey));
 	PG_RETURN_BOOL (success == 0);
 }
 
@@ -178,10 +185,12 @@ Datum
 pgsodium_crypto_sign_update (PG_FUNCTION_ARGS)
 {
 	bytea      *state = PG_GETARG_BYTEA_P_COPY (0);	// input state
-	bytea      *msg_part = PG_GETARG_BYTEA_P (1);
+	bytea      *msg_part = PG_GETARG_BYTEA_PP (1);
 
-	crypto_sign_update ((crypto_sign_state *) VARDATA (state),
-		PGSODIUM_UCHARDATA (msg_part), VARSIZE_ANY_EXHDR (msg_part));
+	crypto_sign_update (
+		(crypto_sign_state *) VARDATA (state),
+		PGSODIUM_UCHARDATA_ANY (msg_part),
+		VARSIZE_ANY_EXHDR (msg_part));
 	PG_RETURN_BYTEA_P (state);
 }
 
@@ -191,15 +200,17 @@ pgsodium_crypto_sign_final_create (PG_FUNCTION_ARGS)
 {
 	int         success;
 	bytea      *state = PG_GETARG_BYTEA_P_COPY (0);
-	bytea      *key = PG_GETARG_BYTEA_P (1);
+	bytea      *key = PG_GETARG_BYTEA_PP (1);
 	size_t      sig_size = crypto_sign_BYTES;
 	size_t      result_size = VARHDRSZ + sig_size;
 	bytea      *result = _pgsodium_zalloc_bytea (result_size);
 
-	success = crypto_sign_final_create ((crypto_sign_state *) VARDATA (state),
-		PGSODIUM_UCHARDATA (result), NULL, PGSODIUM_UCHARDATA (key));
+	success = crypto_sign_final_create (
+		(crypto_sign_state *) VARDATA (state),
+		PGSODIUM_UCHARDATA_ANY (result),
+		NULL,
+		PGSODIUM_UCHARDATA_ANY (key));
 	pfree (state);
-
 	ERRORIF (success != 0, "%s: unable to complete signature");
 	PG_RETURN_BYTEA_P (result);
 }
@@ -210,11 +221,13 @@ pgsodium_crypto_sign_final_verify (PG_FUNCTION_ARGS)
 {
 	int         success;
 	bytea      *state = PG_GETARG_BYTEA_P_COPY (0);
-	bytea      *sig = PG_GETARG_BYTEA_P (1);	// why doesn't _P work here?
-	bytea      *key = PG_GETARG_BYTEA_P (2);
+	bytea      *sig = PG_GETARG_BYTEA_PP (1);
+	bytea      *key = PG_GETARG_BYTEA_PP (2);
 
-	success = crypto_sign_final_verify ((crypto_sign_state *) VARDATA (state),
-		PGSODIUM_UCHARDATA (sig), PGSODIUM_UCHARDATA (key));
+	success = crypto_sign_final_verify (
+		(crypto_sign_state *) VARDATA (state),
+		PGSODIUM_UCHARDATA_ANY (sig),
+		PGSODIUM_UCHARDATA_ANY (key));
 	pfree (state);
 	PG_RETURN_BOOL (success == 0);
 }

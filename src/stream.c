@@ -44,19 +44,19 @@ PG_FUNCTION_INFO_V1 (pgsodium_crypto_stream_xchacha20_xor);
 Datum
 pgsodium_crypto_stream_xchacha20_xor (PG_FUNCTION_ARGS)
 {
-	bytea      *data = PG_GETARG_BYTEA_P (0);
-	bytea      *nonce = PG_GETARG_BYTEA_P (1);
-	bytea      *key = PG_GETARG_BYTEA_P (2);
-	uint64_t    result_size = VARSIZE_ANY (data);
-	bytea      *result = _pgsodium_zalloc_bytea (result_size);
+	bytea      *data = PG_GETARG_BYTEA_PP (0);
+	bytea      *nonce = PG_GETARG_BYTEA_PP (1);
+	bytea      *key = PG_GETARG_BYTEA_PP (2);
+	uint64_t    result_size = VARSIZE_ANY_EXHDR (data);
+	bytea      *result = _pgsodium_zalloc_bytea (result_size + VARHDRSZ);
 	ERRORIF (VARSIZE_ANY_EXHDR (nonce) != crypto_stream_xchacha20_NONCEBYTES,
 		"%s: invalid nonce");
 	ERRORIF (VARSIZE_ANY_EXHDR (key) != crypto_stream_xchacha20_KEYBYTES,
 		"%s: invalid key");
 
 	crypto_stream_xchacha20_xor (PGSODIUM_UCHARDATA (result),
-		PGSODIUM_UCHARDATA (data),
-		result_size, PGSODIUM_UCHARDATA (nonce), PGSODIUM_UCHARDATA (key));
+		PGSODIUM_UCHARDATA_ANY (data),
+		result_size, PGSODIUM_UCHARDATA_ANY (nonce), PGSODIUM_UCHARDATA_ANY (key));
 	PG_RETURN_BYTEA_P (result);
 }
 
@@ -64,19 +64,19 @@ PG_FUNCTION_INFO_V1 (pgsodium_crypto_stream_xchacha20_xor_ic);
 Datum
 pgsodium_crypto_stream_xchacha20_xor_ic (PG_FUNCTION_ARGS)
 {
-	bytea      *data = PG_GETARG_BYTEA_P (0);
-	bytea      *nonce = PG_GETARG_BYTEA_P (1);
+	bytea      *data = PG_GETARG_BYTEA_PP (0);
+	bytea      *nonce = PG_GETARG_BYTEA_PP (1);
 	uint64_t    ic = PG_GETARG_INT64 (2);
-	bytea      *key = PG_GETARG_BYTEA_P (3);
-	uint64_t    result_size = VARSIZE_ANY (data);
-	bytea      *result = _pgsodium_zalloc_bytea (result_size);
+	bytea      *key = PG_GETARG_BYTEA_PP (3);
+	uint64_t    result_size = VARSIZE_ANY_EXHDR (data);
+	bytea      *result = _pgsodium_zalloc_bytea (result_size + VARHDRSZ);
 	ERRORIF (VARSIZE_ANY_EXHDR (nonce) != crypto_stream_xchacha20_NONCEBYTES,
 		"%s: invalid nonce");
 	ERRORIF (VARSIZE_ANY_EXHDR (key) != crypto_stream_xchacha20_KEYBYTES,
 		"%s: invalid key");
 	crypto_stream_xchacha20_xor_ic (PGSODIUM_UCHARDATA (result),
-		PGSODIUM_UCHARDATA (data),
-		result_size, PGSODIUM_UCHARDATA (nonce), ic, PGSODIUM_UCHARDATA (key));
+		PGSODIUM_UCHARDATA_ANY (data),
+		result_size, PGSODIUM_UCHARDATA_ANY (nonce), ic, PGSODIUM_UCHARDATA_ANY (key));
 	PG_RETURN_BYTEA_P (result);
 }
 
@@ -85,9 +85,9 @@ Datum
 pgsodium_crypto_stream_xchacha20_by_id (PG_FUNCTION_ARGS)
 {
 	size_t      size = PG_GETARG_INT64 (0);
-	bytea      *nonce = PG_GETARG_BYTEA_P (1);
+	bytea      *nonce = PG_GETARG_BYTEA_PP (1);
 	uint64_t    key_id = PG_GETARG_INT64 (2);
-	bytea      *context = PG_GETARG_BYTEA_P (3);
+	bytea      *context = PG_GETARG_BYTEA_PP (3);
 	bytea      *key =
 		pgsodium_derive_helper (key_id, crypto_stream_xchacha20_KEYBYTES,
 		context);
@@ -100,7 +100,7 @@ pgsodium_crypto_stream_xchacha20_by_id (PG_FUNCTION_ARGS)
 		"%s: invalid key");
 
 	crypto_stream_xchacha20 (PGSODIUM_UCHARDATA (result),
-		result_size, PGSODIUM_UCHARDATA (nonce), PGSODIUM_UCHARDATA (key));
+		result_size, PGSODIUM_UCHARDATA_ANY (nonce), PGSODIUM_UCHARDATA_ANY (key));
 	PG_RETURN_BYTEA_P (result);
 }
 
@@ -108,23 +108,23 @@ PG_FUNCTION_INFO_V1 (pgsodium_crypto_stream_xchacha20_xor_by_id);
 Datum
 pgsodium_crypto_stream_xchacha20_xor_by_id (PG_FUNCTION_ARGS)
 {
-	bytea      *data = PG_GETARG_BYTEA_P (0);
-	bytea      *nonce = PG_GETARG_BYTEA_P (1);
+	bytea      *data = PG_GETARG_BYTEA_PP (0);
+	bytea      *nonce = PG_GETARG_BYTEA_PP (1);
 	uint64_t    key_id = PG_GETARG_INT64 (2);
-	bytea      *context = PG_GETARG_BYTEA_P (3);
+	bytea      *context = PG_GETARG_BYTEA_PP (3);
 	bytea      *key =
 		pgsodium_derive_helper (key_id, crypto_stream_xchacha20_KEYBYTES,
 		context);
-	uint64_t    result_size = VARSIZE_ANY (data);
-	bytea      *result = _pgsodium_zalloc_bytea (result_size);
+	uint64_t    result_size = VARSIZE_ANY_EXHDR (data);
+	bytea      *result = _pgsodium_zalloc_bytea (result_size + VARHDRSZ);
 	ERRORIF (VARSIZE_ANY_EXHDR (nonce) != crypto_stream_xchacha20_NONCEBYTES,
 		"%s: invalid nonce");
 	ERRORIF (VARSIZE_ANY_EXHDR (key) != crypto_stream_xchacha20_KEYBYTES,
 		"%s: invalid key");
 
 	crypto_stream_xchacha20_xor (PGSODIUM_UCHARDATA (result),
-		PGSODIUM_UCHARDATA (data),
-		result_size, PGSODIUM_UCHARDATA (nonce), PGSODIUM_UCHARDATA (key));
+		PGSODIUM_UCHARDATA_ANY (data),
+		result_size, PGSODIUM_UCHARDATA_ANY (nonce), PGSODIUM_UCHARDATA_ANY (key));
 	PG_RETURN_BYTEA_P (result);
 }
 
@@ -132,23 +132,23 @@ PG_FUNCTION_INFO_V1 (pgsodium_crypto_stream_xchacha20_xor_ic_by_id);
 Datum
 pgsodium_crypto_stream_xchacha20_xor_ic_by_id (PG_FUNCTION_ARGS)
 {
-	bytea      *data = PG_GETARG_BYTEA_P (0);
-	bytea      *nonce = PG_GETARG_BYTEA_P (1);
+	bytea      *data = PG_GETARG_BYTEA_PP (0);
+	bytea      *nonce = PG_GETARG_BYTEA_PP (1);
 	uint64_t    ic = PG_GETARG_INT64 (2);
 	uint64_t    key_id = PG_GETARG_INT64 (3);
-	bytea      *context = PG_GETARG_BYTEA_P (4);
+	bytea      *context = PG_GETARG_BYTEA_PP (4);
 	bytea      *key =
 		pgsodium_derive_helper (key_id, crypto_stream_xchacha20_KEYBYTES,
 		context);
-	uint64_t    result_size = VARSIZE_ANY (data);
-	bytea      *result = _pgsodium_zalloc_bytea (result_size);
+	uint64_t    result_size = VARSIZE_ANY_EXHDR (data);
+	bytea      *result = _pgsodium_zalloc_bytea (result_size + VARHDRSZ);
 	ERRORIF (VARSIZE_ANY_EXHDR (nonce) != crypto_stream_xchacha20_NONCEBYTES,
 		"%s: invalid nonce");
 	ERRORIF (VARSIZE_ANY_EXHDR (key) != crypto_stream_xchacha20_KEYBYTES,
 		"%s: invalid key");
 
 	crypto_stream_xchacha20_xor_ic (PGSODIUM_UCHARDATA (result),
-		PGSODIUM_UCHARDATA (data),
-		result_size, PGSODIUM_UCHARDATA (nonce), ic, PGSODIUM_UCHARDATA (key));
+		PGSODIUM_UCHARDATA_ANY (data),
+		result_size, PGSODIUM_UCHARDATA_ANY (nonce), ic, PGSODIUM_UCHARDATA_ANY (key));
 	PG_RETURN_BYTEA_P (result);
 }

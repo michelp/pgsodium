@@ -20,7 +20,7 @@ RUN git clone --branch REL_${version}_STABLE https://github.com/postgres/postgre
     --enable-debug \
     --enable-depend --enable-cassert --enable-profiling \
     CFLAGS="-ggdb -Og -g3 -fno-omit-frame-pointer" \
-    CFLAGS="-O3" \
+#    CFLAGS="-O3" \
     && make -j 4 && make install
 
 RUN chown postgres:postgres /home/postgres

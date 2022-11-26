@@ -33,6 +33,9 @@
 #define PGSODIUM_UCHARDATA(_vlena) (unsigned char *)VARDATA(_vlena)
 #define PGSODIUM_CHARDATA(_vlena) (char *)VARDATA(_vlena)
 
+#define PGSODIUM_UCHARDATA_ANY(_vlena) (unsigned char *)VARDATA_ANY(_vlena)
+#define PGSODIUM_CHARDATA_ANY(_vlena) (char *)VARDATA_ANY(_vlena)
+
 #define ERRORIF(B, msg)                                                        \
     if ((B))                                                                   \
         ereport(ERROR, (errcode(ERRCODE_DATA_EXCEPTION), errmsg(msg, __func__)))
@@ -111,7 +114,7 @@ pgsodium_derive_helper (unsigned long long subkey_id,
 	crypto_kdf_derive_from_key (PGSODIUM_UCHARDATA (result),
 		subkey_size,
 		subkey_id,
-		(const char *) VARDATA (context),
+		(const char *) VARDATA_ANY (context),
 		PGSODIUM_UCHARDATA (pgsodium_secret_key));
 	return result;
 }

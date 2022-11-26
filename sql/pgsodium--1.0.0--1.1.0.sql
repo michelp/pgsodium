@@ -62,9 +62,6 @@ RETURNS bytea
 AS '$libdir/pgsodium', 'pgsodium_randombytes_buf_deterministic'
 LANGUAGE C IMMUTABLE STRICT;
 
-
--- Marc's hacks follow
-
 CREATE FUNCTION crypto_sign_init()
 RETURNS bytea
 AS '$libdir/pgsodium', 'pgsodium_crypto_sign_init'

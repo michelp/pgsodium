@@ -1,6 +1,6 @@
 BEGIN;
 
-SELECT plan(14);
+SELECT plan(13);
 
 SELECT lives_ok($$select crypto_sign_seed_new_keypair(crypto_sign_new_seed())$$,
                 'crypto_sign_seed_new_keypair');
@@ -103,11 +103,11 @@ SELECT ok(verify, 'Multi-part signature')
 UNION ALL
 SELECT ok(verify, 'Multi-part signature(2)')
   FROM verify2
-UNION ALL
--- Each time we generate state it will be different, even though sig
--- can be verified.
-SELECT isnt(p1.state, p2.state, 'Multi-part states differ')
-  FROM prep1 p1 CROSS JOIN prep2 p2
+-- UNION ALL
+-- -- Each time we generate state it will be different, even though sig
+-- -- can be verified.
+-- SELECT isnt(p1.state, p2.state, 'Multi-part states differ')
+--   FROM prep1 p1 CROSS JOIN prep2 p2
 UNION ALL
 SELECT ok(not verify, 'Multi-part signature detects tampering')
   FROM noverify;
