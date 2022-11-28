@@ -1,5 +1,5 @@
 BEGIN;
-SELECT plan(7);
+SELECT plan(16);
 
 SELECT crypto_aead_ietf_keygen() aeadkey \gset
 SELECT crypto_aead_ietf_noncegen() aeadnonce \gset
@@ -42,16 +42,16 @@ SELECT throws_ok(format($$select crypto_aead_ietf_decrypt('foo', 'and also your 
                  '22000', 'pgsodium_crypto_aead_ietf_decrypt: invalid message', 'crypto_aead_ietf_decrypt invalid message');
 
 SELECT throws_ok(format($$select crypto_aead_ietf_decrypt(NULL::bytea, 'and also your friend', %L, %L::bytea)$$, :'aeadnonce', :'aeadkey'),
-                 '22000', 'pgsodium_crypto_aead_ietf_decrypt: invalid message', 'crypto_aead_ietf_decrypt null message');
+                 '22000', 'pgsodium_crypto_aead_ietf_decrypt: ciphertext cannot be NULL', 'crypto_aead_ietf_decrypt null message');
 
 SELECT throws_ok(format($$select crypto_aead_ietf_decrypt(%L, NULL::bytea, %L::bytea, %L::bytea)$$, :'aead', :'aeadnonce', :'aeadkey'),
-                 '22000', 'pgsodium_crypto_aead_ietf_decrypt: invalid nonce', 'crypto_aead_ietf_decrypt null associated');
+                 '22000', 'pgsodium_crypto_aead_ietf_decrypt: associated cannot be NULL', 'crypto_aead_ietf_decrypt null associated');
 
 SELECT throws_ok(format($$select crypto_aead_ietf_decrypt(%L, 'and also your friend', NULL, 'bad_key'::bytea)$$, :'aead', :'aeadkey'),
-                 '22000', 'pgsodium_crypto_aead_ietf_decrypt: invalid key', 'crypto_aead_ietf_decrypt null nonce');
+                 '22000', 'pgsodium_crypto_aead_ietf_decrypt: nonce cannot be NULL', 'crypto_aead_ietf_decrypt null nonce');
 
 SELECT throws_ok(format($$select crypto_aead_ietf_decrypt('foo', 'and also your friend', %L, NULL::bytea)$$, :'aeadnonce'),
-                 '22000', 'pgsodium_crypto_aead_ietf_decrypt: invalid message', 'crypto_aead_ietf_decrypt null key');
+                 '22000', 'pgsodium_crypto_aead_ietf_decrypt: key cannot be NULL', 'crypto_aead_ietf_decrypt null key');
 
 SELECT crypto_aead_det_keygen() detkey \gset
 
@@ -60,6 +60,12 @@ SELECT crypto_aead_det_encrypt(
 
 SELECT is(crypto_aead_det_decrypt(:'detaead', 'and also your friend', :'detkey'::bytea),
           'bob is your uncle', 'crypto_aead_det_decrypt');
+
+SELECT crypto_aead_det_encrypt(
+    'bob is your uncle', NULL, :'detkey'::bytea) detaead2 \gset
+
+SELECT is(crypto_aead_det_decrypt(:'detaead2', NULL, :'detkey'::bytea),
+          'bob is your uncle', 'crypto_aead_det_decrypt with NULL associated');
 
 SELECT * FROM finish();
 ROLLBACK;

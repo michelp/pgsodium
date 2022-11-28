@@ -65,4 +65,9 @@ that the order of messages passed to the aggregate is invariant.';
     
 
 ALTER FUNCTION pgsodium.crypto_aead_ietf_encrypt(bytea, bytea, bytea, bytea) CALLED ON NULL INPUT;
+ALTER FUNCTION pgsodium.crypto_aead_ietf_encrypt(bytea, bytea, bytea, bigint, bytea) CALLED ON NULL INPUT;
+ALTER FUNCTION pgsodium.crypto_aead_ietf_encrypt(bytea, bytea, bytea, uuid) CALLED ON NULL INPUT;
+
 ALTER FUNCTION pgsodium.crypto_aead_ietf_decrypt(bytea, bytea, bytea, bytea) CALLED ON NULL INPUT;
+ALTER FUNCTION pgsodium.crypto_aead_ietf_decrypt(bytea, bytea, bytea, bigint, bytea) CALLED ON NULL INPUT;
+ALTER FUNCTION pgsodium.crypto_aead_ietf_decrypt(bytea, bytea, bytea, uuid) CALLED ON NULL INPUT;
