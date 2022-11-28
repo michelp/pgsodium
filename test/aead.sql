@@ -1,5 +1,5 @@
 BEGIN;
-SELECT plan(16);
+SELECT plan(14);
 
 SELECT crypto_aead_ietf_keygen() aeadkey \gset
 SELECT crypto_aead_ietf_noncegen() aeadnonce \gset
@@ -16,10 +16,6 @@ SELECT throws_ok(format($$select crypto_aead_ietf_encrypt(%L, 'and also your fri
 SELECT throws_ok(format($$select crypto_aead_ietf_encrypt(NULL, 'and also your friend',
     %L::bytea, %L::bytea)$$, :'aeadnonce', :'aeadkey'),
     '22000', 'pgsodium_crypto_aead_ietf_encrypt: message cannot be NULL', 'crypto_aead_ietf_encrypt null message');
-
-SELECT throws_ok(format($$select crypto_aead_ietf_encrypt('bob is your uncle', NULL,
-    %L::bytea, %L::bytea)$$, :'aeadnonce', :'aeadkey'),
-    '22000', 'pgsodium_crypto_aead_ietf_encrypt: associated cannot be NULL', 'crypto_aead_ietf_encrypt null associated');
 
 SELECT throws_ok(format($$select crypto_aead_ietf_encrypt('bob is your uncle', 'and also your friend',
     NULL::bytea, %L::bytea)$$, :'aeadkey'),
@@ -43,9 +39,6 @@ SELECT throws_ok(format($$select crypto_aead_ietf_decrypt('foo', 'and also your 
 
 SELECT throws_ok(format($$select crypto_aead_ietf_decrypt(NULL::bytea, 'and also your friend', %L, %L::bytea)$$, :'aeadnonce', :'aeadkey'),
                  '22000', 'pgsodium_crypto_aead_ietf_decrypt: ciphertext cannot be NULL', 'crypto_aead_ietf_decrypt null message');
-
-SELECT throws_ok(format($$select crypto_aead_ietf_decrypt(%L, NULL::bytea, %L::bytea, %L::bytea)$$, :'aead', :'aeadnonce', :'aeadkey'),
-                 '22000', 'pgsodium_crypto_aead_ietf_decrypt: associated cannot be NULL', 'crypto_aead_ietf_decrypt null associated');
 
 SELECT throws_ok(format($$select crypto_aead_ietf_decrypt(%L, 'and also your friend', NULL, 'bad_key'::bytea)$$, :'aead', :'aeadkey'),
                  '22000', 'pgsodium_crypto_aead_ietf_decrypt: nonce cannot be NULL', 'crypto_aead_ietf_decrypt null nonce');
