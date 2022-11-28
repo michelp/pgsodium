@@ -62,10 +62,97 @@ crypto_sign_update().
 Note that when signing mutli-part messages using aggregates, the order
 in which message parts is processed is critical. You *must* ensure
 that the order of messages passed to the aggregate is invariant.';
-    
+
 
 CREATE OR REPLACE VIEW pgsodium.valid_key AS
   SELECT id, name, status, key_type, key_id, key_context, created, expires, associated_data
     FROM pgsodium.key
    WHERE  status IN ('valid', 'default')
      AND CASE WHEN expires IS NULL THEN true ELSE expires > now() END;
+
+CREATE OR REPLACE FUNCTION pgsodium.create_mask_view(relid oid, subid integer, debug boolean = false)
+    RETURNS void AS
+  $$
+DECLARE
+  body text;
+  source_name text;
+  view_owner text = session_user;
+  rule pgsodium.masking_rule;
+BEGIN
+  SELECT * INTO STRICT rule FROM pgsodium.masking_rule WHERE attrelid = relid and attnum = subid ;
+
+  source_name := relid::regclass;
+
+  body = format(
+    $c$
+    DROP VIEW IF EXISTS %s;
+    CREATE VIEW %s AS SELECT %s
+    FROM %s;
+    ALTER VIEW %s OWNER TO %s;
+    $c$,
+    rule.view_name,
+    rule.view_name,
+    pgsodium.decrypted_columns(relid),
+    source_name,
+    rule.view_name,
+    view_owner
+  );
+  IF debug THEN
+    RAISE NOTICE '%', body;
+  END IF;
+  EXECUTE body;
+
+  body = format(
+    $c$
+    DROP FUNCTION IF EXISTS %s.%s_encrypt_secret() CASCADE;
+
+    CREATE OR REPLACE FUNCTION %s.%s_encrypt_secret()
+      RETURNS TRIGGER
+      LANGUAGE plpgsql
+      AS $t$
+    BEGIN
+    %s;
+    RETURN new;
+    END;
+    $t$;
+
+    ALTER FUNCTION  %s.%s_encrypt_secret() OWNER TO %s;
+
+    DROP TRIGGER IF EXISTS %s_encrypt_secret_trigger ON %s.%s;
+
+    CREATE TRIGGER %s_encrypt_secret_trigger
+      BEFORE INSERT OR UPDATE ON %s
+      FOR EACH ROW
+      EXECUTE FUNCTION %s.%s_encrypt_secret ();
+      $c$,
+    rule.relnamespace,
+    rule.relname,
+    rule.relnamespace,
+    rule.relname,
+    pgsodium.encrypted_columns(relid),
+    rule.relnamespace,
+    rule.relname,
+    view_owner,
+    rule.relname,
+    rule.relnamespace,
+    rule.relname,
+    rule.relname,
+    source_name,
+    rule.relnamespace,
+    rule.relname
+  );
+  if debug THEN
+    RAISE NOTICE '%', body;
+  END IF;
+  EXECUTE body;
+
+  PERFORM pgsodium.mask_role(oid::regrole, source_name, rule.view_name)
+  FROM pg_roles WHERE pgsodium.has_mask(oid::regrole, source_name);
+
+  RETURN;
+END
+  $$
+  LANGUAGE plpgsql
+  VOLATILE
+  SET search_path='pg_catalog'
+;
