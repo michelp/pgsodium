@@ -64,6 +64,12 @@ in which message parts is processed is critical. You *must* ensure
 that the order of messages passed to the aggregate is invariant.';
     
 
+CREATE OR REPLACE VIEW pgsodium.valid_key AS
+  SELECT id, name, status, key_type, key_id, key_context, created, expires, associated_data
+    FROM pgsodium.key
+   WHERE  status IN ('valid', 'default')
+     AND CASE WHEN expires IS NULL THEN true ELSE expires > now() END;
+
 ALTER FUNCTION pgsodium.crypto_aead_ietf_encrypt(bytea, bytea, bytea, bytea) CALLED ON NULL INPUT;
 ALTER FUNCTION pgsodium.crypto_aead_ietf_encrypt(bytea, bytea, bytea, bigint, bytea) CALLED ON NULL INPUT;
 ALTER FUNCTION pgsodium.crypto_aead_ietf_encrypt(bytea, bytea, bytea, uuid) CALLED ON NULL INPUT;

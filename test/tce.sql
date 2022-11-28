@@ -77,7 +77,7 @@ SELECT lives_ok(
 SELECT * FROM finish();
 COMMIT;
 
-\c postgres bobo
+\c - bobo
 
 BEGIN;
 SELECT plan(9);
@@ -153,6 +153,6 @@ SELECT lives_ok(
 
 SELECT * FROM finish();
 
-\c postgres postgres
+\c - postgres
 DROP SCHEMA private CASCADE;
 \endif

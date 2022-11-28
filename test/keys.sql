@@ -1,6 +1,6 @@
 \if :serverkeys
 BEGIN;
-SELECT plan(4);
+SELECT plan(15);
 
 select * from pgsodium.create_key() \gset anon_det_key_
 
@@ -81,6 +81,37 @@ select set_eq($$select name from pgsodium.get_named_keys()$$,
 select set_eq($$select name from pgsodium.get_named_keys('strip%')$$,
     ARRAY['stripe', 'stripe2'],
     'get_named_keys() with filter');
+
+-- Test expiring keys
+select set_eq($$select id IS NOT NULL from pgsodium.create_key(name => 'notexpired', expires => now() + '1h'::interval)$$,
+    'values (true)',
+    'creating a key expiring in one hour returns a row');
+
+select id as exp_id from pgsodium.key where name = 'notexpired' \gset
+
+select set_has($$select name from pgsodium.valid_key$$, $$values ('notexpired'::text)$$,
+    'view valid_key should list a key expiring in futur');
+
+select set_eq(format('select id from pgsodium.get_key_by_id(%L)', :'exp_id' ),
+    format($$values (%L::uuid)$$, :'exp_id'),
+    'pgsodium.get_key_by_id should return a key expiring in futur');
+
+select set_eq($$select id from pgsodium.get_key_by_name('notexpired')$$,
+    format($$values (%L::uuid)$$, :'exp_id'),
+    'pgsodium.get_key_by_name should return a key expiring in futur');
+
+update pgsodium.key set expires = now() - '1m'::interval, name = 'expired' where name = 'notexpired';
+
+select set_hasnt($$select name from pgsodium.valid_key$$, $$values ('expired'::text)$$,
+    'view valid_key should not list an expired key');
+
+select set_eq(format('select id IS NULL from pgsodium.get_key_by_id(%L)', :'exp_id' ),
+    'values (true)',
+    'pgsodium.get_key_by_id should not return an expired key');
+
+select set_eq($$select id IS NULL from pgsodium.get_key_by_name('expired')$$,
+    'values (true)',
+    'pgsodium.get_key_by_name should not return an expired key');
 
 SELECT * FROM finish();
 ROLLBACK;
