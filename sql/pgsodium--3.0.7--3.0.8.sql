@@ -63,3 +63,6 @@ Note that when signing mutli-part messages using aggregates, the order
 in which message parts is processed is critical. You *must* ensure
 that the order of messages passed to the aggregate is invariant.';
     
+
+ALTER FUNCTION pgsodium.crypto_aead_ietf_encrypt(bytea, bytea, bytea, bytea) CALLED ON NULL INPUT;
+ALTER FUNCTION pgsodium.crypto_aead_ietf_decrypt(bytea, bytea, bytea, bytea) CALLED ON NULL INPUT;

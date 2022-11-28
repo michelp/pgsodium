@@ -27,12 +27,23 @@ PG_FUNCTION_INFO_V1 (pgsodium_crypto_aead_ietf_encrypt);
 Datum
 pgsodium_crypto_aead_ietf_encrypt (PG_FUNCTION_ARGS)
 {
-	bytea      *message = PG_GETARG_BYTEA_PP (0);
-	bytea      *additional = PG_GETARG_BYTEA_PP (1);
-	bytea      *nonce = PG_GETARG_BYTEA_PP (2);
-	bytea      *key = PG_GETARG_BYTEA_PP (3);
+	bytea      *message;
+	bytea      *associated;
+	bytea      *nonce;
+	bytea      *key;
 	unsigned long long result_size;
 	bytea      *result;
+
+	ERRORIF (PG_ARGISNULL (0), "%s: message cannot be NULL");
+	ERRORIF (PG_ARGISNULL (1), "%s: associated cannot be NULL");
+	ERRORIF (PG_ARGISNULL (2), "%s: nonce cannot be NULL");
+	ERRORIF (PG_ARGISNULL (3), "%s: key cannot be NULL");
+
+	message = PG_GETARG_BYTEA_PP (0);
+	associated = PG_GETARG_BYTEA_PP (1);
+	nonce = PG_GETARG_BYTEA_PP (2);
+	key = PG_GETARG_BYTEA_PP (3);
+
 	ERRORIF (VARSIZE_ANY_EXHDR (nonce) !=
 		crypto_aead_chacha20poly1305_IETF_NPUBBYTES, "%s: invalid nonce");
 	ERRORIF (VARSIZE_ANY_EXHDR (key) !=
@@ -45,8 +56,8 @@ pgsodium_crypto_aead_ietf_encrypt (PG_FUNCTION_ARGS)
 		&result_size,
 		PGSODIUM_UCHARDATA_ANY (message),
 		VARSIZE_ANY_EXHDR (message),
-		PGSODIUM_UCHARDATA_ANY (additional),
-		VARSIZE_ANY_EXHDR (additional),
+		PGSODIUM_UCHARDATA_ANY (associated),
+		VARSIZE_ANY_EXHDR (associated),
 		NULL,
 		PGSODIUM_UCHARDATA_ANY (nonce),
 		PGSODIUM_UCHARDATA_ANY (key));
@@ -57,14 +68,24 @@ PG_FUNCTION_INFO_V1 (pgsodium_crypto_aead_ietf_decrypt);
 Datum
 pgsodium_crypto_aead_ietf_decrypt (PG_FUNCTION_ARGS)
 {
-	bytea      *ciphertext = PG_GETARG_BYTEA_PP (0);
-	bytea      *additional = PG_GETARG_BYTEA_PP (1);
-	bytea      *nonce = PG_GETARG_BYTEA_PP (2);
-	bytea      *key = PG_GETARG_BYTEA_PP (3);
+	bytea      *ciphertext;
+	bytea      *associated;
+	bytea      *nonce;
+	bytea      *key;
 	size_t      ciphertext_len;
 	unsigned long long result_size;
 	bytea      *result;
 	int         success;
+
+	ERRORIF (PG_ARGISNULL (0), "%s: ciphertext cannot be NULL");
+	ERRORIF (PG_ARGISNULL (1), "%s: associated cannot be NULL");
+	ERRORIF (PG_ARGISNULL (2), "%s: nonce cannot be NULL");
+	ERRORIF (PG_ARGISNULL (3), "%s: key cannot be NULL");
+
+	ciphertext = PG_GETARG_BYTEA_PP (0);
+	associated = PG_GETARG_BYTEA_PP (1);
+	nonce = PG_GETARG_BYTEA_PP (2);
+	key = PG_GETARG_BYTEA_PP (3);
 
 	ERRORIF (VARSIZE_ANY_EXHDR (ciphertext) <=
 		crypto_aead_chacha20poly1305_IETF_ABYTES, "%s: invalid message");
@@ -84,8 +105,8 @@ pgsodium_crypto_aead_ietf_decrypt (PG_FUNCTION_ARGS)
 			NULL,
 			PGSODIUM_UCHARDATA_ANY (ciphertext),
 			ciphertext_len,
-			PGSODIUM_UCHARDATA_ANY (additional),
-			VARSIZE_ANY_EXHDR (additional),
+			PGSODIUM_UCHARDATA_ANY (associated),
+			VARSIZE_ANY_EXHDR (associated),
 			PGSODIUM_UCHARDATA_ANY (nonce),
 			PGSODIUM_UCHARDATA_ANY (key));
 	ERRORIF (success != 0, "%s: invalid ciphertext");
@@ -97,7 +118,7 @@ Datum
 pgsodium_crypto_aead_ietf_encrypt_by_id (PG_FUNCTION_ARGS)
 {
 	bytea      *message = PG_GETARG_BYTEA_P (0);
-	bytea      *additional = PG_GETARG_BYTEA_P (1);
+	bytea      *associated = PG_GETARG_BYTEA_P (1);
 	bytea      *nonce = PG_GETARG_BYTEA_P (2);
 	unsigned long long key_id = PG_GETARG_INT64 (3);
 	bytea      *context = PG_GETARG_BYTEA_P (4);
@@ -116,8 +137,8 @@ pgsodium_crypto_aead_ietf_encrypt_by_id (PG_FUNCTION_ARGS)
 		&result_size,
 		PGSODIUM_UCHARDATA (message),
 		VARSIZE_ANY_EXHDR (message),
-		PGSODIUM_UCHARDATA (additional),
-		VARSIZE_ANY_EXHDR (additional),
+		PGSODIUM_UCHARDATA (associated),
+		VARSIZE_ANY_EXHDR (associated),
 		NULL, PGSODIUM_UCHARDATA (nonce), PGSODIUM_UCHARDATA (key));
 	SET_VARSIZE (result,
 		VARHDRSZ + result_size + crypto_aead_chacha20poly1305_IETF_ABYTES);
@@ -129,7 +150,7 @@ Datum
 pgsodium_crypto_aead_ietf_decrypt_by_id (PG_FUNCTION_ARGS)
 {
 	bytea      *ciphertext = PG_GETARG_BYTEA_P (0);
-	bytea      *additional = PG_GETARG_BYTEA_P (1);
+	bytea      *associated = PG_GETARG_BYTEA_P (1);
 	bytea      *nonce = PG_GETARG_BYTEA_P (2);
 	unsigned long long key_id = PG_GETARG_INT64 (3);
 	bytea      *context = PG_GETARG_BYTEA_P (4);
@@ -153,7 +174,7 @@ pgsodium_crypto_aead_ietf_decrypt_by_id (PG_FUNCTION_ARGS)
 	success =
 		crypto_aead_chacha20poly1305_ietf_decrypt (PGSODIUM_UCHARDATA (result),
 		&result_size, NULL, PGSODIUM_UCHARDATA (ciphertext), ciphertext_len,
-		PGSODIUM_UCHARDATA (additional), VARSIZE_ANY_EXHDR (additional),
+		PGSODIUM_UCHARDATA (associated), VARSIZE_ANY_EXHDR (associated),
 		PGSODIUM_UCHARDATA (nonce), PGSODIUM_UCHARDATA (key));
 	ERRORIF (success != 0, "%s: invalid ciphertext");
 	SET_VARSIZE (result, VARHDRSZ + result_size);
@@ -185,7 +206,7 @@ Datum
 pgsodium_crypto_aead_det_encrypt (PG_FUNCTION_ARGS)
 {
 	bytea      *message = PG_GETARG_BYTEA_PP (0);
-	bytea      *additional = PG_GETARG_BYTEA_PP (1);
+	bytea      *associated = PG_GETARG_BYTEA_PP (1);
 	bytea      *key = PG_GETARG_BYTEA_PP (2);
 	bytea      *nonce;
 	size_t      result_size;
@@ -211,8 +232,8 @@ pgsodium_crypto_aead_det_encrypt (PG_FUNCTION_ARGS)
 		PGSODIUM_UCHARDATA (result),
 		PGSODIUM_UCHARDATA_ANY (message),
 		VARSIZE_ANY_EXHDR (message),
-		PGSODIUM_UCHARDATA_ANY (additional),
-		VARSIZE_ANY_EXHDR (additional),
+		PGSODIUM_UCHARDATA_ANY (associated),
+		VARSIZE_ANY_EXHDR (associated),
 		nonce != NULL ? PGSODIUM_UCHARDATA_ANY (nonce) : NULL,
 		PGSODIUM_UCHARDATA_ANY (key));
 	ERRORIF (success != 0, "%s: crypto_aead_det_xchacha20_encrypt failed");
@@ -224,7 +245,7 @@ Datum
 pgsodium_crypto_aead_det_decrypt (PG_FUNCTION_ARGS)
 {
 	bytea      *ciphertext = PG_GETARG_BYTEA_PP (0);
-	bytea      *additional = PG_GETARG_BYTEA_PP (1);
+	bytea      *associated = PG_GETARG_BYTEA_PP (1);
 	bytea      *key = PG_GETARG_BYTEA_PP (2);
 	size_t      result_len;
 	bytea      *result, *nonce;
@@ -250,8 +271,8 @@ pgsodium_crypto_aead_det_decrypt (PG_FUNCTION_ARGS)
 		PGSODIUM_UCHARDATA (result),
 		PGSODIUM_UCHARDATA_ANY (ciphertext),
 		VARSIZE_ANY_EXHDR (ciphertext),
-		PGSODIUM_UCHARDATA_ANY (additional),
-		VARSIZE_ANY_EXHDR (additional),
+		PGSODIUM_UCHARDATA_ANY (associated),
+		VARSIZE_ANY_EXHDR (associated),
 		nonce != NULL ? PGSODIUM_UCHARDATA_ANY (nonce) : NULL,
 		PGSODIUM_UCHARDATA_ANY (key));
 	ERRORIF (success != 0, "%s: invalid ciphertext");
@@ -263,7 +284,7 @@ Datum
 pgsodium_crypto_aead_det_encrypt_by_id (PG_FUNCTION_ARGS)
 {
 	bytea      *message = PG_GETARG_BYTEA_PP (0);
-	bytea      *additional = PG_GETARG_BYTEA_PP (1);
+	bytea      *associated = PG_GETARG_BYTEA_PP (1);
 	unsigned long long key_id = PG_GETARG_INT64 (2);
 	bytea      *context = PG_GETARG_BYTEA_PP (3);
 	bytea      *key, *nonce;
@@ -293,8 +314,8 @@ pgsodium_crypto_aead_det_encrypt_by_id (PG_FUNCTION_ARGS)
 		PGSODIUM_UCHARDATA (result),
 		PGSODIUM_UCHARDATA_ANY (message),
 		VARSIZE_ANY_EXHDR (message),
-		PGSODIUM_UCHARDATA_ANY (additional),
-		VARSIZE_ANY_EXHDR (additional),
+		PGSODIUM_UCHARDATA_ANY (associated),
+		VARSIZE_ANY_EXHDR (associated),
 		nonce != NULL ? PGSODIUM_UCHARDATA_ANY (nonce) : NULL,
 		PGSODIUM_UCHARDATA_ANY (key));
 	ERRORIF (success != 0, "%s: failed");
@@ -306,7 +327,7 @@ Datum
 pgsodium_crypto_aead_det_decrypt_by_id (PG_FUNCTION_ARGS)
 {
 	bytea      *ciphertext = PG_GETARG_BYTEA_PP (0);
-	bytea      *additional = PG_GETARG_BYTEA_PP (1);
+	bytea      *associated = PG_GETARG_BYTEA_PP (1);
 	unsigned long long key_id = PG_GETARG_INT64 (2);
 	bytea      *context = PG_GETARG_BYTEA_PP (3);
 	size_t      result_len;
@@ -335,8 +356,8 @@ pgsodium_crypto_aead_det_decrypt_by_id (PG_FUNCTION_ARGS)
 		PGSODIUM_UCHARDATA (result),
 		PGSODIUM_UCHARDATA_ANY (ciphertext),
 		VARSIZE_ANY_EXHDR (ciphertext),
-		PGSODIUM_UCHARDATA_ANY (additional),
-		VARSIZE_ANY_EXHDR (additional),
+		PGSODIUM_UCHARDATA_ANY (associated),
+		VARSIZE_ANY_EXHDR (associated),
 		nonce != NULL ? PGSODIUM_UCHARDATA_ANY (nonce) : NULL,
 		PGSODIUM_UCHARDATA_ANY (key));
 	ERRORIF (success != 0, "%s: invalid ciphertext");
