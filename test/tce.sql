@@ -14,17 +14,17 @@ SELECT throws_ok(
 
 CREATE TABLE private.foo(
   secret text,
-  associated text
+  associated text default ''
 );
 
 CREATE TABLE private.bar(
   id bigserial primary key,
-  secret text,
-  nonce bytea,
-  secret2 text,
-  associated2 text,
+  secret text DEFAULT '',
+  nonce bytea  DEFAULT pgsodium.crypto_aead_det_noncegen(),
+  secret2 text DEFAULT '',
+  associated2 text DEFAULT '',
   secret2_key_id uuid,
-  nonce2 bytea
+  nonce2 bytea DEFAULT pgsodium.crypto_aead_det_noncegen()
 );
 
 SELECT lives_ok(
@@ -52,7 +52,7 @@ SELECT lives_ok(
          SECURITY LABEL FOR pgsodium ON COLUMN private.bar.secret
          IS 'ENCRYPT WITH KEY ID %s ASSOCIATED (id) NONCE nonce'
          $test$, :'secret_key_id'),
-  'can label column for encryption');
+  'can label another column on same table for encryption');
 
 CREATE ROLE bobo with login password 'foo';
 
@@ -80,7 +80,7 @@ COMMIT;
 \c - bobo
 
 BEGIN;
-SELECT plan(9);
+SELECT plan(12);
 
 SELECT pgsodium.crypto_aead_det_noncegen() nonce \gset
 SELECT pgsodium.crypto_aead_det_noncegen() nonce2 \gset
@@ -90,7 +90,18 @@ SELECT lives_ok(
     $test$
     INSERT INTO private.decrypted_foo (secret) VALUES ('s3kr3t');
     $test$),
-    'can insert into foo table');
+    'can insert into decrypted view');
+
+SELECT lives_ok(
+  format(
+    $test$
+    UPDATE private.decrypted_foo SET secret  = 'sp00n';
+    $test$),
+    'can update into decrypted view');
+
+SELECT results_eq($$SELECT decrypted_secret = 'sp00n' from private.decrypted_foo$$,
+    $$VALUES (true)$$,
+    'can see updated decrypted view');
 
 SELECT lives_ok(
   format(
@@ -104,14 +115,22 @@ SELECT lives_ok(
     'can insert into bar table');
 
 SELECT results_eq(
-    $$SELECT decrypted_secret = 's3kr3t' FROM private.decrypted_foo$$,
-    $$VALUES (true)$$,
+    $$SELECT decrypted_secret = 's3kr3t', decrypted_secret2 = 'shhh' FROM private.other_bar$$,
+    $$VALUES (true,  true)$$,
     'can select from masking view');
 
-SELECT results_eq(
-    $$SELECT decrypted_secret = 's3kr3t' FROM private.other_bar$$,
+SELECT id AS another_secret_key_id FROM pgsodium.create_key(name:='ANOTHER_NAME') \gset
+
+SELECT lives_ok(
+  format(
+    $test$
+    UPDATE private.other_bar SET secret2 = decrypted_secret2, secret2_key_id = %L::uuid;
+    $test$, :'another_secret_key_id'),
+    'can update key id with rotation into decrypted view');
+
+SELECT results_eq($$SELECT decrypted_secret2 = 'shhh' from private.other_bar$$,
     $$VALUES (true)$$,
-    'can select from masking view');
+    'can see updated key id in decrypted view');
 
 CREATE TABLE private.bobo(
   secret text,
@@ -144,7 +163,7 @@ SELECT results_eq(
     $$SELECT decrypted_secret = 's3kr3t' FROM private.barbo$$,
     $$VALUES (true)$$,
     'non-extension owner role can select from masking view');
-    
+
 SELECT lives_ok(
     $test$
     select pgsodium.update_masks()
