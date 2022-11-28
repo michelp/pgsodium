@@ -21,7 +21,8 @@ pgsodium_crypto_signcrypt_keypair (PG_FUNCTION_ARGS)
 		VARHDRSZ);
 	secretkey = _pgsodium_zalloc_bytea (crypto_signcrypt_tbsbr_SECRETKEYBYTES +
 		VARHDRSZ);
-	crypto_signcrypt_tbsbr_keygen (PGSODIUM_UCHARDATA (publickey),
+	crypto_signcrypt_tbsbr_keygen (
+		PGSODIUM_UCHARDATA (publickey),
 		PGSODIUM_UCHARDATA (secretkey));
 	values[0] = PointerGetDatum (publickey);
 	values[1] = PointerGetDatum (secretkey);
@@ -34,11 +35,11 @@ PG_FUNCTION_INFO_V1 (pgsodium_crypto_signcrypt_sign_before);
 Datum
 pgsodium_crypto_signcrypt_sign_before (PG_FUNCTION_ARGS)
 {
-	bytea      *sender = PG_GETARG_BYTEA_P (0);
-	bytea      *recipient = PG_GETARG_BYTEA_P (1);
-	bytea      *sender_sk = PG_GETARG_BYTEA_P (2);
-	bytea      *recipient_pk = PG_GETARG_BYTEA_P (3);
-	bytea      *additional = PG_GETARG_BYTEA_P (4);
+	bytea      *sender = PG_GETARG_BYTEA_PP (0);
+	bytea      *recipient = PG_GETARG_BYTEA_PP (1);
+	bytea      *sender_sk = PG_GETARG_BYTEA_PP (2);
+	bytea      *recipient_pk = PG_GETARG_BYTEA_PP (3);
+	bytea      *additional = PG_GETARG_BYTEA_PP (4);
 
 	TupleDesc   tupdesc;
 	Datum       values[2];
@@ -61,16 +62,19 @@ pgsodium_crypto_signcrypt_sign_before (PG_FUNCTION_ARGS)
 		VARHDRSZ);
 
 	success =
-		crypto_signcrypt_tbsbr_sign_before (PGSODIUM_UCHARDATA (state),
-		PGSODIUM_UCHARDATA (shared_key),
-		PGSODIUM_UCHARDATA (sender),
-		VARSIZE_ANY_EXHDR (sender),
-		PGSODIUM_UCHARDATA (recipient),
-		VARSIZE_ANY_EXHDR (recipient),
-		PGSODIUM_UCHARDATA (additional),
-		VARSIZE_ANY_EXHDR (additional),
-		PGSODIUM_UCHARDATA (sender_sk),
-		PGSODIUM_UCHARDATA (recipient_pk), NULL, 0);
+		crypto_signcrypt_tbsbr_sign_before (
+			PGSODIUM_UCHARDATA (state),
+			PGSODIUM_UCHARDATA (shared_key),
+			PGSODIUM_UCHARDATA_ANY (sender),
+			VARSIZE_ANY_EXHDR (sender),
+			PGSODIUM_UCHARDATA_ANY (recipient),
+			VARSIZE_ANY_EXHDR (recipient),
+			PGSODIUM_UCHARDATA_ANY (additional),
+			VARSIZE_ANY_EXHDR (additional),
+			PGSODIUM_UCHARDATA_ANY (sender_sk),
+			PGSODIUM_UCHARDATA_ANY (recipient_pk),
+			NULL,
+			0);
 
 	ERRORIF (success != 0, "%s: sign_before failed");
 	values[0] = PointerGetDatum (state);
@@ -84,18 +88,19 @@ PG_FUNCTION_INFO_V1 (pgsodium_crypto_signcrypt_sign_after);
 Datum
 pgsodium_crypto_signcrypt_sign_after (PG_FUNCTION_ARGS)
 {
-	bytea      *state = PG_GETARG_BYTEA_P (0);
-	bytea      *sender_sk = PG_GETARG_BYTEA_P (1);
-	bytea      *ciphertext = PG_GETARG_BYTEA_P (2);
+	bytea      *state = PG_GETARG_BYTEA_PP (0);
+	bytea      *sender_sk = PG_GETARG_BYTEA_PP (1);
+	bytea      *ciphertext = PG_GETARG_BYTEA_PP (2);
 	bytea      *signature =
 		_pgsodium_zalloc_bytea (crypto_signcrypt_tbsbr_SIGNBYTES + VARHDRSZ);
 	int         success;
 
-	success = crypto_signcrypt_tbsbr_sign_after (PGSODIUM_UCHARDATA (state),
+	success = crypto_signcrypt_tbsbr_sign_after (
+		PGSODIUM_UCHARDATA_ANY (state),
 		PGSODIUM_UCHARDATA (signature),
-		PGSODIUM_UCHARDATA (sender_sk),
-		PGSODIUM_UCHARDATA (ciphertext), VARSIZE_ANY_EXHDR (ciphertext));
-
+		PGSODIUM_UCHARDATA_ANY (sender_sk),
+		PGSODIUM_UCHARDATA_ANY (ciphertext),
+		VARSIZE_ANY_EXHDR (ciphertext));
 	ERRORIF (success != 0, "%s: sign_after failed");
 	PG_RETURN_BYTEA_P (signature);
 }
@@ -104,12 +109,12 @@ PG_FUNCTION_INFO_V1 (pgsodium_crypto_signcrypt_verify_before);
 Datum
 pgsodium_crypto_signcrypt_verify_before (PG_FUNCTION_ARGS)
 {
-	bytea      *signature = PG_GETARG_BYTEA_P (0);
-	bytea      *sender = PG_GETARG_BYTEA_P (1);
-	bytea      *recipient = PG_GETARG_BYTEA_P (2);
-	bytea      *additional = PG_GETARG_BYTEA_P (3);
-	bytea      *sender_pk = PG_GETARG_BYTEA_P (4);
-	bytea      *recipient_sk = PG_GETARG_BYTEA_P (5);
+	bytea      *signature = PG_GETARG_BYTEA_PP (0);
+	bytea      *sender = PG_GETARG_BYTEA_PP (1);
+	bytea      *recipient = PG_GETARG_BYTEA_PP (2);
+	bytea      *additional = PG_GETARG_BYTEA_PP (3);
+	bytea      *sender_pk = PG_GETARG_BYTEA_PP (4);
+	bytea      *recipient_sk = PG_GETARG_BYTEA_PP (5);
 
 	TupleDesc   tupdesc;
 	Datum       values[2];
@@ -132,16 +137,18 @@ pgsodium_crypto_signcrypt_verify_before (PG_FUNCTION_ARGS)
 		VARHDRSZ);
 
 	success =
-		crypto_signcrypt_tbsbr_verify_before (PGSODIUM_UCHARDATA (state),
-		PGSODIUM_UCHARDATA (shared_key),
-		PGSODIUM_UCHARDATA (signature),
-		PGSODIUM_UCHARDATA (sender),
-		VARSIZE_ANY_EXHDR (sender),
-		PGSODIUM_UCHARDATA (recipient),
-		VARSIZE_ANY_EXHDR (recipient),
-		PGSODIUM_UCHARDATA (additional),
-		VARSIZE_ANY_EXHDR (additional),
-		PGSODIUM_UCHARDATA (sender_pk), PGSODIUM_UCHARDATA (recipient_sk));
+		crypto_signcrypt_tbsbr_verify_before (
+			PGSODIUM_UCHARDATA (state),
+			PGSODIUM_UCHARDATA (shared_key),
+			PGSODIUM_UCHARDATA_ANY (signature),
+			PGSODIUM_UCHARDATA_ANY (sender),
+			VARSIZE_ANY_EXHDR (sender),
+			PGSODIUM_UCHARDATA_ANY (recipient),
+			VARSIZE_ANY_EXHDR (recipient),
+			PGSODIUM_UCHARDATA_ANY (additional),
+			VARSIZE_ANY_EXHDR (additional),
+			PGSODIUM_UCHARDATA_ANY (sender_pk),
+			PGSODIUM_UCHARDATA_ANY (recipient_sk));
 	ERRORIF (success != 0, "%s: verify_before failed");
 	values[0] = PointerGetDatum (state);
 	values[1] = PointerGetDatum (shared_key);
@@ -154,17 +161,19 @@ PG_FUNCTION_INFO_V1 (pgsodium_crypto_signcrypt_verify_after);
 Datum
 pgsodium_crypto_signcrypt_verify_after (PG_FUNCTION_ARGS)
 {
-	bytea      *state = PG_GETARG_BYTEA_P (0);
-	bytea      *signature = PG_GETARG_BYTEA_P (1);
-	bytea      *sender_pk = PG_GETARG_BYTEA_P (2);
-	bytea      *ciphertext = PG_GETARG_BYTEA_P (3);
+	bytea      *state = PG_GETARG_BYTEA_PP (0);
+	bytea      *signature = PG_GETARG_BYTEA_PP (1);
+	bytea      *sender_pk = PG_GETARG_BYTEA_PP (2);
+	bytea      *ciphertext = PG_GETARG_BYTEA_PP (3);
 	int         success;
 
 	success =
-		crypto_signcrypt_tbsbr_verify_after (PGSODIUM_UCHARDATA (state),
-		PGSODIUM_UCHARDATA (signature),
-		PGSODIUM_UCHARDATA (sender_pk),
-		PGSODIUM_UCHARDATA (ciphertext), VARSIZE_ANY_EXHDR (ciphertext));
+		crypto_signcrypt_tbsbr_verify_after (
+			PGSODIUM_UCHARDATA_ANY (state),
+			PGSODIUM_UCHARDATA_ANY (signature),
+			PGSODIUM_UCHARDATA_ANY (sender_pk),
+			PGSODIUM_UCHARDATA_ANY (ciphertext),
+			VARSIZE_ANY_EXHDR (ciphertext));
 
 	ERRORIF (success != 0, "%s: verify_after failed");
 	PG_RETURN_BOOL (success == 0);
@@ -174,24 +183,26 @@ PG_FUNCTION_INFO_V1 (pgsodium_crypto_signcrypt_verify_public);
 Datum
 pgsodium_crypto_signcrypt_verify_public (PG_FUNCTION_ARGS)
 {
-	bytea      *signature = PG_GETARG_BYTEA_P (0);
-	bytea      *sender = PG_GETARG_BYTEA_P (1);
-	bytea      *recipient = PG_GETARG_BYTEA_P (2);
-	bytea      *additional = PG_GETARG_BYTEA_P (3);
-	bytea      *sender_pk = PG_GETARG_BYTEA_P (4);
-	bytea      *ciphertext = PG_GETARG_BYTEA_P (5);
+	bytea      *signature = PG_GETARG_BYTEA_PP (0);
+	bytea      *sender = PG_GETARG_BYTEA_PP (1);
+	bytea      *recipient = PG_GETARG_BYTEA_PP (2);
+	bytea      *additional = PG_GETARG_BYTEA_PP (3);
+	bytea      *sender_pk = PG_GETARG_BYTEA_PP (4);
+	bytea      *ciphertext = PG_GETARG_BYTEA_PP (5);
 	int         success;
 
 	success =
-		crypto_signcrypt_tbsr_verify_public (PGSODIUM_UCHARDATA (signature),
-		PGSODIUM_UCHARDATA (sender),
-		VARSIZE_ANY_EXHDR (sender),
-		PGSODIUM_UCHARDATA (recipient),
-		VARSIZE_ANY_EXHDR (recipient),
-		PGSODIUM_UCHARDATA (additional),
-		VARSIZE_ANY_EXHDR (additional),
-		PGSODIUM_UCHARDATA (sender_pk),
-		PGSODIUM_UCHARDATA (ciphertext), VARSIZE_ANY_EXHDR (ciphertext));
+		crypto_signcrypt_tbsr_verify_public (
+			PGSODIUM_UCHARDATA_ANY (signature),
+			PGSODIUM_UCHARDATA_ANY (sender),
+			VARSIZE_ANY_EXHDR (sender),
+			PGSODIUM_UCHARDATA_ANY (recipient),
+			VARSIZE_ANY_EXHDR (recipient),
+			PGSODIUM_UCHARDATA_ANY (additional),
+			VARSIZE_ANY_EXHDR (additional),
+			PGSODIUM_UCHARDATA_ANY (sender_pk),
+			PGSODIUM_UCHARDATA_ANY (ciphertext),
+			VARSIZE_ANY_EXHDR (ciphertext));
 
 	ERRORIF (success != 0, "%s: verify_public failed");
 	PG_RETURN_BOOL (success == 0);

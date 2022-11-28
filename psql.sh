@@ -17,7 +17,7 @@ docker run \
        -p $EXPORT:5432 \
 	   -v `pwd`/example:/pgsodium/example \
 	   -e POSTGRES_HOST_AUTH_METHOD=trust \
-	   -d --name "$DB_HOST" $TAG $CONFIG
+	   -d --name "$DB_HOST" $TAG postgres $CONFIG
 
 echo waiting for database to accept connections
 until
