@@ -85,3 +85,20 @@ ALTER FUNCTION pgsodium.crypto_auth(bytea, uuid) CALLED ON NULL INPUT;
 ALTER FUNCTION pgsodium.crypto_auth_verify(bytea, bytea, bytea) CALLED ON NULL INPUT;
 ALTER FUNCTION pgsodium.crypto_auth_verify(bytea, bytea, bigint, bytea) CALLED ON NULL INPUT;
 ALTER FUNCTION pgsodium.crypto_auth_verify(bytea, bytea, uuid) CALLED ON NULL INPUT;
+
+ALTER FUNCTION pgsodium.crypto_box_seed_new_keypair(bytea) CALLED ON NULL INPUT;
+ALTER FUNCTION pgsodium.crypto_box(bytea, bytea, bytea, bytea) CALLED ON NULL INPUT;
+ALTER FUNCTION pgsodium.crypto_box_open(bytea, bytea, bytea, bytea) CALLED ON NULL INPUT;
+ALTER FUNCTION pgsodium.crypto_box_seal(bytea, bytea) CALLED ON NULL INPUT;
+ALTER FUNCTION pgsodium.crypto_box_seal_open(bytea, bytea, bytea) CALLED ON NULL INPUT;
+
+ALTER FUNCTION pgsodium.crypto_generichash(bytea, bigint, bytea) CALLED ON NULL INPUT;
+ALTER FUNCTION pgsodium.crypto_generichash(bytea, bytea) CALLED ON NULL INPUT;
+ALTER FUNCTION pgsodium.crypto_generichash(bytea, uuid) CALLED ON NULL INPUT;
+
+ALTER FUNCTION pgsodium.crypto_shorthash(bytea, bigint, bytea) CALLED ON NULL INPUT;
+ALTER FUNCTION pgsodium.crypto_shorthash(bytea, bytea) CALLED ON NULL INPUT;
+ALTER FUNCTION pgsodium.crypto_shorthash(bytea, uuid) CALLED ON NULL INPUT;
+
+ALTER FUNCTION pgsodium.sodium_bin2base64(bytea) CALLED ON NULL INPUT;
+ALTER FUNCTION pgsodium.sodium_base642bin(text) CALLED ON NULL INPUT;

@@ -20,6 +20,9 @@ pgsodium_crypto_generichash (PG_FUNCTION_ARGS)
 	unsigned char *key = NULL;
 	size_t      keylen = 0;
 	size_t      result_size;
+
+	ERRORIF (PG_ARGISNULL (0), "%s: data cannot be NULL");
+
 	data = PG_GETARG_BYTEA_PP (0);
 	if (!PG_ARGISNULL (1))
 	{
@@ -59,8 +62,13 @@ pgsodium_crypto_shorthash (PG_FUNCTION_ARGS)
 	bytea      *result;
 	bytea      *key;
 	int         result_size = VARHDRSZ + crypto_shorthash_BYTES;
+
+	ERRORIF (PG_ARGISNULL (0), "%s: data cannot be NULL");
+	ERRORIF (PG_ARGISNULL (1), "%s: key cannot be NULL");
+
 	data = PG_GETARG_BYTEA_PP (0);
 	key = PG_GETARG_BYTEA_PP (1);
+
 	ERRORIF (VARSIZE_ANY_EXHDR (key) != crypto_shorthash_KEYBYTES,
 		"%s: invalid key");
 	result = _pgsodium_zalloc_bytea (result_size);
@@ -83,10 +91,14 @@ pgsodium_crypto_generichash_by_id (PG_FUNCTION_ARGS)
 	unsigned char *key = NULL;
 	size_t      keylen = 0;
 	size_t      result_size;
+
+	ERRORIF (PG_ARGISNULL (0), "%s: data cannot be NULL");
+
 	data = PG_GETARG_BYTEA_PP (0);
 	if (!PG_ARGISNULL (1))
 	{
 		unsigned long long key_id = PG_GETARG_INT64 (1);
+		ERRORIF (PG_ARGISNULL (2), "%s: key context be NULL");
 		context = PG_GETARG_BYTEA_PP (2);
 		keyarg =
 			pgsodium_derive_helper (key_id, crypto_generichash_KEYBYTES,
@@ -118,6 +130,11 @@ pgsodium_crypto_shorthash_by_id (PG_FUNCTION_ARGS)
 	bytea      *context;
 	uint64_t    key_id;
 	int         result_size = VARHDRSZ + crypto_shorthash_BYTES;
+
+	ERRORIF (PG_ARGISNULL (0), "%s: data cannot be NULL");
+	ERRORIF (PG_ARGISNULL (1), "%s: key id cannot be NULL");
+	ERRORIF (PG_ARGISNULL (2), "%s: key context cannot be NULL");
+
 	data = PG_GETARG_BYTEA_PP (0);
 	key_id = PG_GETARG_INT64 (1);
 	context = PG_GETARG_BYTEA_PP (2);

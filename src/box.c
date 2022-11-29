@@ -51,9 +51,13 @@ pgsodium_crypto_box_seed_keypair (PG_FUNCTION_ARGS)
 	Datum       result;
 	bytea      *publickey;
 	bytea      *secretkey;
-	bytea      *seed = PG_GETARG_BYTEA_PP (0);
+	bytea      *seed;
 	size_t      public_size = crypto_box_PUBLICKEYBYTES + VARHDRSZ;
 	size_t      secret_size = crypto_box_SECRETKEYBYTES + VARHDRSZ;
+
+	ERRORIF (PG_ARGISNULL (0), "%s: seed cannot be NULL");
+
+	seed = PG_GETARG_BYTEA_PP (0);
 	ERRORIF (VARSIZE_ANY_EXHDR (seed) != crypto_box_SEEDBYTES,
 		"%s: invalid seed");
 	if (get_call_result_type (fcinfo, NULL, &tupdesc) != TYPEFUNC_COMPOSITE)
@@ -88,13 +92,24 @@ PG_FUNCTION_INFO_V1 (pgsodium_crypto_box);
 Datum
 pgsodium_crypto_box (PG_FUNCTION_ARGS)
 {
-	bytea      *message = PG_GETARG_BYTEA_PP (0);
-	bytea      *nonce = PG_GETARG_BYTEA_PP (1);
-	bytea      *publickey = PG_GETARG_BYTEA_PP (2);
-	bytea      *secretkey = PG_GETARG_BYTEA_PP (3);
+	bytea      *message;
+	bytea      *nonce;
+	bytea      *publickey;
+	bytea      *secretkey;
 	int         success;
 	size_t      message_size;
 	bytea      *result;
+
+	ERRORIF (PG_ARGISNULL (0), "%s: message cannot be NULL");
+	ERRORIF (PG_ARGISNULL (1), "%s: nonce cannot be NULL");
+	ERRORIF (PG_ARGISNULL (2), "%s: publickey cannot be NULL");
+	ERRORIF (PG_ARGISNULL (3), "%s: secretkey cannot be NULL");
+
+	message = PG_GETARG_BYTEA_PP (0);
+	nonce = PG_GETARG_BYTEA_PP (1);
+	publickey = PG_GETARG_BYTEA_PP (2);
+	secretkey = PG_GETARG_BYTEA_PP (3);
+
 	ERRORIF (VARSIZE_ANY_EXHDR (nonce) != crypto_box_NONCEBYTES,
 		"%s: invalid nonce");
 	ERRORIF (VARSIZE_ANY_EXHDR (publickey) != crypto_box_PUBLICKEYBYTES,
@@ -120,12 +135,22 @@ Datum
 pgsodium_crypto_box_open (PG_FUNCTION_ARGS)
 {
 	int         success;
-	bytea      *message = PG_GETARG_BYTEA_PP (0);
-	bytea      *nonce = PG_GETARG_BYTEA_PP (1);
-	bytea      *publickey = PG_GETARG_BYTEA_PP (2);
-	bytea      *secretkey = PG_GETARG_BYTEA_PP (3);
+	bytea      *message;
+	bytea      *nonce;
+	bytea      *publickey;
+	bytea      *secretkey;
 	size_t      message_size;
 	bytea      *result;
+
+	ERRORIF (PG_ARGISNULL (0), "%s: message cannot be NULL");
+	ERRORIF (PG_ARGISNULL (1), "%s: nonce cannot be NULL");
+	ERRORIF (PG_ARGISNULL (2), "%s: publickey cannot be NULL");
+	ERRORIF (PG_ARGISNULL (3), "%s: secretkey cannot be NULL");
+
+	message = PG_GETARG_BYTEA_PP (0);
+	nonce = PG_GETARG_BYTEA_PP (1);
+	publickey = PG_GETARG_BYTEA_PP (2);
+	secretkey = PG_GETARG_BYTEA_PP (3);
 
 	ERRORIF (VARSIZE_ANY_EXHDR (nonce) != crypto_box_NONCEBYTES,
 		"%s: invalid nonce");
@@ -153,10 +178,17 @@ PG_FUNCTION_INFO_V1 (pgsodium_crypto_box_seal);
 Datum
 pgsodium_crypto_box_seal (PG_FUNCTION_ARGS)
 {
-	bytea      *message = PG_GETARG_BYTEA_PP (0);
-	bytea      *public_key = PG_GETARG_BYTEA_PP (1);
+	bytea      *message;
+	bytea      *public_key;
 	size_t      result_size;
 	bytea      *result;
+
+	ERRORIF (PG_ARGISNULL (0), "%s: message cannot be NULL");
+	ERRORIF (PG_ARGISNULL (1), "%s: publickey cannot be NULL");
+
+	message = PG_GETARG_BYTEA_PP (0);
+	public_key = PG_GETARG_BYTEA_PP (1);
+
 	ERRORIF (VARSIZE_ANY_EXHDR (public_key) != crypto_box_PUBLICKEYBYTES,
 		"%s: invalid public key");
 	result_size = crypto_box_SEALBYTES + VARSIZE_ANY(message);
@@ -174,11 +206,20 @@ Datum
 pgsodium_crypto_box_seal_open (PG_FUNCTION_ARGS)
 {
 	int         success;
-	bytea      *ciphertext = PG_GETARG_BYTEA_PP (0);
-	bytea      *public_key = PG_GETARG_BYTEA_PP (1);
-	bytea      *secret_key = PG_GETARG_BYTEA_PP (2);
+	bytea      *ciphertext;
+	bytea      *public_key;
+	bytea      *secret_key;
 	size_t      result_size;
 	bytea      *result;
+
+	ERRORIF (PG_ARGISNULL (0), "%s: ciphertext cannot be NULL");
+	ERRORIF (PG_ARGISNULL (1), "%s: public_key cannot be NULL");
+	ERRORIF (PG_ARGISNULL (2), "%s: secret_key cannot be NULL");
+
+	ciphertext = PG_GETARG_BYTEA_PP (0);
+	public_key = PG_GETARG_BYTEA_PP (1);
+	secret_key = PG_GETARG_BYTEA_PP (2);
+
 	ERRORIF (VARSIZE_ANY_EXHDR (public_key) != crypto_box_PUBLICKEYBYTES,
 		"%s: invalid public key");
 	ERRORIF (VARSIZE_ANY_EXHDR (secret_key) != crypto_box_SECRETKEYBYTES,
