@@ -118,3 +118,5 @@ ALTER FUNCTION pgsodium.crypto_auth_hmacsha256(bytea, uuid) CALLED ON NULL INPUT
 ALTER FUNCTION pgsodium.crypto_auth_hmacsha256_verify(bytea, bytea, bytea) CALLED ON NULL INPUT;
 ALTER FUNCTION pgsodium.crypto_auth_hmacsha256_verify(bytea, bytea, bigint, bytea) CALLED ON NULL INPUT;
 ALTER FUNCTION pgsodium.crypto_auth_hmacsha256_verify(bytea, bytea, uuid) CALLED ON NULL INPUT;
+
+ALTER FUNCTION crypto_kdf_derive_from_key(bigint, bigint, bytea, bytea) CALLED ON NULL INPUT;
