@@ -16,7 +16,7 @@ SELECT throws_ok($$select crypto_sign_seed_new_keypair(NULL)$$, '22000',
 SELECT public, secret FROM crypto_sign_new_keypair() \gset sign_
 
 SELECT crypto_sign('bob is your uncle', :'sign_secret') signed \gset
-    
+
 SELECT throws_ok($$select crypto_sign('bob is your uncle', 's')$$,
        '22000', 'pgsodium_crypto_sign: invalid secret key', 'crypto_sign invalid key');
 
@@ -25,7 +25,7 @@ SELECT throws_ok($$select crypto_sign(NULL, 'bad')$$,
 
 SELECT throws_ok($$select crypto_sign('bad', NULL)$$,
        '22000', 'pgsodium_crypto_sign: secretkey cannot be NULL', 'crypto_sign null key');
-    
+
 SELECT is(crypto_sign_open(:'signed', :'sign_public'),
           'bob is your uncle', 'crypto_sign_open');
 
