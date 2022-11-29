@@ -62,7 +62,7 @@ crypto_sign_update().
 Note that when signing mutli-part messages using aggregates, the order
 in which message parts is processed is critical. You *must* ensure
 that the order of messages passed to the aggregate is invariant.';
-    
+
 
 CREATE OR REPLACE VIEW pgsodium.valid_key AS
   SELECT id, name, status, key_type, key_id, key_context, created, expires, associated_data
@@ -77,3 +77,11 @@ ALTER FUNCTION pgsodium.crypto_aead_ietf_encrypt(bytea, bytea, bytea, uuid) CALL
 ALTER FUNCTION pgsodium.crypto_aead_ietf_decrypt(bytea, bytea, bytea, bytea) CALLED ON NULL INPUT;
 ALTER FUNCTION pgsodium.crypto_aead_ietf_decrypt(bytea, bytea, bytea, bigint, bytea) CALLED ON NULL INPUT;
 ALTER FUNCTION pgsodium.crypto_aead_ietf_decrypt(bytea, bytea, bytea, uuid) CALLED ON NULL INPUT;
+
+ALTER FUNCTION pgsodium.crypto_auth(bytea, bytea) CALLED ON NULL INPUT;
+ALTER FUNCTION pgsodium.crypto_auth(bytea, bigint, bytea) CALLED ON NULL INPUT;
+ALTER FUNCTION pgsodium.crypto_auth(bytea, uuid) CALLED ON NULL INPUT;
+
+ALTER FUNCTION pgsodium.crypto_auth_verify(bytea, bytea, bytea) CALLED ON NULL INPUT;
+ALTER FUNCTION pgsodium.crypto_auth_verify(bytea, bytea, bigint, bytea) CALLED ON NULL INPUT;
+ALTER FUNCTION pgsodium.crypto_auth_verify(bytea, bytea, uuid) CALLED ON NULL INPUT;

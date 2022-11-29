@@ -4,3 +4,5 @@ psql.sh
 .dockerignore
 .git
 .cache
+test/
+example/

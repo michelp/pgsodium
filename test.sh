@@ -18,7 +18,10 @@ do
 		docker build . -t $TAG --build-arg "version=$version"
 
 		echo running test container
-		docker run --rm -e POSTGRES_HOST_AUTH_METHOD=trust -d --name "$DB_HOST" $TAG postgres $config
+		docker run --rm -e POSTGRES_HOST_AUTH_METHOD=trust -d \
+               -v `pwd`/test:/home/postgres/pgsodium/test \
+               -v `pwd`/example:/home/postgres/pgsodium/example \
+               --name "$DB_HOST" $TAG postgres $config
 
 		echo waiting for database to accept connections
 		sleep 3;
