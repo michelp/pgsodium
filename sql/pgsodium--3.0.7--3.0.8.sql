@@ -159,3 +159,90 @@ ALTER FUNCTION crypto_stream_xchacha20_xor(bytea, bytea, bytea) CALLED ON NULL I
 ALTER FUNCTION crypto_stream_xchacha20_xor(bytea, bytea, bigint, bytea) CALLED ON NULL INPUT;
 ALTER FUNCTION crypto_stream_xchacha20_xor_ic(bytea, bytea, bigint, bytea) CALLED ON NULL INPUT;
 ALTER FUNCTION crypto_stream_xchacha20_xor_ic(bytea, bytea, bigint, bigint, bytea) CALLED ON NULL INPUT;
+
+CREATE OR REPLACE FUNCTION pgsodium.create_mask_view(relid oid, subid integer, debug boolean = false)
+    RETURNS void AS
+  $$
+DECLARE
+  body text;
+  source_name text;
+  view_owner text = session_user;
+  rule pgsodium.masking_rule;
+BEGIN
+  SELECT * INTO STRICT rule FROM pgsodium.masking_rule WHERE attrelid = relid and attnum = subid ;
+
+  source_name := relid::regclass;
+
+  body = format(
+    $c$
+    DROP VIEW IF EXISTS %s;
+    CREATE VIEW %s AS SELECT %s
+    FROM %s;
+    ALTER VIEW %s OWNER TO %s;
+    $c$,
+    rule.view_name,
+    rule.view_name,
+    pgsodium.decrypted_columns(relid),
+    source_name,
+    rule.view_name,
+    view_owner
+  );
+  IF debug THEN
+    RAISE NOTICE '%', body;
+  END IF;
+  EXECUTE body;
+
+  body = format(
+    $c$
+    DROP FUNCTION IF EXISTS %s.%s_encrypt_secret() CASCADE;
+
+    CREATE OR REPLACE FUNCTION %s.%s_encrypt_secret()
+      RETURNS TRIGGER
+      LANGUAGE plpgsql
+      AS $t$
+    BEGIN
+    %s;
+    RETURN new;
+    END;
+    $t$;
+
+    ALTER FUNCTION  %s.%s_encrypt_secret() OWNER TO %s;
+
+    DROP TRIGGER IF EXISTS %s_encrypt_secret_trigger ON %s.%s;
+
+    CREATE TRIGGER %s_encrypt_secret_trigger
+      BEFORE INSERT OR UPDATE ON %s
+      FOR EACH ROW
+      EXECUTE FUNCTION %s.%s_encrypt_secret ();
+      $c$,
+    rule.relnamespace,
+    rule.relname,
+    rule.relnamespace,
+    rule.relname,
+    pgsodium.encrypted_columns(relid),
+    rule.relnamespace,
+    rule.relname,
+    view_owner,
+    rule.relname,
+    rule.relnamespace,
+    rule.relname,
+    rule.relname,
+    source_name,
+    rule.relnamespace,
+    rule.relname
+  );
+  if debug THEN
+    RAISE NOTICE '%', body;
+  END IF;
+  EXECUTE body;
+
+  PERFORM pgsodium.mask_role(oid::regrole, source_name, rule.view_name)
+  FROM pg_roles WHERE pgsodium.has_mask(oid::regrole, source_name);
+
+  RETURN;
+END
+  $$
+  LANGUAGE plpgsql
+  VOLATILE
+  SET search_path='pg_catalog'
+;
