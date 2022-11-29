@@ -25,11 +25,22 @@ PG_FUNCTION_INFO_V1 (pgsodium_crypto_stream_xchacha20);
 Datum
 pgsodium_crypto_stream_xchacha20 (PG_FUNCTION_ARGS)
 {
-	size_t      size = PG_GETARG_INT64 (0);
-	bytea      *nonce = PG_GETARG_BYTEA_P (1);
-	bytea      *key = PG_GETARG_BYTEA_P (2);
-	uint64_t    result_size = VARHDRSZ + size;
-	bytea      *result = _pgsodium_zalloc_bytea (result_size);
+	size_t      size;
+	bytea      *nonce;
+	bytea      *key;
+	uint64_t    result_size;
+	bytea      *result;
+
+	ERRORIF (PG_ARGISNULL (0), "%s: size cannot be NULL");
+	ERRORIF (PG_ARGISNULL (1), "%s: nonce cannot be NULL");
+	ERRORIF (PG_ARGISNULL (2), "%s: key cannot be NULL");
+
+	size = PG_GETARG_INT64 (0);
+	nonce = PG_GETARG_BYTEA_P (1);
+	key = PG_GETARG_BYTEA_P (2);
+	result_size = VARHDRSZ + size;
+	result = _pgsodium_zalloc_bytea (result_size);
+
 	ERRORIF (VARSIZE_ANY_EXHDR (nonce) != crypto_stream_xchacha20_NONCEBYTES,
 		"%s: invalid nonce");
 	ERRORIF (VARSIZE_ANY_EXHDR (key) != crypto_stream_xchacha20_KEYBYTES,
@@ -44,11 +55,22 @@ PG_FUNCTION_INFO_V1 (pgsodium_crypto_stream_xchacha20_xor);
 Datum
 pgsodium_crypto_stream_xchacha20_xor (PG_FUNCTION_ARGS)
 {
-	bytea      *data = PG_GETARG_BYTEA_PP (0);
-	bytea      *nonce = PG_GETARG_BYTEA_PP (1);
-	bytea      *key = PG_GETARG_BYTEA_PP (2);
-	uint64_t    result_size = VARSIZE_ANY_EXHDR (data);
-	bytea      *result = _pgsodium_zalloc_bytea (result_size + VARHDRSZ);
+	bytea      *data;
+	bytea      *nonce;
+	bytea      *key;
+	uint64_t    result_size;
+	bytea      *result;
+
+	ERRORIF (PG_ARGISNULL (0), "%s: data cannot be NULL");
+	ERRORIF (PG_ARGISNULL (1), "%s: nonce cannot be NULL");
+	ERRORIF (PG_ARGISNULL (2), "%s: key cannot be NULL");
+
+	data = PG_GETARG_BYTEA_PP (0);
+	nonce = PG_GETARG_BYTEA_PP (1);
+	key = PG_GETARG_BYTEA_PP (2);
+	result_size = VARSIZE_ANY_EXHDR (data);
+	result = _pgsodium_zalloc_bytea (result_size + VARHDRSZ);
+
 	ERRORIF (VARSIZE_ANY_EXHDR (nonce) != crypto_stream_xchacha20_NONCEBYTES,
 		"%s: invalid nonce");
 	ERRORIF (VARSIZE_ANY_EXHDR (key) != crypto_stream_xchacha20_KEYBYTES,
@@ -64,12 +86,25 @@ PG_FUNCTION_INFO_V1 (pgsodium_crypto_stream_xchacha20_xor_ic);
 Datum
 pgsodium_crypto_stream_xchacha20_xor_ic (PG_FUNCTION_ARGS)
 {
-	bytea      *data = PG_GETARG_BYTEA_PP (0);
-	bytea      *nonce = PG_GETARG_BYTEA_PP (1);
-	uint64_t    ic = PG_GETARG_INT64 (2);
-	bytea      *key = PG_GETARG_BYTEA_PP (3);
-	uint64_t    result_size = VARSIZE_ANY_EXHDR (data);
-	bytea      *result = _pgsodium_zalloc_bytea (result_size + VARHDRSZ);
+	bytea      *data;
+	bytea      *nonce;
+	uint64_t    ic;
+	bytea      *key;
+	uint64_t    result_size;
+	bytea      *result;
+
+	ERRORIF (PG_ARGISNULL (0), "%s: data cannot be NULL");
+	ERRORIF (PG_ARGISNULL (1), "%s: nonce cannot be NULL");
+	ERRORIF (PG_ARGISNULL (2), "%s: ic cannot be NULL");
+	ERRORIF (PG_ARGISNULL (3), "%s: key cannot be NULL");
+
+	data = PG_GETARG_BYTEA_PP (0);
+	nonce = PG_GETARG_BYTEA_PP (1);
+	ic = PG_GETARG_INT64 (2);
+	key = PG_GETARG_BYTEA_PP (3);
+	result_size = VARSIZE_ANY_EXHDR (data);
+	result = _pgsodium_zalloc_bytea (result_size + VARHDRSZ);
+
 	ERRORIF (VARSIZE_ANY_EXHDR (nonce) != crypto_stream_xchacha20_NONCEBYTES,
 		"%s: invalid nonce");
 	ERRORIF (VARSIZE_ANY_EXHDR (key) != crypto_stream_xchacha20_KEYBYTES,
@@ -84,16 +119,27 @@ PG_FUNCTION_INFO_V1 (pgsodium_crypto_stream_xchacha20_by_id);
 Datum
 pgsodium_crypto_stream_xchacha20_by_id (PG_FUNCTION_ARGS)
 {
-	size_t      size = PG_GETARG_INT64 (0);
-	bytea      *nonce = PG_GETARG_BYTEA_PP (1);
-	uint64_t    key_id = PG_GETARG_INT64 (2);
-	bytea      *context = PG_GETARG_BYTEA_PP (3);
-	bytea      *key =
-		pgsodium_derive_helper (key_id, crypto_stream_xchacha20_KEYBYTES,
-		context);
+	size_t      size;
+	bytea      *nonce;
+	uint64_t    key_id;
+	bytea      *context;
+	bytea      *key;
+	uint64_t    result_size;
+	bytea      *result;
 
-	uint64_t    result_size = VARHDRSZ + size;
-	bytea      *result = _pgsodium_zalloc_bytea (result_size);
+	ERRORIF (PG_ARGISNULL (0), "%s: size cannot be NULL");
+	ERRORIF (PG_ARGISNULL (1), "%s: nonce cannot be NULL");
+	ERRORIF (PG_ARGISNULL (2), "%s: key id cannot be NULL");
+	ERRORIF (PG_ARGISNULL (3), "%s: key context cannot be NULL");
+
+	size = PG_GETARG_INT64 (0);
+	nonce = PG_GETARG_BYTEA_PP (1);
+	key_id = PG_GETARG_INT64 (2);
+	context = PG_GETARG_BYTEA_PP (3);
+	key = pgsodium_derive_helper (key_id, crypto_stream_xchacha20_KEYBYTES,	context);
+	result_size = VARHDRSZ + size;
+	result = _pgsodium_zalloc_bytea (result_size);
+
 	ERRORIF (VARSIZE_ANY_EXHDR (nonce) != crypto_stream_xchacha20_NONCEBYTES,
 		"%s: invalid nonce");
 	ERRORIF (VARSIZE_ANY_EXHDR (key) != crypto_stream_xchacha20_KEYBYTES,
@@ -108,15 +154,27 @@ PG_FUNCTION_INFO_V1 (pgsodium_crypto_stream_xchacha20_xor_by_id);
 Datum
 pgsodium_crypto_stream_xchacha20_xor_by_id (PG_FUNCTION_ARGS)
 {
-	bytea      *data = PG_GETARG_BYTEA_PP (0);
-	bytea      *nonce = PG_GETARG_BYTEA_PP (1);
-	uint64_t    key_id = PG_GETARG_INT64 (2);
-	bytea      *context = PG_GETARG_BYTEA_PP (3);
-	bytea      *key =
-		pgsodium_derive_helper (key_id, crypto_stream_xchacha20_KEYBYTES,
-		context);
-	uint64_t    result_size = VARSIZE_ANY_EXHDR (data);
-	bytea      *result = _pgsodium_zalloc_bytea (result_size + VARHDRSZ);
+	bytea      *data;
+	bytea      *nonce;
+	uint64_t    key_id;
+	bytea      *context;
+	bytea      *key;
+	uint64_t    result_size;
+	bytea      *result;
+
+	ERRORIF (PG_ARGISNULL (0), "%s: data cannot be NULL");
+	ERRORIF (PG_ARGISNULL (1), "%s: nonce cannot be NULL");
+	ERRORIF (PG_ARGISNULL (2), "%s: key id cannot be NULL");
+	ERRORIF (PG_ARGISNULL (3), "%s: key context cannot be NULL");
+
+	data = PG_GETARG_BYTEA_PP (0);
+	nonce = PG_GETARG_BYTEA_PP (1);
+	key_id = PG_GETARG_INT64 (2);
+	context = PG_GETARG_BYTEA_PP (3);
+	key = pgsodium_derive_helper (key_id, crypto_stream_xchacha20_KEYBYTES,	context);
+	result_size = VARSIZE_ANY_EXHDR (data);
+	result = _pgsodium_zalloc_bytea (result_size + VARHDRSZ);
+
 	ERRORIF (VARSIZE_ANY_EXHDR (nonce) != crypto_stream_xchacha20_NONCEBYTES,
 		"%s: invalid nonce");
 	ERRORIF (VARSIZE_ANY_EXHDR (key) != crypto_stream_xchacha20_KEYBYTES,
@@ -132,16 +190,31 @@ PG_FUNCTION_INFO_V1 (pgsodium_crypto_stream_xchacha20_xor_ic_by_id);
 Datum
 pgsodium_crypto_stream_xchacha20_xor_ic_by_id (PG_FUNCTION_ARGS)
 {
-	bytea      *data = PG_GETARG_BYTEA_PP (0);
-	bytea      *nonce = PG_GETARG_BYTEA_PP (1);
-	uint64_t    ic = PG_GETARG_INT64 (2);
-	uint64_t    key_id = PG_GETARG_INT64 (3);
-	bytea      *context = PG_GETARG_BYTEA_PP (4);
-	bytea      *key =
-		pgsodium_derive_helper (key_id, crypto_stream_xchacha20_KEYBYTES,
-		context);
-	uint64_t    result_size = VARSIZE_ANY_EXHDR (data);
-	bytea      *result = _pgsodium_zalloc_bytea (result_size + VARHDRSZ);
+	bytea      *data;
+	bytea      *nonce;
+	uint64_t    ic;
+	uint64_t    key_id;
+	bytea      *context;
+	bytea      *key;
+	uint64_t    result_size;
+	bytea      *result;
+
+	ERRORIF (PG_ARGISNULL (0), "%s: data cannot be NULL");
+	ERRORIF (PG_ARGISNULL (1), "%s: nonce cannot be NULL");
+	ERRORIF (PG_ARGISNULL (2), "%s: ic cannot be NULL");
+	ERRORIF (PG_ARGISNULL (3), "%s: key id context cannot be NULL");
+	ERRORIF (PG_ARGISNULL (4), "%s: key context cannot be NULL");
+
+	data = PG_GETARG_BYTEA_PP (0);
+	nonce = PG_GETARG_BYTEA_PP (1);
+	ic = PG_GETARG_INT64 (2);
+	key_id = PG_GETARG_INT64 (3);
+	context = PG_GETARG_BYTEA_PP (4);
+
+	key = pgsodium_derive_helper (key_id, crypto_stream_xchacha20_KEYBYTES,	context);
+	result_size = VARSIZE_ANY_EXHDR (data);
+	result = _pgsodium_zalloc_bytea (result_size + VARHDRSZ);
+
 	ERRORIF (VARSIZE_ANY_EXHDR (nonce) != crypto_stream_xchacha20_NONCEBYTES,
 		"%s: invalid nonce");
 	ERRORIF (VARSIZE_ANY_EXHDR (key) != crypto_stream_xchacha20_KEYBYTES,

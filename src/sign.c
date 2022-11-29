@@ -52,9 +52,13 @@ pgsodium_crypto_sign_seed_keypair (PG_FUNCTION_ARGS)
 	Datum       result;
 	bytea      *publickey;
 	bytea      *secretkey;
-	bytea      *seed = PG_GETARG_BYTEA_PP (0);
+	bytea      *seed;
 	size_t      public_size = crypto_sign_PUBLICKEYBYTES + VARHDRSZ;
 	size_t      secret_size = crypto_sign_SECRETKEYBYTES + VARHDRSZ;
+
+	ERRORIF (PG_ARGISNULL (0), "%s: seed cannot be NULL");
+	seed = PG_GETARG_BYTEA_PP (0);
+
 	ERRORIF (VARSIZE_ANY_EXHDR (seed) != crypto_sign_SEEDBYTES,
 		"%s: invalid seed");
 
@@ -83,11 +87,18 @@ Datum
 pgsodium_crypto_sign (PG_FUNCTION_ARGS)
 {
 	int         success;
-	bytea      *message = PG_GETARG_BYTEA_PP (0);
-	bytea      *secretkey = PG_GETARG_BYTEA_PP (1);
+	bytea      *message;
+	bytea      *secretkey;
 	unsigned long long signed_message_len;
 	size_t      result_size;
 	bytea      *result;
+
+	ERRORIF (PG_ARGISNULL (0), "%s: message cannot be NULL");
+	ERRORIF (PG_ARGISNULL (1), "%s: secretkey cannot be NULL");
+
+	message = PG_GETARG_BYTEA_PP (0);
+	secretkey = PG_GETARG_BYTEA_PP (1);
+
 	ERRORIF (VARSIZE_ANY_EXHDR (secretkey) != crypto_sign_SECRETKEYBYTES,
 		"%s: invalid secret key");
 	result_size = crypto_sign_BYTES + VARSIZE_ANY (message);
@@ -108,10 +119,16 @@ pgsodium_crypto_sign_open (PG_FUNCTION_ARGS)
 {
 	int         success;
 	unsigned long long unsigned_message_len;
-	bytea      *message = PG_GETARG_BYTEA_PP (0);
-	bytea      *publickey = PG_GETARG_BYTEA_PP (1);
+	bytea      *message;
+	bytea      *publickey;
 	size_t      result_size;
 	bytea      *result;
+
+	ERRORIF (PG_ARGISNULL (0), "%s: message cannot be NULL");
+	ERRORIF (PG_ARGISNULL (1), "%s: publickey cannot be NULL");
+
+	message = PG_GETARG_BYTEA_PP (0);
+	publickey = PG_GETARG_BYTEA_PP (1);
 
 	ERRORIF (VARSIZE_ANY_EXHDR (publickey) != crypto_sign_PUBLICKEYBYTES,
 		"%s: invalid public key");
@@ -135,11 +152,18 @@ Datum
 pgsodium_crypto_sign_detached (PG_FUNCTION_ARGS)
 {
 	int         success;
-	bytea      *message = PG_GETARG_BYTEA_PP (0);
-	bytea      *secretkey = PG_GETARG_BYTEA_PP (1);
+	bytea      *message;
+	bytea      *secretkey;
 	size_t      sig_size = crypto_sign_BYTES;
 	size_t      result_size = VARHDRSZ + sig_size;
 	bytea      *result = _pgsodium_zalloc_bytea (result_size);
+
+	ERRORIF (PG_ARGISNULL (0), "%s: message cannot be NULL");
+	ERRORIF (PG_ARGISNULL (1), "%s: secretkey cannot be NULL");
+
+	message = PG_GETARG_BYTEA_PP (0);
+	secretkey = PG_GETARG_BYTEA_PP (1);
+
 	ERRORIF (VARSIZE_ANY_EXHDR (secretkey) != crypto_sign_SECRETKEYBYTES,
 		"%s: invalid secret key");
 	success = crypto_sign_detached (
@@ -157,9 +181,18 @@ Datum
 pgsodium_crypto_sign_verify_detached (PG_FUNCTION_ARGS)
 {
 	int         success;
-	bytea      *sig       = PG_GETARG_BYTEA_PP (0);
-	bytea      *message   = PG_GETARG_BYTEA_PP (1);
-	bytea      *publickey = PG_GETARG_BYTEA_PP (2);
+	bytea      *sig;
+	bytea      *message;
+	bytea      *publickey;
+
+	ERRORIF (PG_ARGISNULL (0), "%s: signature cannot be NULL");
+	ERRORIF (PG_ARGISNULL (1), "%s: message cannot be NULL");
+	ERRORIF (PG_ARGISNULL (2), "%s: publickey cannot be NULL");
+
+	sig       = PG_GETARG_BYTEA_PP (0);
+	message   = PG_GETARG_BYTEA_PP (1);
+	publickey = PG_GETARG_BYTEA_PP (2);
+
 	ERRORIF (VARSIZE_ANY_EXHDR (publickey) != crypto_sign_PUBLICKEYBYTES,
 		"%s: invalid public key");
 	success = crypto_sign_verify_detached (
@@ -184,8 +217,14 @@ PG_FUNCTION_INFO_V1 (pgsodium_crypto_sign_update);
 Datum
 pgsodium_crypto_sign_update (PG_FUNCTION_ARGS)
 {
-	bytea      *state = PG_GETARG_BYTEA_P_COPY (0);	// input state
-	bytea      *msg_part = PG_GETARG_BYTEA_PP (1);
+	bytea      *state;
+	bytea      *msg_part;
+
+	ERRORIF (PG_ARGISNULL (0), "%s: state cannot be NULL");
+	ERRORIF (PG_ARGISNULL (1), "%s: message part cannot be NULL");
+
+	state = PG_GETARG_BYTEA_P_COPY (0);	// input state
+	msg_part = PG_GETARG_BYTEA_PP (1);
 
 	crypto_sign_update (
 		(crypto_sign_state *) VARDATA (state),
@@ -199,11 +238,17 @@ Datum
 pgsodium_crypto_sign_final_create (PG_FUNCTION_ARGS)
 {
 	int         success;
-	bytea      *state = PG_GETARG_BYTEA_P_COPY (0);
-	bytea      *key = PG_GETARG_BYTEA_PP (1);
+	bytea      *state;
+	bytea      *key;
 	size_t      sig_size = crypto_sign_BYTES;
 	size_t      result_size = VARHDRSZ + sig_size;
 	bytea      *result = _pgsodium_zalloc_bytea (result_size);
+
+	ERRORIF (PG_ARGISNULL (0), "%s: state cannot be NULL");
+	ERRORIF (PG_ARGISNULL (1), "%s: key cannot be NULL");
+
+	state = PG_GETARG_BYTEA_P_COPY (0);
+	key = PG_GETARG_BYTEA_PP (1);
 
 	success = crypto_sign_final_create (
 		(crypto_sign_state *) VARDATA (state),
@@ -220,9 +265,17 @@ Datum
 pgsodium_crypto_sign_final_verify (PG_FUNCTION_ARGS)
 {
 	int         success;
-	bytea      *state = PG_GETARG_BYTEA_P_COPY (0);
-	bytea      *sig = PG_GETARG_BYTEA_PP (1);
-	bytea      *key = PG_GETARG_BYTEA_PP (2);
+	bytea      *state;
+	bytea      *sig;
+	bytea      *key;
+
+	ERRORIF (PG_ARGISNULL (0), "%s: state cannot be NULL");
+	ERRORIF (PG_ARGISNULL (1), "%s: signature cannot be NULL");
+	ERRORIF (PG_ARGISNULL (2), "%s: key cannot be NULL");
+
+	state = PG_GETARG_BYTEA_P_COPY (0);
+	sig = PG_GETARG_BYTEA_PP (1);
+	key = PG_GETARG_BYTEA_PP (2);
 
 	success = crypto_sign_final_verify (
 		(crypto_sign_state *) VARDATA (state),

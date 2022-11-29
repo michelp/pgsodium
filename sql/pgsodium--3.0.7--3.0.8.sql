@@ -120,3 +120,42 @@ ALTER FUNCTION pgsodium.crypto_auth_hmacsha256_verify(bytea, bytea, bigint, byte
 ALTER FUNCTION pgsodium.crypto_auth_hmacsha256_verify(bytea, bytea, uuid) CALLED ON NULL INPUT;
 
 ALTER FUNCTION crypto_kdf_derive_from_key(bigint, bigint, bytea, bytea) CALLED ON NULL INPUT;
+ALTER FUNCTION crypto_pwhash(bytea, bytea) CALLED ON NULL INPUT;
+ALTER FUNCTION crypto_pwhash_str(bytea) CALLED ON NULL INPUT;
+ALTER FUNCTION crypto_pwhash_str_verify(bytea, bytea) CALLED ON NULL INPUT;
+ALTER FUNCTION randombytes_uniform(integer) CALLED ON NULL INPUT;
+ALTER FUNCTION randombytes_buf(integer) CALLED ON NULL INPUT;
+ALTER FUNCTION randombytes_buf_deterministic(integer, bytea) CALLED ON NULL INPUT;
+
+ALTER FUNCTION crypto_secretbox(bytea, bytea, bytea) CALLED ON NULL INPUT;
+ALTER FUNCTION crypto_secretbox(bytea, bytea, bigint, bytea) CALLED ON NULL INPUT;
+ALTER FUNCTION crypto_secretbox(bytea, bytea, uuid) CALLED ON NULL INPUT;
+
+ALTER FUNCTION crypto_secretbox_open(bytea, bytea, bytea) CALLED ON NULL INPUT;
+ALTER FUNCTION crypto_secretbox_open(bytea, bytea, bigint, bytea) CALLED ON NULL INPUT;
+ALTER FUNCTION crypto_secretbox_open(bytea, bytea, uuid) CALLED ON NULL INPUT;
+
+ALTER FUNCTION crypto_hash_sha256(bytea) CALLED ON NULL INPUT;
+ALTER FUNCTION crypto_hash_sha512(bytea) CALLED ON NULL INPUT;
+ALTER FUNCTION crypto_sign_seed_new_keypair(bytea) CALLED ON NULL INPUT;
+
+ALTER FUNCTION crypto_sign(bytea, bytea) CALLED ON NULL INPUT;
+ALTER FUNCTION crypto_sign_detached(bytea, bytea) CALLED ON NULL INPUT;
+ALTER FUNCTION crypto_sign_final_create(bytea, bytea) CALLED ON NULL INPUT;
+ALTER FUNCTION crypto_sign_final_verify(bytea, bytea, bytea) CALLED ON NULL INPUT;
+ALTER FUNCTION crypto_sign_open(bytea, bytea) CALLED ON NULL INPUT;
+ALTER FUNCTION crypto_sign_seed_new_keypair(bytea) CALLED ON NULL INPUT;
+ALTER FUNCTION crypto_sign_verify_detached(bytea, bytea, bytea) CALLED ON NULL INPUT;
+
+ALTER FUNCTION crypto_signcrypt_sign_after(bytea, bytea, bytea) CALLED ON NULL INPUT;
+ALTER FUNCTION crypto_signcrypt_sign_before(bytea, bytea, bytea, bytea, bytea) CALLED ON NULL INPUT;
+ALTER FUNCTION crypto_signcrypt_verify_after(bytea, bytea, bytea, bytea) CALLED ON NULL INPUT;
+ALTER FUNCTION crypto_signcrypt_verify_before(bytea, bytea, bytea, bytea, bytea, bytea) CALLED ON NULL INPUT;
+ALTER FUNCTION crypto_signcrypt_verify_public(bytea, bytea, bytea, bytea, bytea, bytea) CALLED ON NULL INPUT;
+
+ALTER FUNCTION crypto_stream_xchacha20(bigint, bytea, bytea) CALLED ON NULL INPUT;
+ALTER FUNCTION crypto_stream_xchacha20(bigint, bytea, bigint, bytea) CALLED ON NULL INPUT;
+ALTER FUNCTION crypto_stream_xchacha20_xor(bytea, bytea, bytea) CALLED ON NULL INPUT;
+ALTER FUNCTION crypto_stream_xchacha20_xor(bytea, bytea, bigint, bytea) CALLED ON NULL INPUT;
+ALTER FUNCTION crypto_stream_xchacha20_xor_ic(bytea, bytea, bigint, bytea) CALLED ON NULL INPUT;
+ALTER FUNCTION crypto_stream_xchacha20_xor_ic(bytea, bytea, bigint, bigint, bytea) CALLED ON NULL INPUT;

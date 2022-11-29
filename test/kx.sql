@@ -1,5 +1,5 @@
 BEGIN;
-SELECT plan(2);
+SELECT plan(8);
 
 SELECT public, secret FROM crypto_kx_new_keypair() \gset bob_
 SELECT public, secret FROM crypto_kx_new_keypair() \gset alice_
@@ -8,6 +8,24 @@ SELECT crypto_kx_new_seed() kxseed \gset
 
 SELECT public, secret FROM crypto_kx_seed_new_keypair(:'kxseed') \gset seed_bob_
 SELECT public, secret FROM crypto_kx_seed_new_keypair(:'kxseed') \gset seed_alice_
+
+select throws_ok($$select crypto_kx_client_session_keys(NULL, 'bad', 'bad')$$,
+    '22000', 'pgsodium_crypto_kx_client_session_keys: client publickey cannot be NULL', 'kx client null client pk');
+
+select throws_ok($$select crypto_kx_client_session_keys('bad', NULL, 'bad')$$,
+    '22000', 'pgsodium_crypto_kx_client_session_keys: client secretkey cannot be NULL', 'kx client null client sk');
+
+select throws_ok($$select crypto_kx_client_session_keys('bad', 'bad', NULL)$$,
+    '22000', 'pgsodium_crypto_kx_client_session_keys: server publickey cannot be NULL', 'kx client null server pk');
+
+select throws_ok($$select crypto_kx_server_session_keys(NULL, 'bad', 'bad')$$,
+    '22000', 'pgsodium_crypto_kx_server_session_keys: server publickey cannot be NULL', 'kx server null client pk');
+
+select throws_ok($$select crypto_kx_server_session_keys('bad', NULL, 'bad')$$,
+    '22000', 'pgsodium_crypto_kx_server_session_keys: server secretkey cannot be NULL', 'kx server null client sk');
+
+select throws_ok($$select crypto_kx_server_session_keys('bad', 'bad', NULL)$$,
+    '22000', 'pgsodium_crypto_kx_server_session_keys: client publickey cannot be NULL', 'kx server null server pk');
 
 SELECT tx, rx FROM crypto_kx_client_session_keys(
     :'seed_bob_public', :'seed_bob_secret',

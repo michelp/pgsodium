@@ -1,5 +1,5 @@
 BEGIN;
-SELECT plan(6);
+SELECT plan(16);
 
 SELECT crypto_secretbox_keygen() boxkey \gset
 SELECT crypto_secretbox_noncegen() secretboxnonce \gset
@@ -12,6 +12,21 @@ SELECT throws_ok(format($$select crypto_secretbox(%L, 'bad nonce', %L::bytea)$$,
 SELECT throws_ok(format($$select crypto_secretbox(%L, %L, 'bad_key'::bytea)$$, :'secretbox', :'secretboxnonce'),
                  '22000', 'pgsodium_crypto_secretbox: invalid key', 'crypto_secretbox invalid key');
 
+SELECT throws_ok($$select crypto_secretbox(NULL, 'bad', 'bad'::bytea)$$,
+                 '22000', 'pgsodium_crypto_secretbox: message cannot be NULL', 'crypto_secretbox null message');
+
+SELECT throws_ok($$select crypto_secretbox('bad', NULL, 'bad'::bytea)$$,
+                 '22000', 'pgsodium_crypto_secretbox: nonce cannot be NULL', 'crypto_secretbox null nonce');
+
+SELECT throws_ok($$select crypto_secretbox('bad', 'bad', NULL::bytea)$$,
+                 '22000', 'pgsodium_crypto_secretbox: key cannot be NULL', 'crypto_secretbox null key');
+
+SELECT throws_ok($$select crypto_secretbox('bad', 'bad', NULL::bigint)$$,
+                 '22000', 'pgsodium_crypto_secretbox_by_id: key id cannot be NULL', 'crypto_secretbox null key id');
+
+SELECT throws_ok($$select crypto_secretbox('bad', 'bad', 1, NULL)$$,
+                 '22000', 'pgsodium_crypto_secretbox_by_id: key context cannot be NULL', 'crypto_secretbox null key context');
+
 SELECT is(crypto_secretbox_open(:'secretbox', :'secretboxnonce', :'boxkey'::bytea),
           'bob is your uncle', 'secretbox_open');
 
@@ -23,6 +38,21 @@ SELECT throws_ok(format($$select crypto_secretbox_open(%L, %L, 'bad_key'::bytea)
 
 SELECT throws_ok(format($$select crypto_secretbox_open('foo', %L, %L::bytea)$$, :'secretboxnonce', :'boxkey'),
                  '22000', 'pgsodium_crypto_secretbox_open: invalid message', 'crypto_secretbox_open invalid message');
+
+SELECT throws_ok($$select crypto_secretbox_open(NULL, 'bad', 'bad'::bytea)$$,
+                 '22000', 'pgsodium_crypto_secretbox_open: message cannot be NULL', 'crypto_secretbox null message');
+
+SELECT throws_ok($$select crypto_secretbox_open('bad', NULL, 'bad'::bytea)$$,
+                 '22000', 'pgsodium_crypto_secretbox_open: nonce cannot be NULL', 'crypto_secretbox null nonce');
+
+SELECT throws_ok($$select crypto_secretbox_open('bad', 'bad', NULL::bytea)$$,
+                 '22000', 'pgsodium_crypto_secretbox_open: key cannot be NULL', 'crypto_secretbox null key');
+
+SELECT throws_ok($$select crypto_secretbox_open('bad', 'bad', NULL::bigint)$$,
+                 '22000', 'pgsodium_crypto_secretbox_open_by_id: key id cannot be NULL', 'crypto_secretbox null key id');
+
+SELECT throws_ok($$select crypto_secretbox_open('bad', 'bad', 1, NULL)$$,
+                 '22000', 'pgsodium_crypto_secretbox_open_by_id: key context cannot be NULL', 'crypto_secretbox null key context');
 
 SELECT * FROM finish();
 ROLLBACK;

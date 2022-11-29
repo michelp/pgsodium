@@ -1,19 +1,31 @@
 BEGIN;
 
-SELECT plan(13);
+SELECT plan(18);
 
 SELECT lives_ok($$select crypto_sign_seed_new_keypair(crypto_sign_new_seed())$$,
                 'crypto_sign_seed_new_keypair');
+
 SELECT throws_ok($$select crypto_sign_seed_new_keypair('bogus')$$, '22000',
                  'pgsodium_crypto_sign_seed_keypair: invalid seed',
                  'crypto_sign_seed_new_keypair invalid seed');
 
+SELECT throws_ok($$select crypto_sign_seed_new_keypair(NULL)$$, '22000',
+                 'pgsodium_crypto_sign_seed_keypair: seed cannot be NULL',
+                 'crypto_sign_seed_new_keypair NULL seed');
+
 SELECT public, secret FROM crypto_sign_new_keypair() \gset sign_
 
 SELECT crypto_sign('bob is your uncle', :'sign_secret') signed \gset
+    
 SELECT throws_ok($$select crypto_sign('bob is your uncle', 's')$$,
        '22000', 'pgsodium_crypto_sign: invalid secret key', 'crypto_sign invalid key');
 
+SELECT throws_ok($$select crypto_sign(NULL, 'bad')$$,
+       '22000', 'pgsodium_crypto_sign: message cannot be NULL', 'crypto_sign null message');
+
+SELECT throws_ok($$select crypto_sign('bad', NULL)$$,
+       '22000', 'pgsodium_crypto_sign: secretkey cannot be NULL', 'crypto_sign null key');
+    
 SELECT is(crypto_sign_open(:'signed', :'sign_public'),
           'bob is your uncle', 'crypto_sign_open');
 
@@ -24,6 +36,14 @@ SELECT throws_ok(format($$select crypto_sign_open(%L, 'bad_key')$$, :'signed'),
 SELECT throws_ok(format($$select crypto_sign_open('foo', %L)$$, :'sign_public'),
                  '22000', 'pgsodium_crypto_sign_open: invalid message',
                  'crypto_sign_open invalid message');
+
+SELECT throws_ok($$select crypto_sign_open(NULL, 'bad_key')$$,
+                 '22000', 'pgsodium_crypto_sign_open: message cannot be NULL',
+                 'crypto_sign_open null public key');
+
+SELECT throws_ok($$select crypto_sign_open('foo', NULL)$$,
+                 '22000', 'pgsodium_crypto_sign_open: publickey cannot be NULL',
+                 'crypto_sign_open null message');
 
 -- public key signatures
 -- We will sign our previously generated sealed box
