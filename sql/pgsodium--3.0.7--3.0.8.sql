@@ -102,3 +102,19 @@ ALTER FUNCTION pgsodium.crypto_shorthash(bytea, uuid) CALLED ON NULL INPUT;
 
 ALTER FUNCTION pgsodium.sodium_bin2base64(bytea) CALLED ON NULL INPUT;
 ALTER FUNCTION pgsodium.sodium_base642bin(text) CALLED ON NULL INPUT;
+
+ALTER FUNCTION pgsodium.crypto_auth_hmacsha512(bytea, bytea) CALLED ON NULL INPUT;
+ALTER FUNCTION pgsodium.crypto_auth_hmacsha512(bytea, bigint, bytea) CALLED ON NULL INPUT;
+ALTER FUNCTION pgsodium.crypto_auth_hmacsha512(bytea, uuid) CALLED ON NULL INPUT;
+
+ALTER FUNCTION pgsodium.crypto_auth_hmacsha512_verify(bytea, bytea, bytea) CALLED ON NULL INPUT;
+ALTER FUNCTION pgsodium.crypto_auth_hmacsha512_verify(bytea, bytea, bigint, bytea) CALLED ON NULL INPUT;
+ALTER FUNCTION pgsodium.crypto_auth_hmacsha512_verify(bytea, bytea, uuid) CALLED ON NULL INPUT;
+
+ALTER FUNCTION pgsodium.crypto_auth_hmacsha256(bytea, bytea) CALLED ON NULL INPUT;
+ALTER FUNCTION pgsodium.crypto_auth_hmacsha256(bytea, bigint, bytea) CALLED ON NULL INPUT;
+ALTER FUNCTION pgsodium.crypto_auth_hmacsha256(bytea, uuid) CALLED ON NULL INPUT;
+
+ALTER FUNCTION pgsodium.crypto_auth_hmacsha256_verify(bytea, bytea, bytea) CALLED ON NULL INPUT;
+ALTER FUNCTION pgsodium.crypto_auth_hmacsha256_verify(bytea, bytea, bigint, bytea) CALLED ON NULL INPUT;
+ALTER FUNCTION pgsodium.crypto_auth_hmacsha256_verify(bytea, bytea, uuid) CALLED ON NULL INPUT;
