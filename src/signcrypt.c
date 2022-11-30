@@ -35,12 +35,11 @@ PG_FUNCTION_INFO_V1 (pgsodium_crypto_signcrypt_sign_before);
 Datum
 pgsodium_crypto_signcrypt_sign_before (PG_FUNCTION_ARGS)
 {
-	bytea      *sender = PG_GETARG_BYTEA_PP (0);
-	bytea      *recipient = PG_GETARG_BYTEA_PP (1);
-	bytea      *sender_sk = PG_GETARG_BYTEA_PP (2);
-	bytea      *recipient_pk = PG_GETARG_BYTEA_PP (3);
-	bytea      *additional = PG_GETARG_BYTEA_PP (4);
-
+	bytea      *sender;
+	bytea      *recipient;
+	bytea      *sender_sk;
+	bytea      *recipient_pk;
+	bytea      *associated;
 	TupleDesc   tupdesc;
 	Datum       values[2];
 	bool        nulls[2] = { false, false };
@@ -48,6 +47,18 @@ pgsodium_crypto_signcrypt_sign_before (PG_FUNCTION_ARGS)
 	Datum       result;
 	bytea      *state, *shared_key;
 	int         success;
+
+	ERRORIF (PG_ARGISNULL (0), "%s: sender cannot be NULL");
+	ERRORIF (PG_ARGISNULL (1), "%s: recipient cannot be NULL");
+	ERRORIF (PG_ARGISNULL (2), "%s: sender secretkey cannot be NULL");
+	ERRORIF (PG_ARGISNULL (3), "%s: recipient publickey cannot be NULL");
+	ERRORIF (PG_ARGISNULL (4), "%s: associated cannot be NULL");
+
+	sender = PG_GETARG_BYTEA_PP (0);
+	recipient = PG_GETARG_BYTEA_PP (1);
+	sender_sk = PG_GETARG_BYTEA_PP (2);
+	recipient_pk = PG_GETARG_BYTEA_PP (3);
+	associated = PG_GETARG_BYTEA_PP (4);
 
 	if (get_call_result_type (fcinfo, NULL, &tupdesc) != TYPEFUNC_COMPOSITE)
 		ereport (ERROR,
@@ -69,8 +80,8 @@ pgsodium_crypto_signcrypt_sign_before (PG_FUNCTION_ARGS)
 			VARSIZE_ANY_EXHDR (sender),
 			PGSODIUM_UCHARDATA_ANY (recipient),
 			VARSIZE_ANY_EXHDR (recipient),
-			PGSODIUM_UCHARDATA_ANY (additional),
-			VARSIZE_ANY_EXHDR (additional),
+			PGSODIUM_UCHARDATA_ANY (associated),
+			VARSIZE_ANY_EXHDR (associated),
 			PGSODIUM_UCHARDATA_ANY (sender_sk),
 			PGSODIUM_UCHARDATA_ANY (recipient_pk),
 			NULL,
@@ -88,12 +99,20 @@ PG_FUNCTION_INFO_V1 (pgsodium_crypto_signcrypt_sign_after);
 Datum
 pgsodium_crypto_signcrypt_sign_after (PG_FUNCTION_ARGS)
 {
-	bytea      *state = PG_GETARG_BYTEA_PP (0);
-	bytea      *sender_sk = PG_GETARG_BYTEA_PP (1);
-	bytea      *ciphertext = PG_GETARG_BYTEA_PP (2);
+	bytea      *state;
+	bytea      *sender_sk;
+	bytea      *ciphertext;
 	bytea      *signature =
 		_pgsodium_zalloc_bytea (crypto_signcrypt_tbsbr_SIGNBYTES + VARHDRSZ);
 	int         success;
+
+	ERRORIF (PG_ARGISNULL (0), "%s: state cannot be NULL");
+	ERRORIF (PG_ARGISNULL (1), "%s: sender secretkey cannot be NULL");
+	ERRORIF (PG_ARGISNULL (2), "%s: ciphertext cannot be NULL");
+
+	state = PG_GETARG_BYTEA_PP (0);
+	sender_sk = PG_GETARG_BYTEA_PP (1);
+	ciphertext = PG_GETARG_BYTEA_PP (2);
 
 	success = crypto_signcrypt_tbsbr_sign_after (
 		PGSODIUM_UCHARDATA_ANY (state),
@@ -109,13 +128,12 @@ PG_FUNCTION_INFO_V1 (pgsodium_crypto_signcrypt_verify_before);
 Datum
 pgsodium_crypto_signcrypt_verify_before (PG_FUNCTION_ARGS)
 {
-	bytea      *signature = PG_GETARG_BYTEA_PP (0);
-	bytea      *sender = PG_GETARG_BYTEA_PP (1);
-	bytea      *recipient = PG_GETARG_BYTEA_PP (2);
-	bytea      *additional = PG_GETARG_BYTEA_PP (3);
-	bytea      *sender_pk = PG_GETARG_BYTEA_PP (4);
-	bytea      *recipient_sk = PG_GETARG_BYTEA_PP (5);
-
+	bytea      *signature;
+	bytea      *sender;
+	bytea      *recipient;
+	bytea      *associated;
+	bytea      *sender_pk;
+	bytea      *recipient_sk;
 	TupleDesc   tupdesc;
 	Datum       values[2];
 	bool        nulls[2] = { false, false };
@@ -123,6 +141,20 @@ pgsodium_crypto_signcrypt_verify_before (PG_FUNCTION_ARGS)
 	Datum       result;
 	bytea      *state, *shared_key;
 	int         success;
+
+	ERRORIF (PG_ARGISNULL (0), "%s: signature cannot be NULL");
+	ERRORIF (PG_ARGISNULL (1), "%s: sender cannot be NULL");
+	ERRORIF (PG_ARGISNULL (2), "%s: recipient cannot be NULL");
+	ERRORIF (PG_ARGISNULL (3), "%s: associated cannot be NULL");
+	ERRORIF (PG_ARGISNULL (4), "%s: sender publickey cannot be NULL");
+	ERRORIF (PG_ARGISNULL (5), "%s: recipient secretkey cannot be NULL");
+
+	signature = PG_GETARG_BYTEA_PP (0);
+	sender = PG_GETARG_BYTEA_PP (1);
+	recipient = PG_GETARG_BYTEA_PP (2);
+	associated = PG_GETARG_BYTEA_PP (3);
+	sender_pk = PG_GETARG_BYTEA_PP (4);
+	recipient_sk = PG_GETARG_BYTEA_PP (5);
 
 	if (get_call_result_type (fcinfo, NULL, &tupdesc) != TYPEFUNC_COMPOSITE)
 		ereport (ERROR,
@@ -145,8 +177,8 @@ pgsodium_crypto_signcrypt_verify_before (PG_FUNCTION_ARGS)
 			VARSIZE_ANY_EXHDR (sender),
 			PGSODIUM_UCHARDATA_ANY (recipient),
 			VARSIZE_ANY_EXHDR (recipient),
-			PGSODIUM_UCHARDATA_ANY (additional),
-			VARSIZE_ANY_EXHDR (additional),
+			PGSODIUM_UCHARDATA_ANY (associated),
+			VARSIZE_ANY_EXHDR (associated),
 			PGSODIUM_UCHARDATA_ANY (sender_pk),
 			PGSODIUM_UCHARDATA_ANY (recipient_sk));
 	ERRORIF (success != 0, "%s: verify_before failed");
@@ -161,11 +193,21 @@ PG_FUNCTION_INFO_V1 (pgsodium_crypto_signcrypt_verify_after);
 Datum
 pgsodium_crypto_signcrypt_verify_after (PG_FUNCTION_ARGS)
 {
-	bytea      *state = PG_GETARG_BYTEA_PP (0);
-	bytea      *signature = PG_GETARG_BYTEA_PP (1);
-	bytea      *sender_pk = PG_GETARG_BYTEA_PP (2);
-	bytea      *ciphertext = PG_GETARG_BYTEA_PP (3);
+	bytea      *state;
+	bytea      *signature;
+	bytea      *sender_pk;
+	bytea      *ciphertext;
 	int         success;
+
+	ERRORIF (PG_ARGISNULL (0), "%s: state cannot be NULL");
+	ERRORIF (PG_ARGISNULL (1), "%s: signature cannot be NULL");
+	ERRORIF (PG_ARGISNULL (2), "%s: sender publickey cannot be NULL");
+	ERRORIF (PG_ARGISNULL (3), "%s: ciphertext cannot be NULL");
+
+	state = PG_GETARG_BYTEA_PP (0);
+	signature = PG_GETARG_BYTEA_PP (1);
+	sender_pk = PG_GETARG_BYTEA_PP (2);
+	ciphertext = PG_GETARG_BYTEA_PP (3);
 
 	success =
 		crypto_signcrypt_tbsbr_verify_after (
@@ -183,13 +225,27 @@ PG_FUNCTION_INFO_V1 (pgsodium_crypto_signcrypt_verify_public);
 Datum
 pgsodium_crypto_signcrypt_verify_public (PG_FUNCTION_ARGS)
 {
-	bytea      *signature = PG_GETARG_BYTEA_PP (0);
-	bytea      *sender = PG_GETARG_BYTEA_PP (1);
-	bytea      *recipient = PG_GETARG_BYTEA_PP (2);
-	bytea      *additional = PG_GETARG_BYTEA_PP (3);
-	bytea      *sender_pk = PG_GETARG_BYTEA_PP (4);
-	bytea      *ciphertext = PG_GETARG_BYTEA_PP (5);
+	bytea      *signature;
+	bytea      *sender;
+	bytea      *recipient;
+	bytea      *associated;
+	bytea      *sender_pk;
+	bytea      *ciphertext;
 	int         success;
+
+	ERRORIF (PG_ARGISNULL (0), "%s: signature cannot be NULL");
+	ERRORIF (PG_ARGISNULL (1), "%s: sender cannot be NULL");
+	ERRORIF (PG_ARGISNULL (2), "%s: recipient cannot be NULL");
+	ERRORIF (PG_ARGISNULL (3), "%s: associated cannot be NULL");
+	ERRORIF (PG_ARGISNULL (4), "%s: sender publickey cannot be NULL");
+	ERRORIF (PG_ARGISNULL (5), "%s: ciphertext cannot be NULL");
+
+	signature = PG_GETARG_BYTEA_PP (0);
+	sender = PG_GETARG_BYTEA_PP (1);
+	recipient = PG_GETARG_BYTEA_PP (2);
+	associated = PG_GETARG_BYTEA_PP (3);
+	sender_pk = PG_GETARG_BYTEA_PP (4);
+	ciphertext = PG_GETARG_BYTEA_PP (5);
 
 	success =
 		crypto_signcrypt_tbsr_verify_public (
@@ -198,8 +254,8 @@ pgsodium_crypto_signcrypt_verify_public (PG_FUNCTION_ARGS)
 			VARSIZE_ANY_EXHDR (sender),
 			PGSODIUM_UCHARDATA_ANY (recipient),
 			VARSIZE_ANY_EXHDR (recipient),
-			PGSODIUM_UCHARDATA_ANY (additional),
-			VARSIZE_ANY_EXHDR (additional),
+			PGSODIUM_UCHARDATA_ANY (associated),
+			VARSIZE_ANY_EXHDR (associated),
 			PGSODIUM_UCHARDATA_ANY (sender_pk),
 			PGSODIUM_UCHARDATA_ANY (ciphertext),
 			VARSIZE_ANY_EXHDR (ciphertext));

@@ -56,11 +56,20 @@ pgsodium_crypto_kx_client_session_keys (PG_FUNCTION_ARGS)
 	Datum       result;
 	bytea      *rx;
 	bytea      *tx;
-	bytea      *client_pk = PG_GETARG_BYTEA_PP (0);
-	bytea      *client_sk = PG_GETARG_BYTEA_PP (1);
-	bytea      *server_pk = PG_GETARG_BYTEA_PP (2);
+	bytea      *client_pk;
+	bytea      *client_sk;
+	bytea      *server_pk;
 	size_t      rx_size = crypto_kx_SESSIONKEYBYTES + VARHDRSZ;
 	size_t      tx_size = crypto_kx_SESSIONKEYBYTES + VARHDRSZ;
+
+	ERRORIF (PG_ARGISNULL (0), "%s: client publickey cannot be NULL");
+	ERRORIF (PG_ARGISNULL (1), "%s: client secretkey cannot be NULL");
+	ERRORIF (PG_ARGISNULL (2), "%s: server publickey cannot be NULL");
+
+	client_pk = PG_GETARG_BYTEA_PP (0);
+	client_sk = PG_GETARG_BYTEA_PP (1);
+	server_pk = PG_GETARG_BYTEA_PP (2);
+
 	if (get_call_result_type (fcinfo, NULL, &tupdesc) != TYPEFUNC_COMPOSITE)
 		ereport (ERROR,
 			(errcode (ERRCODE_FEATURE_NOT_SUPPORTED),
@@ -100,11 +109,20 @@ pgsodium_crypto_kx_server_session_keys (PG_FUNCTION_ARGS)
 	Datum       result;
 	bytea      *rx;
 	bytea      *tx;
-	bytea      *server_pk = PG_GETARG_BYTEA_PP (0);
-	bytea      *server_sk = PG_GETARG_BYTEA_PP (1);
-	bytea      *client_pk = PG_GETARG_BYTEA_PP (2);
+	bytea      *server_pk;
+	bytea      *server_sk;
+	bytea      *client_pk;
 	size_t      rx_size = crypto_kx_SESSIONKEYBYTES + VARHDRSZ;
 	size_t      tx_size = crypto_kx_SESSIONKEYBYTES + VARHDRSZ;
+
+	ERRORIF (PG_ARGISNULL (0), "%s: server publickey cannot be NULL");
+	ERRORIF (PG_ARGISNULL (1), "%s: server secretkey cannot be NULL");
+	ERRORIF (PG_ARGISNULL (2), "%s: client publickey cannot be NULL");
+
+	server_pk = PG_GETARG_BYTEA_PP (0);
+	server_sk = PG_GETARG_BYTEA_PP (1);
+	client_pk = PG_GETARG_BYTEA_PP (2);
+
 	if (get_call_result_type (fcinfo, NULL, &tupdesc) != TYPEFUNC_COMPOSITE)
 		ereport (ERROR,
 			(errcode (ERRCODE_FEATURE_NOT_SUPPORTED),

@@ -1,5 +1,5 @@
 BEGIN;
-SELECT plan(6);
+SELECT plan(7);
 
 SELECT crypto_kdf_keygen() kdfkey \gset
 SELECT length(crypto_kdf_derive_from_key(64, 1, '__auth__', :'kdfkey'::bytea)) kdfsubkeylen \gset
@@ -11,17 +11,21 @@ SELECT is(:kdfsubkeylen, 32, 'kdf 32 byte derived subkey');
 SELECT is(crypto_kdf_derive_from_key(32, 2, '__auth__', :'kdfkey'::bytea),
     crypto_kdf_derive_from_key(32, 2, '__auth__', :'kdfkey'::bytea), 'kdf subkeys are deterministic.');
 
-SELECT throws_ok(format($$SELECT crypto_kdf_derive_from_key(32, 2, '__aut__', %L::bytea)$$, :'kdfkey'),
-    '22000', 'pgsodium_crypto_kdf_derive_from_key: context must be 8 bytes',
-    'kdf context must be 8 bytes.');
+SELECT throws_ok($$SELECT crypto_kdf_derive_from_key(NULL, 2, '__aut__', 'bad'::bytea)$$,
+    '22000', 'pgsodium_crypto_kdf_derive_from_key: subkey size cannot be NULL',
+    'kdf null key size.');
 
-SELECT throws_ok(format($$SELECT crypto_kdf_derive_from_key(15, 2, '__auth__', %L::bytea)$$, :'kdfkey'),
-    '22000', 'pgsodium_crypto_kdf_derive_from_key: invalid key size requested',
-    'kdf keysize must be >= 16');
+SELECT throws_ok($$SELECT crypto_kdf_derive_from_key(32, NULL, '__aut__', 'bad'::bytea)$$,
+    '22000', 'pgsodium_crypto_kdf_derive_from_key: subkey id cannot be NULL',
+    'kdf null key size.');
 
-SELECT throws_ok(format($$SELECT crypto_kdf_derive_from_key(65, 2, '__auth__', %L::bytea)$$, :'kdfkey'),
-    '22000', 'pgsodium_crypto_kdf_derive_from_key: invalid key size requested',
-    'kdf keysize must be <= 64');
+SELECT throws_ok($$SELECT crypto_kdf_derive_from_key(32, 1, NULL, 'bad'::bytea)$$,
+    '22000', 'pgsodium_crypto_kdf_derive_from_key: subkey context cannot be NULL',
+    'kdf null key size.');
+
+SELECT throws_ok($$SELECT crypto_kdf_derive_from_key(32, 1, '__aut__', NULL::bytea)$$,
+    '22000', 'pgsodium_crypto_kdf_derive_from_key: primary key cannot be NULL',
+    'kdf null key size.');
 
 SELECT * FROM finish();
 ROLLBACK;
