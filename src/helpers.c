@@ -27,12 +27,20 @@ PG_FUNCTION_INFO_V1 (pgsodium_sodium_bin2base64);
 Datum
 pgsodium_sodium_bin2base64 (PG_FUNCTION_ARGS)
 {
-	bytea      *bin = PG_GETARG_BYTEA_PP (0);
-	size_t      bin_size = VARSIZE_ANY_EXHDR (bin);
-	size_t      text_size = sodium_base64_ENCODED_LEN (
+	bytea      *bin;
+	size_t      bin_size;
+	size_t      text_size;
+	text       *base64;
+
+	ERRORIF (PG_ARGISNULL (0), "%s: bin cannot be NULL");
+
+	bin = PG_GETARG_BYTEA_PP (0);
+	bin_size = VARSIZE_ANY_EXHDR (bin);
+	text_size = sodium_base64_ENCODED_LEN (
 		bin_size,
 		sodium_base64_VARIANT_URLSAFE_NO_PADDING);
-	text       *base64 = (text *) _pgsodium_zalloc_text (text_size + VARHDRSZ);
+	base64 = (text *) _pgsodium_zalloc_text (text_size + VARHDRSZ);
+
 	sodium_bin2base64 (
 		PGSODIUM_CHARDATA (base64),
 		text_size,
@@ -46,12 +54,20 @@ PG_FUNCTION_INFO_V1 (pgsodium_sodium_base642bin);
 Datum
 pgsodium_sodium_base642bin (PG_FUNCTION_ARGS)
 {
-	text       *base64 = PG_GETARG_TEXT_PP (0);
-	size_t      base64_size = VARSIZE_ANY_EXHDR (base64);
-	size_t      max_bin_size = ((base64_size + 1) / 4) * 3;
-	bytea      *bin = _pgsodium_zalloc_bytea (max_bin_size + VARHDRSZ);
+	text       *base64;
+	size_t      base64_size;
+	size_t      max_bin_size;
+	bytea      *bin;
 	size_t      bin_size;
 	int         success;
+
+	ERRORIF (PG_ARGISNULL (0), "%s: base64 cannot be NULL");
+
+	base64 = PG_GETARG_TEXT_PP (0);
+	base64_size = VARSIZE_ANY_EXHDR (base64);
+	max_bin_size = ((base64_size + 1) / 4) * 3;
+	bin = _pgsodium_zalloc_bytea (max_bin_size + VARHDRSZ);
+
 	success = sodium_base642bin (
 		PGSODIUM_UCHARDATA (bin),
 		max_bin_size,
