@@ -70,13 +70,190 @@ CREATE OR REPLACE VIEW pgsodium.valid_key AS
    WHERE  status IN ('valid', 'default')
      AND CASE WHEN expires IS NULL THEN true ELSE expires > now() END;
 
+CREATE OR REPLACE VIEW pgsodium.masking_rule AS
+  WITH const AS (
+    SELECT
+      'encrypt +with +key +id +([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})'
+        AS pattern_key_id,
+      'encrypt +with +key +column +([\w\"\-$]+)'
+        AS pattern_key_id_column,
+      '(?<=associated) +\(([\w\"\-$, ]+)\)'
+        AS pattern_associated_columns,
+      '(?<=nonce) +([\w\"\-$]+)'
+        AS pattern_nonce_column,
+      '(?<=decrypt with view) +([\w\"\-$]+\.[\w\"\-$]+)'
+        AS pattern_view_name
+  ),
+  rules_from_seclabels AS (
+    SELECT
+      sl.objoid AS attrelid,
+      sl.objsubid  AS attnum,
+      c.relnamespace::regnamespace,
+      c.relname,
+      a.attname,
+      pg_catalog.format_type(a.atttypid, a.atttypmod),
+      sl.label AS col_description,
+      (regexp_match(sl.label, k.pattern_key_id_column, 'i'))[1] AS key_id_column,
+      (regexp_match(sl.label, k.pattern_key_id, 'i'))[1] AS key_id,
+      (regexp_match(sl.label, k.pattern_associated_columns, 'i'))[1] AS associated_columns,
+      (regexp_match(sl.label, k.pattern_nonce_column, 'i'))[1] AS nonce_column,
+      coalesce((regexp_match(sl2.label, k.pattern_view_name, 'i'))[1],
+               c.relnamespace::regnamespace || '.' || quote_ident('decrypted_' || c.relname)) AS view_name,
+      100 AS priority
+      FROM const k,
+           pg_catalog.pg_seclabel sl
+           JOIN pg_catalog.pg_class c ON sl.classoid = c.tableoid AND sl.objoid = c.oid
+           JOIN pg_catalog.pg_attribute a ON a.attrelid = c.oid AND sl.objsubid = a.attnum
+           LEFT JOIN pg_catalog.pg_seclabel sl2 ON sl2.objoid = c.oid AND sl2.objsubid = 0
+     WHERE a.attnum > 0
+       AND c.relnamespace::regnamespace != 'pg_catalog'::regnamespace
+       AND NOT a.attisdropped
+       AND sl.label ilike 'ENCRYPT%'
+       AND sl.provider = 'pgsodium'
+  )
+  SELECT
+    DISTINCT ON (attrelid, attnum) *
+    FROM rules_from_seclabels
+   ORDER BY attrelid, attnum, priority DESC;
+
+CREATE OR REPLACE FUNCTION pgsodium.encrypted_columns(relid OID)
+RETURNS TEXT AS
+$$
+DECLARE
+    m RECORD;
+    expression TEXT;
+    comma TEXT;
+BEGIN
+  expression := '';
+  comma := E'        ';
+  FOR m IN SELECT * FROM pgsodium.mask_columns where attrelid = relid LOOP
+    IF m.key_id IS NULL AND m.key_id_column is NULL THEN
+      CONTINUE;
+    ELSE
+      expression := expression || comma;
+      IF m.format_type = 'text' THEN
+          expression := expression || format(
+            $f$%s = CASE WHEN %s IS NULL THEN NULL ELSE
+                CASE WHEN %s IS NULL THEN NULL ELSE pg_catalog.encode(
+                  pgsodium.crypto_aead_det_encrypt(
+                    pg_catalog.convert_to(%s, 'utf8'),
+                    pg_catalog.convert_to((%s)::text, 'utf8'),
+                    %s::uuid,
+                    %s
+                  ),
+                    'base64') END END$f$,
+                'new.' || quote_ident(m.attname),
+                'new.' || quote_ident(m.attname),
+                COALESCE('new.' || quote_ident(m.key_id_column), quote_literal(m.key_id)),
+                'new.' || quote_ident(m.attname),
+                COALESCE(pgsodium.quote_assoc(m.associated_columns, true), quote_literal('')),
+                COALESCE('new.' || quote_ident(m.key_id_column), quote_literal(m.key_id)),
+                COALESCE('new.' || quote_ident(m.nonce_column), 'NULL')
+          );
+      ELSIF m.format_type = 'bytea' THEN
+          expression := expression || format(
+            $f$%s = CASE WHEN %s IS NULL THEN NULL ELSE
+                CASE WHEN %s IS NULL THEN NULL ELSE
+                        pgsodium.crypto_aead_det_encrypt(%s::bytea, pg_catalog.convert_to((%s)::text, 'utf8'),
+                %s::uuid,
+                %s
+              ) END END$f$,
+                'new.' || quote_ident(m.attname),
+                'new.' || quote_ident(m.attname),
+                COALESCE('new.' || quote_ident(m.key_id_column), quote_literal(m.key_id)),
+                'new.' || quote_ident(m.attname),
+                COALESCE(pgsodium.quote_assoc(m.associated_columns, true), quote_literal('')),
+                COALESCE('new.' || quote_ident(m.key_id_column), quote_literal(m.key_id)),
+                COALESCE('new.' || quote_ident(m.nonce_column), 'NULL')
+          );
+      END IF;
+    END IF;
+    comma := E';\n        ';
+  END LOOP;
+  RETURN expression;
+END
+$$
+  LANGUAGE plpgsql
+  VOLATILE
+  SET search_path=''
+  ;
+
+CREATE OR REPLACE FUNCTION pgsodium.decrypted_columns(relid OID)
+RETURNS TEXT AS
+$$
+DECLARE
+  m RECORD;
+  expression TEXT;
+  comma TEXT;
+  padding text = '        ';
+BEGIN
+  expression := E'\n';
+  comma := padding;
+  FOR m IN SELECT * FROM pgsodium.mask_columns where attrelid = relid LOOP
+    expression := expression || comma;
+    IF m.key_id IS NULL AND m.key_id_column IS NULL THEN
+      expression := expression || padding || quote_ident(m.attname);
+    ELSE
+      expression := expression || padding || quote_ident(m.attname) || E',\n';
+      IF m.format_type = 'text' THEN
+          expression := expression || format(
+            $f$
+            CASE WHEN %s IS NULL THEN NULL ELSE
+                CASE WHEN %s IS NULL THEN NULL ELSE pg_catalog.convert_from(
+                  pgsodium.crypto_aead_det_decrypt(
+                    pg_catalog.decode(%s, 'base64'),
+                    pg_catalog.convert_to((%s)::text, 'utf8'),
+                    %s::uuid,
+                    %s
+                  ),
+                    'utf8') END
+                END AS %s$f$,
+                quote_ident(m.attname),
+                coalesce(quote_ident(m.key_id_column), quote_literal(m.key_id)),
+                quote_ident(m.attname),
+                coalesce(pgsodium.quote_assoc(m.associated_columns), quote_literal('')),
+                coalesce(quote_ident(m.key_id_column), quote_literal(m.key_id)),
+                coalesce(quote_ident(m.nonce_column), 'NULL'),
+                quote_ident('decrypted_' || m.attname)
+          );
+      ELSIF m.format_type = 'bytea' THEN
+          expression := expression || format(
+            $f$
+            CASE WHEN %s IS NULL THEN NULL ELSE
+                CASE WHEN %s IS NULL THEN NULL ELSE pgsodium.crypto_aead_det_decrypt(
+                    %s::bytea,
+                    pg_catalog.convert_to((%s)::text, 'utf8'),
+                    %s::uuid,
+                    %s
+                  ) END
+                END AS %s$f$,
+                quote_ident(m.attname),
+                coalesce(quote_ident(m.key_id_column), quote_literal(m.key_id)),
+                quote_ident(m.attname),
+                coalesce(pgsodium.quote_assoc(m.associated_columns), quote_literal('')),
+                coalesce(quote_ident(m.key_id_column), quote_literal(m.key_id)),
+                coalesce(quote_ident(m.nonce_column), 'NULL'),
+                'decrypted_' || quote_ident(m.attname)
+          );
+      END IF;
+    END IF;
+    comma := E',       \n';
+  END LOOP;
+  RETURN expression;
+END
+$$
+  LANGUAGE plpgsql
+  VOLATILE
+  SET search_path=''
+;
+
 CREATE OR REPLACE FUNCTION pgsodium.create_mask_view(relid oid, subid integer, debug boolean = false)
     RETURNS void AS
   $$
 DECLARE
   body text;
   source_name text;
-  view_owner text = session_user;
+  view_owner regrole = session_user;
   rule pgsodium.masking_rule;
 BEGIN
   SELECT * INTO STRICT rule FROM pgsodium.masking_rule WHERE attrelid = relid and attnum = subid ;
@@ -104,9 +281,9 @@ BEGIN
 
   body = format(
     $c$
-    DROP FUNCTION IF EXISTS %s.%s_encrypt_secret() CASCADE;
+    DROP FUNCTION IF EXISTS %s."%s_encrypt_secret"() CASCADE;
 
-    CREATE OR REPLACE FUNCTION %s.%s_encrypt_secret()
+    CREATE OR REPLACE FUNCTION %s."%s_encrypt_secret"()
       RETURNS TRIGGER
       LANGUAGE plpgsql
       AS $t$
@@ -116,14 +293,14 @@ BEGIN
     END;
     $t$;
 
-    ALTER FUNCTION  %s.%s_encrypt_secret() OWNER TO %s;
+    ALTER FUNCTION  %s."%s_encrypt_secret"() OWNER TO %s;
 
-    DROP TRIGGER IF EXISTS %s_encrypt_secret_trigger ON %s.%s;
+    DROP TRIGGER IF EXISTS "%s_encrypt_secret_trigger" ON %s;
 
-    CREATE TRIGGER %s_encrypt_secret_trigger
+    CREATE TRIGGER "%s_encrypt_secret_trigger"
       BEFORE INSERT OR UPDATE ON %s
       FOR EACH ROW
-      EXECUTE FUNCTION %s.%s_encrypt_secret ();
+      EXECUTE FUNCTION %s."%s_encrypt_secret" ();
       $c$,
     rule.relnamespace,
     rule.relname,
@@ -134,8 +311,7 @@ BEGIN
     rule.relname,
     view_owner,
     rule.relname,
-    rule.relnamespace,
-    rule.relname,
+    source_name,
     rule.relname,
     source_name,
     rule.relnamespace,
