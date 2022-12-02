@@ -1,99 +1,99 @@
 -- All roles cannot execute functions in pgsodium
-REVOKE ALL ON SCHEMA @extschema@ FROM PUBLIC;
+REVOKE ALL ON SCHEMA pgsodium FROM PUBLIC;
 -- But they can see the objects in pgsodium
-GRANT USAGE ON SCHEMA @extschema@ TO PUBLIC;
+GRANT USAGE ON SCHEMA pgsodium TO PUBLIC;
 
 -- By default, public can't use any table, functions, or sequences
-ALTER DEFAULT PRIVILEGES IN SCHEMA @extschema@ REVOKE ALL ON TABLES FROM PUBLIC;
-ALTER DEFAULT PRIVILEGES IN SCHEMA @extschema@ REVOKE ALL ON FUNCTIONS FROM PUBLIC;
-ALTER DEFAULT PRIVILEGES IN SCHEMA @extschema@ REVOKE ALL ON SEQUENCES FROM PUBLIC;
+ALTER DEFAULT PRIVILEGES IN SCHEMA pgsodium REVOKE ALL ON TABLES FROM PUBLIC;
+ALTER DEFAULT PRIVILEGES IN SCHEMA pgsodium REVOKE ALL ON FUNCTIONS FROM PUBLIC;
+ALTER DEFAULT PRIVILEGES IN SCHEMA pgsodium REVOKE ALL ON SEQUENCES FROM PUBLIC;
 
 -- pgsodium_keyiduser can use all tables and sequences (functions are granted individually)
-ALTER DEFAULT PRIVILEGES IN SCHEMA @extschema@ GRANT ALL ON TABLES TO pgsodium_keyiduser;
-ALTER DEFAULT PRIVILEGES IN SCHEMA @extschema@ GRANT ALL ON SEQUENCES TO pgsodium_keyiduser;
+ALTER DEFAULT PRIVILEGES IN SCHEMA pgsodium GRANT ALL ON TABLES TO pgsodium_keyiduser;
+ALTER DEFAULT PRIVILEGES IN SCHEMA pgsodium GRANT ALL ON SEQUENCES TO pgsodium_keyiduser;
 
 -- Create a schema to hold the masking views
-CREATE SCHEMA @extschema@_masks;
+CREATE SCHEMA pgsodium_masks;
 -- Revoke all from public on that schema
-REVOKE ALL ON SCHEMA @extschema@_masks FROM PUBLIC;
+REVOKE ALL ON SCHEMA pgsodium_masks FROM PUBLIC;
 
 -- By default public can't use any tables, functions, or sequences in the mask schema
-ALTER DEFAULT PRIVILEGES IN SCHEMA @extschema@_masks REVOKE ALL ON TABLES FROM PUBLIC;
-ALTER DEFAULT PRIVILEGES IN SCHEMA @extschema@_masks REVOKE ALL ON FUNCTIONS FROM PUBLIC;
-ALTER DEFAULT PRIVILEGES IN SCHEMA @extschema@_masks REVOKE ALL ON SEQUENCES FROM PUBLIC;
+ALTER DEFAULT PRIVILEGES IN SCHEMA pgsodium_masks REVOKE ALL ON TABLES FROM PUBLIC;
+ALTER DEFAULT PRIVILEGES IN SCHEMA pgsodium_masks REVOKE ALL ON FUNCTIONS FROM PUBLIC;
+ALTER DEFAULT PRIVILEGES IN SCHEMA pgsodium_masks REVOKE ALL ON SEQUENCES FROM PUBLIC;
 
 -- pgsodium_keyiduser can see objects in the schema.
-GRANT USAGE ON SCHEMA @extschema@_masks TO pgsodium_keyiduser;
+GRANT USAGE ON SCHEMA pgsodium_masks TO pgsodium_keyiduser;
 
 -- Misc functions
 
-CREATE OR REPLACE FUNCTION @extschema@.version()
+CREATE OR REPLACE FUNCTION pgsodium.version()
   RETURNS text
   AS $$ SELECT extversion FROM pg_extension WHERE extname = 'pgsodium') $$
   LANGUAGE sql;
 
 -- Internal Key Management
 
-CREATE TYPE @extschema@.key_status AS ENUM (
+CREATE TYPE pgsodium.key_status AS ENUM (
   'default',
   'valid',
   'invalid',
   'expired'
 );
 
-CREATE TYPE @extschema@.key_type AS ENUM (
+CREATE TYPE pgsodium.key_type AS ENUM (
   'aead-ietf',
   'aead-det'
 );
 
-CREATE TABLE @extschema@.key (
+CREATE TABLE pgsodium.key (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  status @extschema@.key_status DEFAULT 'valid',
+  status pgsodium.key_status DEFAULT 'valid',
   created timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
   expires timestamp,
-  key_type @extschema@.key_type,
+  key_type pgsodium.key_type,
   key_id bigserial NOT NULL,
   key_context bytea NOT NULL DEFAULT 'pgsodium' CHECK (length(key_context) = 8),
   comment text,
   user_data jsonb
 );
 
-SELECT pg_catalog.pg_extension_config_dump('@extschema@.key', '');
+SELECT pg_catalog.pg_extension_config_dump('pgsodium.key', '');
 
-GRANT SELECT ON @extschema@.key TO pgsodium_keyiduser;
-GRANT INSERT, UPDATE, DELETE ON @extschema@.key TO pgsodium_keymaker;
+GRANT SELECT ON pgsodium.key TO pgsodium_keyiduser;
+GRANT INSERT, UPDATE, DELETE ON pgsodium.key TO pgsodium_keymaker;
 
-CREATE INDEX ON @extschema@.key (status)
+CREATE INDEX ON pgsodium.key (status)
   WHERE (status IN ('valid', 'default'));
 
-CREATE UNIQUE INDEX ON @extschema@.key (status)
+CREATE UNIQUE INDEX ON pgsodium.key (status)
   WHERE (status = 'default');
 
-CREATE UNIQUE INDEX ON @extschema@.key (key_id, key_context, key_type);
+CREATE UNIQUE INDEX ON pgsodium.key (key_id, key_context, key_type);
 
-COMMENT ON TABLE @extschema@.key IS
+COMMENT ON TABLE pgsodium.key IS
   'This table holds metadata for derived keys given a key_id '
   'and key_context. The raw key is never stored.';
 
-CREATE VIEW @extschema@.valid_key AS
+CREATE VIEW pgsodium.valid_key AS
   SELECT
     *
     FROM
-      @extschema@.key
+      pgsodium.key
    WHERE
   status IN ('valid', 'default')
      AND CASE WHEN expires IS NULL THEN true ELSE expires < now() END;
 
-CREATE FUNCTION @extschema@.create_key(
+CREATE FUNCTION pgsodium.create_key(
   comment text = null,
-  key_type @extschema@.key_type = 'aead-det',
+  key_type pgsodium.key_type = 'aead-det',
   key_id bigint = null,
   key_context bytea = 'pgsodium',
   expires timestamp = null,
-  user_data jsonb = null) RETURNS @extschema@.key
+  user_data jsonb = null) RETURNS pgsodium.key
         AS $$
-        INSERT INTO @extschema@.key (key_id, key_context, key_type, expires, comment, user_data)
-          VALUES (case when key_id is null then nextval('@extschema@.key_key_id_seq'::regclass) else key_id
+        INSERT INTO pgsodium.key (key_id, key_context, key_type, expires, comment, user_data)
+          VALUES (case when key_id is null then nextval('pgsodium.key_key_id_seq'::regclass) else key_id
                   end,
                   key_context,
                   key_type,
@@ -104,26 +104,26 @@ CREATE FUNCTION @extschema@.create_key(
 
 -- Deterministic AEAD functions by key uuid
 
-CREATE TYPE @extschema@._key_id_context AS (
+CREATE TYPE pgsodium._key_id_context AS (
   key_id bigint,
   key_context bytea
 );
 
-CREATE FUNCTION @extschema@.crypto_aead_det_noncegen()
+CREATE FUNCTION pgsodium.crypto_aead_det_noncegen()
 RETURNS bytea
 AS '$libdir/pgsodium', 'pgsodium_crypto_aead_det_noncegen'
 LANGUAGE C VOLATILE;
 
-GRANT EXECUTE ON FUNCTION @extschema@.crypto_aead_det_noncegen() TO pgsodium_keyiduser;
+GRANT EXECUTE ON FUNCTION pgsodium.crypto_aead_det_noncegen() TO pgsodium_keyiduser;
 
-CREATE FUNCTION @extschema@.crypto_aead_det_encrypt(message bytea, additional bytea, key_uuid uuid)
+CREATE FUNCTION pgsodium.crypto_aead_det_encrypt(message bytea, additional bytea, key_uuid uuid)
   RETURNS bytea AS
 $$
 DECLARE
-  key_id @extschema@._key_id_context;
+  key_id pgsodium._key_id_context;
 BEGIN
-  SELECT v.key_id, v.key_context INTO STRICT key_id FROM @extschema@.valid_key v WHERE id = key_uuid;
-  RETURN @extschema@.crypto_aead_det_encrypt(message, additional, key_id.key_id, key_id.key_context);
+  SELECT v.key_id, v.key_context INTO STRICT key_id FROM pgsodium.valid_key v WHERE id = key_uuid;
+  RETURN pgsodium.crypto_aead_det_encrypt(message, additional, key_id.key_id, key_id.key_context);
 END;
   $$
   LANGUAGE plpgsql
@@ -132,17 +132,17 @@ END;
   ;
 
 GRANT EXECUTE ON FUNCTION
-  @extschema@.crypto_aead_det_encrypt(message bytea, additional bytea, key_uuid uuid)
+  pgsodium.crypto_aead_det_encrypt(message bytea, additional bytea, key_uuid uuid)
   TO pgsodium_keyiduser;
 
-CREATE FUNCTION @extschema@.crypto_aead_det_decrypt(message bytea, additional bytea, key_uuid uuid)
+CREATE FUNCTION pgsodium.crypto_aead_det_decrypt(message bytea, additional bytea, key_uuid uuid)
   RETURNS bytea AS
   $$
 DECLARE
-  key_id @extschema@._key_id_context;
+  key_id pgsodium._key_id_context;
 BEGIN
-  SELECT v.key_id, v.key_context INTO STRICT key_id FROM @extschema@.valid_key v WHERE id = key_uuid;
-  RETURN @extschema@.crypto_aead_det_decrypt(message, additional, key_id.key_id, key_id.key_context);
+  SELECT v.key_id, v.key_context INTO STRICT key_id FROM pgsodium.valid_key v WHERE id = key_uuid;
+  RETURN pgsodium.crypto_aead_det_decrypt(message, additional, key_id.key_id, key_id.key_context);
 END;
   $$
   LANGUAGE plpgsql
@@ -155,14 +155,14 @@ GRANT EXECUTE ON FUNCTION
 
 --- AEAD det with nonce
 
-CREATE FUNCTION @extschema@.crypto_aead_det_encrypt(message bytea, additional bytea, key_uuid uuid, nonce bytea)
+CREATE FUNCTION pgsodium.crypto_aead_det_encrypt(message bytea, additional bytea, key_uuid uuid, nonce bytea)
   RETURNS bytea AS
 $$
 DECLARE
-  key_id @extschema@._key_id_context;
+  key_id pgsodium._key_id_context;
 BEGIN
-  SELECT v.key_id, v.key_context INTO STRICT key_id FROM @extschema@.valid_key v WHERE id = key_uuid;
-  RETURN @extschema@.crypto_aead_det_encrypt(message, additional, key_id.key_id, key_id.key_context, nonce);
+  SELECT v.key_id, v.key_context INTO STRICT key_id FROM pgsodium.valid_key v WHERE id = key_uuid;
+  RETURN pgsodium.crypto_aead_det_encrypt(message, additional, key_id.key_id, key_id.key_context, nonce);
 END;
   $$
   LANGUAGE plpgsql
@@ -171,17 +171,17 @@ END;
   ;
 
 GRANT EXECUTE ON FUNCTION
-  @extschema@.crypto_aead_det_encrypt(message bytea, additional bytea, key_uuid uuid, nonce bytea)
+  pgsodium.crypto_aead_det_encrypt(message bytea, additional bytea, key_uuid uuid, nonce bytea)
   TO pgsodium_keyiduser;
 
-CREATE FUNCTION @extschema@.crypto_aead_det_decrypt(message bytea, additional bytea, key_uuid uuid, nonce bytea)
+CREATE FUNCTION pgsodium.crypto_aead_det_decrypt(message bytea, additional bytea, key_uuid uuid, nonce bytea)
   RETURNS bytea AS
   $$
 DECLARE
-  key_id @extschema@._key_id_context;
+  key_id pgsodium._key_id_context;
 BEGIN
-  SELECT v.key_id, v.key_context INTO STRICT key_id FROM @extschema@.valid_key v WHERE id = key_uuid;
-  RETURN @extschema@.crypto_aead_det_decrypt(message, additional, key_id.key_id, key_id.key_context, nonce);
+  SELECT v.key_id, v.key_context INTO STRICT key_id FROM pgsodium.valid_key v WHERE id = key_uuid;
+  RETURN pgsodium.crypto_aead_det_decrypt(message, additional, key_id.key_id, key_id.key_context, nonce);
 END;
   $$
   LANGUAGE plpgsql
@@ -194,14 +194,14 @@ GRANT EXECUTE ON FUNCTION
 
 -- IETF AEAD functions by key uuid
 
-CREATE FUNCTION @extschema@.crypto_aead_ietf_encrypt(message bytea, additional bytea, nonce bytea, key_uuid uuid)
+CREATE FUNCTION pgsodium.crypto_aead_ietf_encrypt(message bytea, additional bytea, nonce bytea, key_uuid uuid)
   RETURNS bytea AS
   $$
 DECLARE
-  key_id @extschema@._key_id_context;
+  key_id pgsodium._key_id_context;
 BEGIN
-  SELECT v.key_id, v.key_context INTO STRICT key_id FROM @extschema@.valid_key v WHERE id = key_uuid;
-  RETURN @extschema@.crypto_aead_ietf_encrypt(message, additional, nonce, key_id.key_id, key_id.key_context);
+  SELECT v.key_id, v.key_context INTO STRICT key_id FROM pgsodium.valid_key v WHERE id = key_uuid;
+  RETURN pgsodium.crypto_aead_ietf_encrypt(message, additional, nonce, key_id.key_id, key_id.key_context);
 END;
   $$
   LANGUAGE plpgsql
@@ -211,17 +211,17 @@ END;
 ;
 
 GRANT EXECUTE ON FUNCTION
-  @extschema@.crypto_aead_ietf_encrypt(message bytea, additional bytea, nonce bytea, key_uuid uuid)
+  pgsodium.crypto_aead_ietf_encrypt(message bytea, additional bytea, nonce bytea, key_uuid uuid)
   TO pgsodium_keyiduser;
 
-CREATE FUNCTION @extschema@.crypto_aead_ietf_decrypt(message bytea, additional bytea, nonce bytea, key_uuid uuid)
+CREATE FUNCTION pgsodium.crypto_aead_ietf_decrypt(message bytea, additional bytea, nonce bytea, key_uuid uuid)
   RETURNS bytea AS
   $$
 DECLARE
-  key_id @extschema@._key_id_context;
+  key_id pgsodium._key_id_context;
 BEGIN
-  SELECT v.key_id, v.key_context INTO STRICT key_id FROM @extschema@.valid_key v WHERE id = key_uuid;
-  RETURN @extschema@.crypto_aead_ietf_decrypt(message, additional, nonce, key_id.key_id, key_id.key_context);
+  SELECT v.key_id, v.key_context INTO STRICT key_id FROM pgsodium.valid_key v WHERE id = key_uuid;
+  RETURN pgsodium.crypto_aead_ietf_decrypt(message, additional, nonce, key_id.key_id, key_id.key_context);
 END;
   $$
   LANGUAGE plpgsql
@@ -235,7 +235,7 @@ GRANT EXECUTE ON FUNCTION
 
 -- Transparent Column Encryption
 
-CREATE OR REPLACE VIEW @extschema@.masking_rule AS
+CREATE OR REPLACE VIEW pgsodium.masking_rule AS
   WITH const AS (
     SELECT
       'encrypt +with +key +id +([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})'
@@ -276,10 +276,10 @@ CREATE OR REPLACE VIEW @extschema@.masking_rule AS
     FROM rules_from_seclabels
    ORDER BY attrelid, attnum, priority DESC;
 
-GRANT SELECT ON @extschema@.masking_rule TO PUBLIC;
+GRANT SELECT ON pgsodium.masking_rule TO PUBLIC;
 
 
-CREATE FUNCTION @extschema@.has_mask(role regrole, source_name text)
+CREATE FUNCTION pgsodium.has_mask(role regrole, source_name text)
   RETURNS boolean AS $$
   SELECT EXISTS(
     SELECT 1
@@ -290,7 +290,7 @@ CREATE FUNCTION @extschema@.has_mask(role regrole, source_name text)
   $$ LANGUAGE sql;
 
 -- Display all columns of the relation with the masking function (if any)
-CREATE FUNCTION @extschema@.mask_columns(source_relid oid)
+CREATE FUNCTION pgsodium.mask_columns(source_relid oid)
   RETURNS TABLE (attname name, key_id text, key_id_column text,
                  associated_column text, nonce_column text, format_type text)
 AS $$
@@ -302,7 +302,7 @@ AS $$
   m.nonce_column,
   m.format_type
   FROM pg_attribute a
-  LEFT JOIN  @extschema@.masking_rule m
+  LEFT JOIN  pgsodium.masking_rule m
   ON m.attrelid = a.attrelid
   AND m.attname = a.attname
   WHERE  a.attrelid = source_relid
@@ -312,7 +312,7 @@ AS $$
 $$ LANGUAGE sql;
 
 -- get the "select filters" that will decrypt the real data of a table
-CREATE FUNCTION @extschema@.decrypted_columns(
+CREATE FUNCTION pgsodium.decrypted_columns(
   relid OID
 )
 RETURNS TEXT AS
@@ -325,7 +325,7 @@ DECLARE
 BEGIN
   expression := E'\n';
   comma := padding;
-  FOR m IN SELECT * FROM @extschema@.mask_columns(relid) LOOP
+  FOR m IN SELECT * FROM pgsodium.mask_columns(relid) LOOP
     expression := expression || comma;
     IF m.key_id IS NULL AND m.key_id_column IS NULL THEN
       expression := expression || padding || quote_ident(m.attname);
@@ -334,7 +334,7 @@ BEGIN
       expression := expression || format(
         $f$
         pg_catalog.convert_from(
-          @extschema@.crypto_aead_det_decrypt(
+          pgsodium.crypto_aead_det_decrypt(
             pg_catalog.decode(%s, 'base64'),
             pg_catalog.convert_to(%s, 'utf8'),
             %s::uuid,
@@ -359,7 +359,7 @@ $$
 ;
 
 -- get the "insert filters" that will encrypt the real data of a table
-CREATE FUNCTION @extschema@.encrypted_columns(
+CREATE FUNCTION pgsodium.encrypted_columns(
   relid OID
 )
 RETURNS TEXT AS
@@ -371,14 +371,14 @@ DECLARE
 BEGIN
   expression := '';
   comma := E'        ';
-  FOR m IN SELECT * FROM @extschema@.mask_columns(relid) LOOP
+  FOR m IN SELECT * FROM pgsodium.mask_columns(relid) LOOP
     IF m.key_id IS NULL AND m.key_id_column is NULL THEN
       CONTINUE;
     ELSE
       expression := expression || comma;
       expression := expression || format(
         $f$%s = pg_catalog.encode(
-          @extschema@.crypto_aead_det_encrypt(
+          pgsodium.crypto_aead_det_encrypt(
             pg_catalog.convert_to(%s, 'utf8'),
             pg_catalog.convert_to(%s, 'utf8'),
             %s::uuid,
@@ -402,13 +402,13 @@ $$
   SET search_path=''
   ;
 
-CREATE FUNCTION @extschema@.create_mask_view(relid oid, debug boolean = false) RETURNS void AS
+CREATE FUNCTION pgsodium.create_mask_view(relid oid, debug boolean = false) RETURNS void AS
   $$
 DECLARE
   body text;
   source_name text;
   view_name text;
-  rule @extschema@.masking_rule;
+  rule pgsodium.masking_rule;
 BEGIN
   SELECT DISTINCT(quote_ident(relname)) INTO STRICT view_name
     FROM pg_class c, pg_seclabel sl
@@ -420,13 +420,13 @@ BEGIN
 
   body = format(
     $c$
-    DROP VIEW IF EXISTS @extschema@_masks.%s;
-    CREATE VIEW @extschema@_masks.%s AS SELECT %s
+    DROP VIEW IF EXISTS pgsodium_masks.%s;
+    CREATE VIEW pgsodium_masks.%s AS SELECT %s
     FROM %s;
     $c$,
     view_name,
     view_name,
-    @extschema@.decrypted_columns(relid),
+    pgsodium.decrypted_columns(relid),
     source_name
   );
   IF debug THEN
@@ -436,7 +436,7 @@ BEGIN
 
   body = format(
     $c$
-    CREATE OR REPLACE FUNCTION @extschema@_masks.%s_encrypt_secret()
+    CREATE OR REPLACE FUNCTION pgsodium_masks.%s_encrypt_secret()
       RETURNS TRIGGER
       LANGUAGE plpgsql
       AS $t$
@@ -451,10 +451,10 @@ BEGIN
     CREATE TRIGGER %s_encrypt_secret_trigger
       BEFORE INSERT ON %s
       FOR EACH ROW
-      EXECUTE FUNCTION @extschema@_masks.%s_encrypt_secret ();
+      EXECUTE FUNCTION pgsodium_masks.%s_encrypt_secret ();
     $c$,
     view_name,
-    @extschema@.encrypted_columns(relid),
+    pgsodium.encrypted_columns(relid),
     view_name,
     source_name,
     view_name,
@@ -466,8 +466,8 @@ BEGIN
   END IF;
   EXECUTE body;
 
-  PERFORM @extschema@.mask_role(oid::regrole, source_name, view_name)
-  FROM pg_roles WHERE @extschema@.has_mask(oid::regrole, source_name);
+  PERFORM pgsodium.mask_role(oid::regrole, source_name, view_name)
+  FROM pg_roles WHERE pgsodium.has_mask(oid::regrole, source_name);
 
   RETURN;
 END
@@ -477,11 +477,11 @@ END
   SET search_path='pg_catalog'
 ;
 
-CREATE FUNCTION @extschema@.trg_mask_update()
+CREATE FUNCTION pgsodium.trg_mask_update()
 RETURNS EVENT_TRIGGER AS
 $$
 BEGIN
-  PERFORM @extschema@.update_masks();
+  PERFORM pgsodium.update_masks();
 END
 $$
   LANGUAGE plpgsql
@@ -489,11 +489,11 @@ $$
 ;
 
 -- Mask a specific role
-CREATE FUNCTION @extschema@.mask_role(masked_role regrole, source_name text, view_name text)
+CREATE FUNCTION pgsodium.mask_role(masked_role regrole, source_name text, view_name text)
   RETURNS void AS
   $$
   DECLARE
-  mask_schema REGNAMESPACE = '@extschema@_masks';
+  mask_schema REGNAMESPACE = 'pgsodium_masks';
   source_schema REGNAMESPACE = (regexp_split_to_array(source_name, '\.'))[1];
 BEGIN
   EXECUTE format(
@@ -518,13 +518,13 @@ $$
   SET search_path='pg_catalog'
 ;
 
-CREATE FUNCTION @extschema@.update_masks(debug boolean = false)
+CREATE FUNCTION pgsodium.update_masks(debug boolean = false)
 RETURNS void AS
   $$
   declare
   rname text;
 BEGIN
-  PERFORM @extschema@.create_mask_view(c.oid, debug)
+  PERFORM pgsodium.create_mask_view(c.oid, debug)
     FROM (SELECT distinct(c.oid)
             FROM pg_seclabel s, pg_class c, pg_namespace n
            WHERE s.objoid = c.oid
@@ -539,7 +539,7 @@ $$
   SET search_path='pg_catalog'
 ;
 
-CREATE EVENT TRIGGER @extschema@_trg_mask_update
+CREATE EVENT TRIGGER pgsodium_trg_mask_update
   ON ddl_command_end
   WHEN TAG IN (
     'ALTER TABLE',
@@ -555,5 +555,5 @@ CREATE EVENT TRIGGER @extschema@_trg_mask_update
     'SECURITY LABEL',
     'SELECT INTO'
   )
-  EXECUTE PROCEDURE @extschema@.trg_mask_update()
+  EXECUTE PROCEDURE pgsodium.trg_mask_update()
 ;
