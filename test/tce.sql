@@ -125,7 +125,7 @@ COMMIT;
 \c - bobo
 
 BEGIN;
-SELECT plan(15);
+SELECT plan(17);
 
 SELECT pgsodium.crypto_aead_det_noncegen() nonce \gset
 SELECT pgsodium.crypto_aead_det_noncegen() nonce2 \gset
@@ -150,8 +150,8 @@ SELECT results_eq($$SELECT decrypted_secret = 'sp00n' from private.decrypted_foo
 
 SELECT lives_ok(
     $test$
-    INSERT INTO private.other_bar (secret2, associated2)
-    VALUES ('s3kr3t', 'bob was here');
+    INSERT INTO private.other_bar (secret, secret2, associated2)
+    VALUES ('s3kr3t', 's3kr3t2', 'bob was here 2');
     $test$,
     'can insert into other bar');
 
@@ -163,8 +163,19 @@ SELECT lives_ok(
     'can insert into quoted private bar');
 
 SELECT results_eq(
-    $$SELECT decrypted_secret2 = 's3kr3t' FROM private.other_bar$$,
-    $$VALUES (true)$$,
+    $$SELECT decrypted_secret = 's3kr3t', decrypted_secret2 = 's3kr3t2' FROM private.other_bar$$,
+    $$VALUES (true, true)$$,
+    'can select from masking view');
+
+SELECT lives_ok(
+    $test$
+    UPDATE private.other_bar SET secret = 'fooz';
+    $test$,
+    'can update one secret without effecting the other');
+
+SELECT results_eq(
+    $$SELECT decrypted_secret = 'fooz', decrypted_secret2 = 's3kr3t2' FROM private.other_bar$$,
+    $$VALUES (true, true)$$,
     'can select from masking view');
 
 SELECT results_eq(
@@ -181,7 +192,7 @@ SELECT lives_ok(
     $test$, :'another_secret_key_id'),
     'can update key id with rotation into decrypted view');
 
-SELECT results_eq($$SELECT decrypted_secret2 = 's3kr3t' from private.other_bar$$,
+SELECT results_eq($$SELECT decrypted_secret2 = 's3kr3t2' from private.other_bar$$,
     $$VALUES (true)$$,
     'can see updated key id in decrypted view');
 
