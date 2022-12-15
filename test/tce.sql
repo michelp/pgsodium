@@ -1,6 +1,6 @@
 \if :serverkeys
 BEGIN;
-SELECT plan(10);
+SELECT plan(15);
 
 CREATE SCHEMA private;
 CREATE SCHEMA "private-test";
@@ -63,7 +63,7 @@ SELECT lives_ok(
 -- Create a key id to use in the tests below
 SELECT id AS secret_key_id FROM pgsodium.create_key('aead-det', 'OPTIONAL_NAME') \gset
 
--- Create a key id to use in the tests below
+-- Create another key id to use in the tests below
 SELECT id AS secret2_key_id
   FROM pgsodium.create_key('aead-det', 'Optional Name 2') \gset
 
@@ -122,6 +122,24 @@ GRANT USAGE ON ALL SEQUENCES IN SCHEMA "private-test" TO bobo;
 SELECT * FROM finish();
 COMMIT;
 
+select pgsodium.update_masks();
+
+select ok(has_table_privilege('bobo', 'private.bar', 'SELECT'),
+	'user keeps privs after regeneration');
+
+select ok(has_table_privilege('bobo', 'private.other_bar', 'SELECT'),
+	'user keeps view select privs after regeneration');
+	
+select ok(has_table_privilege('bobo', 'private.other_bar', 'INSERT'),
+	'user keeps view insert privs after regeneration');
+	
+select ok(has_table_privilege('bobo', 'private.other_bar', 'UPDATE'),
+	'user keeps view update privs after regeneration');
+	
+select ok(has_table_privilege('bobo', 'private.other_bar', 'DELETE'),
+	'user keeps view delete privs after regeneration');
+
+SELECT * FROM finish();
 \c - bobo
 
 BEGIN;
