@@ -9,6 +9,11 @@ DROP FUNCTION IF EXISTS pgsodium.create_mask_view(oid, boolean);
 DROP FUNCTION IF EXISTS pgsodium.mask_columns(oid);
 
 /*
+ * change: useless code since 3.1.1 and the introduction of encrypted_column(oid)
+ */
+DROP FUNCTION IF EXISTS pgsodium.encrypted_columns(oid);
+
+/*
  * change: schema "pgsodium_masks" removed in 3.0.4
  * FIXME: how the extension handle bw compatibility when a table having a view
  *        in pgsodium_masks is update or has a seclabel added/changed? A new
