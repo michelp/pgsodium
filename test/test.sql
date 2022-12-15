@@ -7,7 +7,6 @@
 
 \set ON_ERROR_ROLLBACK 1
 \set ON_ERROR_STOP on
--- \set QUIET 1
 
 CREATE EXTENSION IF NOT EXISTS pgtap;
 
