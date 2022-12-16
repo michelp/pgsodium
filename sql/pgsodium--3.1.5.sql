@@ -13,28 +13,28 @@ COMMENT ON EXTENSION pgsodium IS
 
 /* */
 DO $$
-DECLARE
-	new_role text;
-BEGIN
-	FOREACH new_role IN ARRAY
-	    ARRAY['pgsodium_keyiduser',
-	          'pgsodium_keyholder',
+  DECLARE
+    new_role text;
+  BEGIN
+    FOREACH new_role IN ARRAY
+        ARRAY['pgsodium_keyiduser',
+              'pgsodium_keyholder',
               'pgsodium_keymaker']
-	LOOP
-		IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = new_role) THEN
-		    EXECUTE format($i$
-			CREATE ROLE %I WITH
-				NOLOGIN
-				NOSUPERUSER
-				NOCREATEDB
-				NOCREATEROLE
-				INHERIT
-				NOREPLICATION
-				CONNECTION LIMIT -1;
-	        $i$, new_role);
-		END IF;
-	END LOOP;
-END
+    LOOP
+        IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = new_role) THEN
+            EXECUTE format($i$
+                CREATE ROLE %I WITH
+                NOLOGIN
+                NOSUPERUSER
+                NOCREATEDB
+                NOCREATEROLE
+                INHERIT
+                NOREPLICATION
+                CONNECTION LIMIT -1
+                $i$, new_role);
+        END IF;
+    END LOOP;
+  END
 $$;
 
 GRANT pgsodium_keyholder TO pgsodium_keymaker;  -- deprecating keyholder
@@ -740,8 +740,9 @@ CREATE FUNCTION pgsodium.crypto_aead_ietf_encrypt(message bytea, additional byte
       key pgsodium.decrypted_key;
     BEGIN
       SELECT * INTO STRICT key
-        FROM pgsodium.decrypted_key v
-      WHERE id = key_uuid AND key_type = 'aead-ietf';
+      FROM pgsodium.decrypted_key v
+      WHERE id = key_uuid
+        AND key_type = 'aead-ietf';
 
       IF key.decrypted_raw_key IS NOT NULL THEN
         RETURN pgsodium.crypto_aead_ietf_encrypt(message, additional, nonce, key.decrypted_raw_key);
@@ -819,8 +820,9 @@ CREATE FUNCTION pgsodium.crypto_auth(message bytea, key_uuid uuid)
       key pgsodium.decrypted_key;
     BEGIN
       SELECT * INTO STRICT key
-        FROM pgsodium.decrypted_key v
-      WHERE id = key_uuid AND key_type = 'auth';
+      FROM pgsodium.decrypted_key v
+      WHERE id = key_uuid
+        AND key_type = 'auth';
 
       IF key.decrypted_raw_key IS NOT NULL THEN
         RETURN pgsodium.crypto_auth(message, key.decrypted_raw_key);
@@ -872,8 +874,9 @@ CREATE FUNCTION pgsodium.crypto_auth_hmacsha256(message bytea, key_uuid uuid)
       key pgsodium.decrypted_key;
     BEGIN
       SELECT * INTO STRICT key
-        FROM pgsodium.decrypted_key v
-      WHERE id = key_uuid AND key_type = 'hmacsha256';
+      FROM pgsodium.decrypted_key v
+      WHERE id = key_uuid
+        AND key_type = 'hmacsha256';
 
       IF key.decrypted_raw_key IS NOT NULL THEN
         RETURN pgsodium.crypto_auth_hmacsha256(message, key.decrypted_raw_key);
@@ -938,8 +941,9 @@ CREATE FUNCTION pgsodium.crypto_auth_hmacsha256_verify(signature bytea, message 
       key pgsodium.decrypted_key;
     BEGIN
       SELECT * INTO STRICT key
-        FROM pgsodium.decrypted_key v
-      WHERE id = key_uuid AND key_type = 'hmacsha256';
+      FROM pgsodium.decrypted_key v
+      WHERE id = key_uuid
+        AND key_type = 'hmacsha256';
 
       IF key.decrypted_raw_key IS NOT NULL THEN
         RETURN pgsodium.crypto_auth_hmacsha256_verify(signature, message, key.decrypted_raw_key);
@@ -991,8 +995,9 @@ CREATE FUNCTION pgsodium.crypto_auth_hmacsha512(message bytea, key_uuid uuid)
       key pgsodium.decrypted_key;
     BEGIN
       SELECT * INTO STRICT key
-        FROM pgsodium.decrypted_key v
-      WHERE id = key_uuid AND key_type = 'hmacsha512';
+      FROM pgsodium.decrypted_key v
+      WHERE id = key_uuid
+        AND key_type = 'hmacsha512';
 
       IF key.decrypted_raw_key IS NOT NULL THEN
         RETURN pgsodium.crypto_auth_hmacsha512(message, key.decrypted_raw_key);
@@ -1057,8 +1062,9 @@ CREATE FUNCTION pgsodium.crypto_auth_hmacsha512_verify(signature bytea, message 
       key pgsodium.decrypted_key;
     BEGIN
       SELECT * INTO STRICT key
-        FROM pgsodium.decrypted_key v
-      WHERE id = key_uuid AND key_type = 'hmacsha512';
+      FROM pgsodium.decrypted_key v
+      WHERE id = key_uuid
+        AND key_type = 'hmacsha512';
 
       IF key.decrypted_raw_key IS NOT NULL THEN
         RETURN pgsodium.crypto_auth_hmacsha512_verify(signature, message, key.decrypted_raw_key);
@@ -1123,8 +1129,9 @@ CREATE FUNCTION pgsodium.crypto_auth_verify(mac bytea, message bytea, key_uuid u
       key pgsodium.decrypted_key;
     BEGIN
       SELECT * INTO STRICT key
-        FROM pgsodium.decrypted_key v
-      WHERE id = key_uuid AND key_type = 'auth';
+      FROM pgsodium.decrypted_key v
+      WHERE id = key_uuid
+        AND key_type = 'auth';
 
       IF key.decrypted_raw_key IS NOT NULL THEN
         RETURN pgsodium.crypto_auth_verify(mac, message, key.decrypted_raw_key);
@@ -1294,8 +1301,9 @@ CREATE FUNCTION pgsodium.crypto_generichash(message bytea, key_uuid uuid)
       key pgsodium.decrypted_key;
     BEGIN
       SELECT * INTO STRICT key
-        FROM pgsodium.decrypted_key v
-      WHERE id = key_uuid AND key_type = 'generichash';
+      FROM pgsodium.decrypted_key v
+      WHERE id = key_uuid
+        AND key_type = 'generichash';
 
       IF key.decrypted_raw_key IS NOT NULL THEN
         RETURN pgsodium.crypto_generichash(message, key.decrypted_raw_key);
@@ -1365,20 +1373,20 @@ GRANT EXECUTE ON FUNCTION pgsodium.crypto_kdf_derive_from_key(bigint, bigint, by
  * crypto_kdf_derive_from_key(integer, bigint, bytea, uuid)
  */
 CREATE FUNCTION pgsodium.crypto_kdf_derive_from_key(subkey_size integer, subkey_id bigint, context bytea, primary_key uuid)
-  RETURNS bytea
-  AS $$
-  DECLARE
-    key pgsodium.decrypted_key;
-  BEGIN
-    SELECT * INTO STRICT key
+  RETURNS bytea AS $$
+    DECLARE
+      key pgsodium.decrypted_key;
+    BEGIN
+      SELECT * INTO STRICT key
       FROM pgsodium.decrypted_key v
-    WHERE id = primary_key AND key_type = 'kdf';
+      WHERE id = primary_key
+        AND key_type = 'kdf';
 
-    IF key.decrypted_raw_key IS NOT NULL THEN
-      RETURN pgsodium.crypto_kdf_derive_from_key(subkey_size, subkey_id, context, key.decrypted_raw_key);
-    END IF;
-    RETURN pgsodium.derive_key(key.key_id, subkey_size, key.key_context);
-  END
+      IF key.decrypted_raw_key IS NOT NULL THEN
+        RETURN pgsodium.crypto_kdf_derive_from_key(subkey_size, subkey_id, context, key.decrypted_raw_key);
+      END IF;
+      RETURN pgsodium.derive_key(key.key_id, subkey_size, key.key_context);
+    END
   $$
   LANGUAGE plpgsql
   STRICT STABLE
@@ -1540,20 +1548,20 @@ GRANT EXECUTE ON FUNCTION pgsodium.crypto_secretbox(bytea, bytea, bigint, bytea)
  * crypto_secretbox(bytea, bytea, uuid)
  */
 CREATE FUNCTION pgsodium.crypto_secretbox(message bytea, nonce bytea, key_uuid uuid)
-  RETURNS bytea AS
-  $$
-  DECLARE
-    key pgsodium.decrypted_key;
-  BEGIN
-    SELECT * INTO STRICT key
+  RETURNS bytea AS $$
+    DECLARE
+      key pgsodium.decrypted_key;
+    BEGIN
+      SELECT * INTO STRICT key
       FROM pgsodium.decrypted_key v
-    WHERE id = key_uuid AND key_type = 'secretbox';
+      WHERE id = key_uuid
+        AND key_type = 'secretbox';
 
-    IF key.decrypted_raw_key IS NOT NULL THEN
-      RETURN pgsodium.crypto_secretbox(message, nonce, key.decrypted_raw_key);
-    END IF;
-    RETURN pgsodium.crypto_secretbox(message, nonce, key.key_id, key.key_context);
-  END;
+      IF key.decrypted_raw_key IS NOT NULL THEN
+        RETURN pgsodium.crypto_secretbox(message, nonce, key.decrypted_raw_key);
+      END IF;
+      RETURN pgsodium.crypto_secretbox(message, nonce, key.key_id, key.key_context);
+    END
   $$
   LANGUAGE plpgsql
   STABLE
@@ -1616,20 +1624,20 @@ GRANT EXECUTE ON FUNCTION pgsodium.crypto_secretbox_open(bytea, bytea, bigint, b
  * crypto_secretbox_open(bytea, bytea, uuid)
  */
 CREATE FUNCTION pgsodium.crypto_secretbox_open(message bytea, nonce bytea, key_uuid uuid)
-  RETURNS bytea AS
-  $$
-  DECLARE
-    key pgsodium.decrypted_key;
-  BEGIN
-    SELECT * INTO STRICT key
+  RETURNS bytea AS $$
+    DECLARE
+      key pgsodium.decrypted_key;
+    BEGIN
+      SELECT * INTO STRICT key
       FROM pgsodium.decrypted_key v
-    WHERE id = key_uuid AND key_type = 'secretbox';
+      WHERE id = key_uuid
+        AND key_type = 'secretbox';
 
-    IF key.decrypted_raw_key IS NOT NULL THEN
-      RETURN pgsodium.crypto_secretbox_open(message, nonce, key.decrypted_raw_key);
-    END IF;
-    RETURN pgsodium.crypto_secretbox_open(message, nonce, key.key_id, key.key_context);
-  END;
+      IF key.decrypted_raw_key IS NOT NULL THEN
+        RETURN pgsodium.crypto_secretbox_open(message, nonce, key.decrypted_raw_key);
+      END IF;
+      RETURN pgsodium.crypto_secretbox_open(message, nonce, key.key_id, key.key_context);
+    END
   $$
   LANGUAGE plpgsql
   STABLE
@@ -1682,21 +1690,20 @@ GRANT EXECUTE ON FUNCTION pgsodium.crypto_shorthash(bytea, bigint, bytea) TO pgs
  * crypto_shorthash(bytea, uuid)
  */
 CREATE FUNCTION pgsodium.crypto_shorthash(message bytea, key_uuid uuid)
-  RETURNS bytea AS
-  $$
-  DECLARE
-    key pgsodium.decrypted_key;
-  BEGIN
-    SELECT * INTO STRICT key
+  RETURNS bytea AS $$
+    DECLARE
+      key pgsodium.decrypted_key;
+    BEGIN
+      SELECT * INTO STRICT key
       FROM pgsodium.decrypted_key v
-    WHERE id = key_uuid AND key_type = 'shorthash';
+      WHERE id = key_uuid
+        AND key_type = 'shorthash';
 
-    IF key.decrypted_raw_key IS NOT NULL THEN
-      RETURN pgsodium.crypto_shorthash(message, key.decrypted_raw_key);
-    END IF;
-    RETURN pgsodium.crypto_shorthash(message, key.key_id, key.key_context);
-  END;
-
+      IF key.decrypted_raw_key IS NOT NULL THEN
+        RETURN pgsodium.crypto_shorthash(message, key.decrypted_raw_key);
+      END IF;
+      RETURN pgsodium.crypto_shorthash(message, key.key_id, key.key_context);
+    END
   $$
   LANGUAGE plpgsql
   STRICT STABLE
@@ -1855,10 +1862,11 @@ GRANT EXECUTE ON FUNCTION pgsodium.crypto_sign_update TO pgsodium_keyholder;
  * crypto_sign_update_agg1(bytea, bytea)
  */
 CREATE FUNCTION pgsodium.crypto_sign_update_agg1(state bytea, message bytea)
-  RETURNS bytea
-  AS
-  $$
-   SELECT pgsodium.crypto_sign_update(COALESCE(state, pgsodium.crypto_sign_init()), message);
+  RETURNS bytea AS $$
+    SELECT pgsodium.crypto_sign_update(
+      COALESCE(state, pgsodium.crypto_sign_init()),
+      message
+    );
   $$
   LANGUAGE SQL
   IMMUTABLE;
@@ -1876,7 +1884,7 @@ initializes state if it has not already been initialized.';
  */
 CREATE FUNCTION pgsodium.crypto_sign_update_agg2(cur_state bytea,
                  initial_state bytea,
-				 message bytea)
+                 message bytea)
   RETURNS bytea
   AS $$
     SELECT pgsodium.crypto_sign_update(
@@ -1897,10 +1905,11 @@ initializes state to the state passed to the aggregate as a parameter,
 if it has not already been initialized.';
 
 CREATE OR REPLACE AGGREGATE pgsodium.crypto_sign_update_agg(message bytea)
- (
+(
   SFUNC = pgsodium.crypto_sign_update_agg1,
   STYPE = bytea,
-  PARALLEL = unsafe);
+  PARALLEL = unsafe
+);
 
 COMMENT ON AGGREGATE pgsodium.crypto_sign_update_agg(bytea) IS
 'Multi-part message signing aggregate that returns a state which can
@@ -1913,10 +1922,11 @@ in which message parts is processed is critical. You *must* ensure
 that the order of messages passed to the aggregate is invariant.';
 
 CREATE OR REPLACE AGGREGATE pgsodium.crypto_sign_update_agg(state bytea, message bytea)
- (
+(
   SFUNC = pgsodium.crypto_sign_update_agg2,
   STYPE = bytea,
-  PARALLEL = unsafe);
+  PARALLEL = unsafe
+);
 
 COMMENT ON AGGREGATE pgsodium.crypto_sign_update_agg(bytea, bytea) IS
 'Multi-part message signing aggregate that returns a state which can
@@ -2212,8 +2222,8 @@ GRANT EXECUTE ON FUNCTION pgsodium.derive_key TO pgsodium_keymaker;
 /*
  * disable_security_label_trigger()
  */
-CREATE FUNCTION pgsodium.disable_security_label_trigger() RETURNS void AS
-  $$
+CREATE FUNCTION pgsodium.disable_security_label_trigger()
+  RETURNS void AS $$
     ALTER EVENT TRIGGER pgsodium_trg_mask_update DISABLE;
   $$
   LANGUAGE sql
@@ -2227,8 +2237,8 @@ CREATE FUNCTION pgsodium.disable_security_label_trigger() RETURNS void AS
 /*
  * enable_security_label_trigger()
  */
-CREATE FUNCTION pgsodium.enable_security_label_trigger() RETURNS void AS
-  $$
+CREATE FUNCTION pgsodium.enable_security_label_trigger()
+  RETURNS void AS $$
     ALTER EVENT TRIGGER pgsodium_trg_mask_update ENABLE;
   $$
   LANGUAGE sql
@@ -2297,9 +2307,8 @@ CREATE FUNCTION pgsodium.encrypted_column(relid OID, m record)
  * get_key_by_id(uuid)
  */
 CREATE FUNCTION pgsodium.get_key_by_id(uuid)
-  RETURNS pgsodium.valid_key
-  AS $$
-      SELECT * FROM pgsodium.valid_key WHERE id = $1;
+  RETURNS pgsodium.valid_key AS $$
+    SELECT * FROM pgsodium.valid_key WHERE id = $1;
   $$
   SECURITY DEFINER
   LANGUAGE sql
@@ -2313,8 +2322,7 @@ CREATE FUNCTION pgsodium.get_key_by_id(uuid)
  * get_key_by_name(text)
  */
 CREATE FUNCTION pgsodium.get_key_by_name(text)
-  RETURNS pgsodium.valid_key
-  AS $$
+  RETURNS pgsodium.valid_key AS $$
       SELECT * from pgsodium.valid_key WHERE name = $1;
   $$
   SECURITY DEFINER
@@ -2346,13 +2354,14 @@ CREATE FUNCTION pgsodium.get_named_keys(filter text='%')
  */
 CREATE FUNCTION pgsodium.has_mask(role regrole, source_name text)
   RETURNS boolean AS $$
-  SELECT EXISTS(
-    SELECT 1
-      FROM pg_shseclabel
-     WHERE  objoid = role
-       AND provider = 'pgsodium'
-       AND label ilike 'ACCESS%' || source_name || '%')
-  $$ LANGUAGE sql;
+    SELECT EXISTS(
+      SELECT 1
+        FROM pg_shseclabel
+       WHERE  objoid = role
+         AND provider = 'pgsodium'
+         AND label ilike 'ACCESS%' || source_name || '%')
+  $$
+  LANGUAGE sql;
 
 -- FIXME: owner?
 -- FIXME: revoke?
@@ -2363,7 +2372,7 @@ CREATE FUNCTION pgsodium.has_mask(role regrole, source_name text)
  */
 CREATE FUNCTION pgsodium.mask_role(masked_role regrole, source_name text, view_name text)
   RETURNS void AS $$
-  DECLARE
+    DECLARE
       source_schema REGNAMESPACE = (regexp_split_to_array(source_name, '\.'))[1];
     BEGIN
       EXECUTE format(
@@ -2513,19 +2522,18 @@ CREATE FUNCTION pgsodium.sodium_bin2base64(bin bytea) RETURNS text
  * update_mask(oid, boolean)
  */
 CREATE FUNCTION pgsodium.update_mask(target oid, debug boolean = false)
-RETURNS void AS
+  RETURNS void AS $$
+    BEGIN
+      PERFORM pgsodium.disable_security_label_trigger();
+      PERFORM pgsodium.create_mask_view(objoid, objsubid, debug)
+        FROM pg_catalog.pg_seclabel sl
+        WHERE sl.objoid = target
+          AND sl.label ILIKE 'ENCRYPT%'
+          AND sl.provider = 'pgsodium';
+      PERFORM pgsodium.enable_security_label_trigger();
+      RETURN;
+    END
   $$
-BEGIN
-  PERFORM pgsodium.disable_security_label_trigger();
-  PERFORM pgsodium.create_mask_view(objoid, objsubid, debug)
-    FROM pg_catalog.pg_seclabel sl
-    WHERE sl.objoid = target
-      AND sl.label ILIKE 'ENCRYPT%'
-      AND sl.provider = 'pgsodium';
-  PERFORM pgsodium.enable_security_label_trigger();
-  RETURN;
-END
-$$
   LANGUAGE plpgsql
   SECURITY DEFINER
   SET search_path='';
@@ -2538,8 +2546,7 @@ $$
  * update_masks(boolean)
  */
 CREATE FUNCTION pgsodium.update_masks(debug boolean = false)
-  RETURNS void AS
-  $$
+  RETURNS void AS $$
     BEGIN
       PERFORM pgsodium.update_mask(objoid, debug)
         FROM pg_catalog.pg_seclabel sl
@@ -2562,8 +2569,7 @@ CREATE FUNCTION pgsodium.update_masks(debug boolean = false)
  * version()
  */
 CREATE FUNCTION pgsodium.version()
-  RETURNS text
-  AS $$
+  RETURNS text AS $$
     SELECT extversion
     FROM pg_catalog.pg_extension
     WHERE extname = 'pgsodium'
@@ -2613,7 +2619,7 @@ GRANT ALL ON ALL SEQUENCES IN SCHEMA pgsodium TO pgsodium_keymaker;
 
 
 SECURITY LABEL FOR pgsodium ON COLUMN pgsodium.key.raw_key
-    IS 'ENCRYPT WITH KEY COLUMN parent_key ASSOCIATED (id, associated_data) NONCE raw_key_nonce';
+  IS 'ENCRYPT WITH KEY COLUMN parent_key ASSOCIATED (id, associated_data) NONCE raw_key_nonce';
 
 SELECT * FROM pgsodium.update_mask('pgsodium.key'::regclass::oid);
 
