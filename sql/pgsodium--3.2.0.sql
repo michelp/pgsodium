@@ -337,6 +337,7 @@ GRANT EXECUTE ON FUNCTION pgsodium.create_key(pgsodium.key_type, text, bytea, by
  * create_mask_view(oid, integer, boolean)
  *
  * - drop and create view "decrypted_<relname>" for given relation
+ * - restore privileges on view if applicable
  * - drop and create associated triggers to encrypt data on INSERT OR UPDATE for given relation
  */
 CREATE FUNCTION pgsodium.create_mask_view(relid oid, subid integer, debug boolean = false)
@@ -347,15 +348,25 @@ CREATE FUNCTION pgsodium.create_mask_view(relid oid, subid integer, debug boolea
       source_name text;
       view_owner regrole = session_user;
       rule pgsodium.masking_rule;
+      privs aclitem[];
+      priv record;
     BEGIN
-      SELECT * INTO STRICT rule
+      SELECT DISTINCT * INTO STRICT rule
       FROM pgsodium.masking_rule
       WHERE attrelid = relid
         AND attnum = subid;
 
-      source_name := relid::regclass;
+      source_name := relid::regclass::text;
 
-      -- FIXME: missing grant/revoke DDL?
+      BEGIN
+        SELECT relacl INTO STRICT privs
+        FROM pg_catalog.pg_class
+        WHERE oid = rule.view_name::regclass::oid;
+      EXCEPTION
+        WHEN undefined_table THEN
+          SELECT relacl INTO STRICT privs FROM pg_catalog.pg_class WHERE oid = relid;
+      END;
+
       body = format(
         $c$
         DROP VIEW IF EXISTS %s;
@@ -377,7 +388,27 @@ CREATE FUNCTION pgsodium.create_mask_view(relid oid, subid integer, debug boolea
 
       EXECUTE body;
 
-      FOR m IN SELECT * FROM pgsodium.mask_columns WHERE attrelid = relid LOOP
+      -- FIXME: missing revoke DDL?
+      FOR priv IN SELECT * FROM pg_catalog.aclexplode(privs) LOOP
+        body = format(
+          'GRANT %s ON %s TO %s',
+          priv.privilege_type,
+          rule.view_name,
+          priv.grantee::regrole::text
+        );
+
+        IF debug THEN
+          RAISE NOTICE '%', body;
+        END IF;
+
+        EXECUTE body;
+      END LOOP;
+
+      FOR m IN
+        SELECT *
+        FROM pgsodium.mask_columns
+        WHERE attrelid = relid
+      LOOP
         IF m.key_id IS NULL AND m.key_id_column IS NULL THEN
           CONTINUE;
         ELSE
@@ -385,7 +416,7 @@ CREATE FUNCTION pgsodium.create_mask_view(relid oid, subid integer, debug boolea
             $c$
             DROP FUNCTION IF EXISTS %s."%s_encrypt_secret_%s"() CASCADE;
 
-            CREATE FUNCTION %s."%s_encrypt_secret_%s"()
+            CREATE OR REPLACE FUNCTION %s."%s_encrypt_secret_%s"()
               RETURNS TRIGGER
               LANGUAGE plpgsql
               AS $t$
@@ -407,22 +438,17 @@ CREATE FUNCTION pgsodium.create_mask_view(relid oid, subid integer, debug boolea
             rule.relnamespace,
             rule.relname,
             m.attname,
-
             rule.relnamespace,
             rule.relname,
             m.attname,
-
             pgsodium.encrypted_column(relid, m),
-
             rule.relnamespace,
             rule.relname,
             m.attname,
             view_owner,
-
             rule.relname,
             m.attname,
             source_name,
-
             rule.relname,
             m.attname,
             m.attname,
@@ -432,7 +458,7 @@ CREATE FUNCTION pgsodium.create_mask_view(relid oid, subid integer, debug boolea
             m.attname
           );
 
-          if debug THEN
+          IF debug THEN
             RAISE NOTICE '%', body;
           END IF;
 
