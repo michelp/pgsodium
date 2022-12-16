@@ -52,8 +52,6 @@ GRANT pgsodium_keyiduser TO pgsodium_keyholder;
 CREATE FUNCTION pgsodium.trg_mask_update()
   RETURNS EVENT_TRIGGER
   AS $$
-    DECLARE
-      r record;
     BEGIN
       -- FIXME: should we filter out all extensions BUT pgsodium?
       --        This would allow the extension to generate the decrypted_key
@@ -2246,51 +2244,45 @@ CREATE FUNCTION pgsodium.enable_security_label_trigger() RETURNS void AS
  */
 CREATE FUNCTION pgsodium.encrypted_column(relid OID, m record)
   RETURNS TEXT AS $$
-    DECLARE
-        expression TEXT;
-        comma TEXT;
     BEGIN
-      expression := '';
-      comma := E'        ';
-      expression := expression || comma;
       IF m.format_type = 'text' THEN
-    	  expression := expression || format(
-    		$f$%s = CASE WHEN %s IS NULL THEN NULL ELSE
-    			CASE WHEN %s IS NULL THEN NULL ELSE pg_catalog.encode(
-    			  pgsodium.crypto_aead_det_encrypt(
-    				pg_catalog.convert_to(%s, 'utf8'),
-    				pg_catalog.convert_to((%s)::text, 'utf8'),
-    				%s::uuid,
-    				%s
-    			  ),
-    				'base64') END END$f$,
-    			'new.' || quote_ident(m.attname),
-    			'new.' || quote_ident(m.attname),
-    			COALESCE('new.' || quote_ident(m.key_id_column), quote_literal(m.key_id)),
-    			'new.' || quote_ident(m.attname),
-    			COALESCE(pgsodium.quote_assoc(m.associated_columns, true), quote_literal('')),
-    			COALESCE('new.' || quote_ident(m.key_id_column), quote_literal(m.key_id)),
-    			COALESCE('new.' || quote_ident(m.nonce_column), 'NULL')
-    	  );
+          RETURN format(
+            $f$%s = CASE WHEN %s IS NULL THEN NULL ELSE
+                CASE WHEN %s IS NULL THEN NULL ELSE pg_catalog.encode(
+                  pgsodium.crypto_aead_det_encrypt(
+                    pg_catalog.convert_to(%s, 'utf8'),
+                    pg_catalog.convert_to((%s)::text, 'utf8'),
+                    %s::uuid,
+                    %s
+                  ),
+                    'base64') END END$f$,
+                'new.' || quote_ident(m.attname),
+                'new.' || quote_ident(m.attname),
+                COALESCE('new.' || quote_ident(m.key_id_column), quote_literal(m.key_id)),
+                'new.' || quote_ident(m.attname),
+                COALESCE(pgsodium.quote_assoc(m.associated_columns, true), quote_literal('')),
+                COALESCE('new.' || quote_ident(m.key_id_column), quote_literal(m.key_id)),
+                COALESCE('new.' || quote_ident(m.nonce_column), 'NULL')
+          );
       ELSIF m.format_type = 'bytea' THEN
-    	  expression := expression || format(
-    		$f$%s = CASE WHEN %s IS NULL THEN NULL ELSE
-    			CASE WHEN %s IS NULL THEN NULL ELSE
-    					pgsodium.crypto_aead_det_encrypt(%s::bytea, pg_catalog.convert_to((%s)::text, 'utf8'),
-    			%s::uuid,
-    			%s
-    		  ) END END$f$,
-    			'new.' || quote_ident(m.attname),
-    			'new.' || quote_ident(m.attname),
-    			COALESCE('new.' || quote_ident(m.key_id_column), quote_literal(m.key_id)),
-    			'new.' || quote_ident(m.attname),
-    			COALESCE(pgsodium.quote_assoc(m.associated_columns, true), quote_literal('')),
-    			COALESCE('new.' || quote_ident(m.key_id_column), quote_literal(m.key_id)),
-    			COALESCE('new.' || quote_ident(m.nonce_column), 'NULL')
-    	  );
+          RETURN format(
+            $f$%s = CASE WHEN %s IS NULL THEN NULL ELSE
+                CASE WHEN %s IS NULL THEN NULL ELSE
+                        pgsodium.crypto_aead_det_encrypt(%s::bytea, pg_catalog.convert_to((%s)::text, 'utf8'),
+                %s::uuid,
+                %s
+              ) END END$f$,
+                'new.' || quote_ident(m.attname),
+                'new.' || quote_ident(m.attname),
+                COALESCE('new.' || quote_ident(m.key_id_column), quote_literal(m.key_id)),
+                'new.' || quote_ident(m.attname),
+                COALESCE(pgsodium.quote_assoc(m.associated_columns, true), quote_literal('')),
+                COALESCE('new.' || quote_ident(m.key_id_column), quote_literal(m.key_id)),
+                COALESCE('new.' || quote_ident(m.nonce_column), 'NULL')
+          );
       END IF;
-      comma := E';\n        ';
-      RETURN expression;
+      RAISE 'Not supported type % for encryoted column %',
+        m.format_type, m.attname;
     END
   $$
   LANGUAGE plpgsql
