@@ -1,6 +1,6 @@
 \if :serverkeys
 BEGIN;
-SELECT plan(15);
+SELECT plan(17);
 
 CREATE SCHEMA private;
 CREATE SCHEMA "private-test";
@@ -48,6 +48,14 @@ CREATE TABLE "private-test"."bar-test"(
   "nonce2-test" bytea DEFAULT pgsodium.crypto_aead_det_noncegen()
 );
 
+SELECT throws_ok(
+  $test$
+  SECURITY LABEL FOR pgsodium ON TABLE private.bar IS 'wrong'
+  $test$,
+  '42602',
+  '''wrong'' is not a valid label for a table',
+  'reject bad label on a table');
+
 SELECT lives_ok(
   $test$
   SECURITY LABEL FOR pgsodium ON TABLE private.bar IS 'DECRYPT WITH VIEW private.other_bar'
@@ -66,6 +74,14 @@ SELECT id AS secret_key_id FROM pgsodium.create_key('aead-det', 'OPTIONAL_NAME')
 -- Create another key id to use in the tests below
 SELECT id AS secret2_key_id
   FROM pgsodium.create_key('aead-det', 'Optional Name 2') \gset
+
+SELECT throws_ok(
+  $test$
+  SECURITY LABEL FOR pgsodium ON COLUMN private.foo.secret IS 'wrong again'
+  $test$,
+  '42602',
+  '''wrong again'' is not a valid label for a column',
+  'reject bad label on a column');
 
 SELECT lives_ok(
   format($test$
@@ -119,9 +135,6 @@ GRANT ALL ON SCHEMA "private-test" to bobo;
 GRANT ALL ON ALL TABLES IN SCHEMA "private-test" to bobo;
 GRANT USAGE ON ALL SEQUENCES IN SCHEMA "private-test" TO bobo;
 
-SELECT * FROM finish();
-COMMIT;
-
 select pgsodium.update_masks();
 
 select ok(has_table_privilege('bobo', 'private.bar', 'SELECT'),
@@ -140,6 +153,8 @@ select ok(has_table_privilege('bobo', 'private.other_bar', 'DELETE'),
 	'user keeps view delete privs after regeneration');
 
 SELECT * FROM finish();
+COMMIT;
+
 \c - bobo
 
 BEGIN;
