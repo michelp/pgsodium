@@ -89,7 +89,7 @@ pgsodium arguments and return values for content and keys are of type
 `bytea`.  If you wish to use `text` or `varchar` values for general
 content, you must make sure they are encoded correctly.  The
 [`encode() and decode()` and
-`convert_to()/convert_from()`](https://www.postgresql.org/docs/12/functions-binarystring.html)
+`convert_to()/convert_from()`](https://www.postgresql.org/docs/current/functions-binarystring.html)
 binary string functions can convert from `text` to `bytea`.  Simple
 ascii `text` strings without escape or unicode characters will be cast
 by the database implicitly, and this is how it is done in the tests to
@@ -117,7 +117,7 @@ server key at boot that other keys are *derived* from.
 # Server Key Management
 
 If you add pgsodium to your
-[`shared_preload_libraries`](https://www.postgresql.org/docs/12/runtime-config-client.html#RUNTIME-CONFIG-CLIENT-PRELOAD)
+[`shared_preload_libraries`](https://www.postgresql.org/docs/current/runtime-config-client.html#RUNTIME-CONFIG-CLIENT-PRELOAD)
 configuration and place a special script in your postgres shared
 extension directory, the server can preload a libsodium key on server
 start. **This root secret key cannot be accessed from SQL**.  The only
@@ -131,7 +131,7 @@ need to provide your own key management.  Skip ahead to the API usage
 section if you choose not to use server managed keys.
 
 See the file
-[`getkey_scripts/pgsodium_getkey_urandom.sh`](./pgsodium_getkey_urandom.sh)
+[`getkey_scripts/pgsodium_getkey_urandom.sh`](getkey_scripts/pgsodium_getkey_urandom.sh)
 for an example script that returns a libsodium key using the linux
 `/dev/urandom` CSPRNG.
 
@@ -196,7 +196,7 @@ them then possibly logged in database users can generate the key if
 they have permission to call the `derive_key()` function.
 Keeping the key id and/or length context secret to a client avoid this
 possibility and make sure to set your [database security
-model](https://www.postgresql.org/docs/12/sql-grant.html) correctly so
+model](https://www.postgresql.org/docs/current/sql-grant.html) correctly so
 that only the minimum permission possible is given to users that
 interact with the encryption API.
 
@@ -211,7 +211,7 @@ the ascii encoded bytes `pgsodium`.  You are free to use any 8 byte
 context to scope your keys, but remember it must be a valid 8 byte
 `bytea` which automatically cast correctly for simple ascii string.
 For encoding other characters, see the [`encode() and decode()` and
-`convert_to()/convert_from()`](https://www.postgresql.org/docs/12/functions-binarystring.html)
+`convert_to()/convert_from()`](https://www.postgresql.org/docs/current/functions-binarystring.html)
 binary string functions.  The derivable keyspace is huge given one
 `bigint` keyspace per context and 2^64 contexts.
 
@@ -481,7 +481,7 @@ associated data column.  Columns used for associated data must be
 # Simple public key encryption with `crypto_box()`
 
 Here's an example usage from the test.sql that uses command-line
-[`psql`](https://www.postgresql.org/docs/12/app-psql.html) client
+[`psql`](https://www.postgresql.org/docs/current/app-psql.html) client
 commands (which begin with a backslash) to create keypairs and encrypt
 a message from Alice to Bob.
 
@@ -515,13 +515,13 @@ If you choose to work with your own keys and not restrict yourself to
 the `pgsodium_keyiduser` role, a useful approach is to keep keys in an
 external storage and disables logging while injecting the keys into
 local variables with [`SET
-LOCAL`](https://www.postgresql.org/docs/12/sql-set.html). If the
+LOCAL`](https://www.postgresql.org/docs/current/sql-set.html). If the
 images of database are hacked or stolen, the keys will not be
 available to the attacker.
 
 To disable logging of the key injections, `SET LOCAL` is also used to
 disable
-[`log_statements`](https://www.postgresql.org/docs/12/runtime-config-logging.html#RUNTIME-CONFIG-LOGGING-WHAT)
+[`log_statements`](https://www.postgresql.org/docs/current/runtime-config-logging.html#RUNTIME-CONFIG-LOGGING-WHAT)
 and then re-enable normal logging afterwards. as shown below. Setting
 `log_statement` requires superuser privileges:
 
