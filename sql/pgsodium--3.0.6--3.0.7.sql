@@ -194,11 +194,11 @@ END;
   SET search_path=''
   ;
     
-CREATE OR REPLACE FUNCTION @extschema@.mask_role(masked_role regrole, source_name text, view_name text)
+CREATE OR REPLACE FUNCTION pgsodium.mask_role(masked_role regrole, source_name text, view_name text)
   RETURNS void AS
   $$
   DECLARE
-  mask_schema REGNAMESPACE = '@extschema@_masks';
+  mask_schema REGNAMESPACE = 'pgsodium_masks';
   source_schema REGNAMESPACE = (regexp_split_to_array(source_name, '\.'))[1];
 BEGIN
   EXECUTE format(
