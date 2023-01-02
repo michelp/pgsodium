@@ -15,9 +15,6 @@ for encryption and decryption instead of the raw keys themselves.
 
 - Using pgsodium to Encrypt Data
   - [Configuration](Configuration.md)
-  - [Server Key Management](Server_Key_Management.md)
-  - [Transparent Column Encryption](Transparent_Column_Encryption.md)
-
 
 - SQL API to libsodium
   - [Generating Random Data](Generating_Random_Data.md)
