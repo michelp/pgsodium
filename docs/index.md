@@ -1,9 +1,19 @@
 # pgsodium User Guide
 
-Introduction.
+pgsodium is an encryption library extension for
+[PostgreSQL](https://www.postgresql.org/) using the
+[libsodium](https://download.libsodium.org/doc/) library for high
+level cryptographic algorithms.
+
+pgsodium can be used a straight interface to libsodium, but it can
+also use a powerful feature called [Server Key
+Management](./Server_Key_Management.md) where pgsodium loads an external
+secret key into memory that is never accessible to SQL.  This
+inaccessible root key can then be used to derive sub-keys that are used
+for encryption and decryption instead of the raw keys themselves.
+
 
 - Using pgsodium to Encrypt Data
-  - [Introduction](Introduction.md)
   - [Configuration](Configuration.md)
   - [Server Key Management](Server_Key_Management.md)
   - [Transparent Column Encryption](Transparent_Column_Encryption.md)
