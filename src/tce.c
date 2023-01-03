@@ -4,6 +4,68 @@
 #include "lib/stringinfo.h"
 #include "utils/lsyscache.h"
 
+static void fetch_key_meta_using_uuid(Datum keyuuid, Datum *key_id,
+									  Datum *key_context)
+{
+	int ret;
+	Oid uuidtype; /* uuidtype */
+	bool isnull;
+	HeapTuple rettuple  = NULL;
+
+	/*
+	 * Connect to SPI manager.
+	 * Every operations now occurs in the SPI memory context!
+	 */
+	if ((ret = SPI_connect()) < 0)
+		/* internal error */
+		elog(ERROR, "fetch_key_meta_using_uuid: SPI_connect returned %d", ret);
+
+	// FIXME: error when not found
+	parseTypeString("uuid", &uuidtype, NULL, false);
+
+	/* Fetch key_id and key_context from pgsodium key table */
+	ret = SPI_execute_with_args(
+		"SELECT key_id, key_context    "
+		"FROM pgsodium.decrypted_key v "
+		"WHERE id = $1                 "
+		"  AND key_type = 'aead-det'   ",
+		1,  &uuidtype, &keyuuid, NULL, true, 1
+	);
+
+	if (ret < 0)
+		elog(ERROR,
+			 "fetch_key_meta_using_uuid: SPI_execute_with_args returned %d",
+			 ret);
+
+	if (ret != SPI_OK_SELECT)
+		elog(ERROR,
+			 "fetch_key_meta_using_uuid: unexpected query result (return: %d)",
+			 ret);
+
+	if (SPI_processed > 1)
+		elog(ERROR, "more than one key found for uuid %s",
+			 DatumGetCString(DirectFunctionCall1(uuid_out, keyuuid)));
+
+	if (SPI_processed == 0)
+		elog(ERROR, "no key found for uuid %s",
+			 DatumGetCString(DirectFunctionCall1(uuid_out, keyuuid)));
+
+	rettuple = SPI_copytuple(SPI_tuptable->vals[0]);
+
+	/* Get key_id Datum from the query result */
+	*key_id = SPI_getbinval(rettuple, SPI_tuptable->tupdesc, 1, &isnull);
+	if (isnull)
+		elog(ERROR, "key found for uuid %s is NULL",
+			 DatumGetCString(DirectFunctionCall1(uuid_out, keyuuid)));
+
+	/* Get key_context Datum from the query result */
+	*key_context = SPI_getbinval(rettuple, SPI_tuptable->tupdesc, 2, &isnull);
+	if (isnull)
+		elog(ERROR, "key context for uuid %s is NULL",
+			 DatumGetCString(DirectFunctionCall1(uuid_out, keyuuid)));
+
+	SPI_finish();
+}
 /**** Trigger related code ****/
 
 /*
@@ -15,23 +77,17 @@ static Datum tg_tce_encrypt(PG_FUNCTION_ARGS, Datum keyuuid)
 	TriggerData *trigdata = (TriggerData *) fcinfo->context;
 
 	Trigger    *trigger	  = trigdata->tg_trigger;	/* to get trigger name */
-	char	   *tgname	  = trigger->tgname;		/* trigger name */
 	Relation	rel		  = trigdata->tg_relation;	/* triggered relation */
-	char	   *relname   = RelationGetRelationName(rel); /* trigg'd relname */
 	char	  **tgargs	  = trigger->tgargs;		/* trigger arguments */
 	TupleDesc	tupdesc	  = rel->rd_att;			/* tuple description */
 	HeapTuple	rettuple  = NULL;
 
-	int			msgattnum;		/* message attribute position in row */
-	Datum		message;		/* non encrypted message */
-	Datum		encmsg;			/* encrypted message */
+	int			msgattnum;	/* message attribute position in row */
+	Datum		message;	/* non encrypted message */
+	Datum		encmsg;		/* encrypted message */
 
-	Datum		key_id;			/* key_id from pgsodium.key */
+	Datum		key_id;		/* key_id from pgsodium.key */
 	Datum		key_context;	/* key context from pgsodium.key */
-
-	Oid			uuidtype;		/* uuidtype */
-
-	int			ret;			/* return codes from SPI */
 
 	bool		isnull = false;
 	bool		istext = false;
@@ -58,57 +114,7 @@ static Datum tg_tce_encrypt(PG_FUNCTION_ARGS, Datum keyuuid)
 		message = DirectFunctionCall2(pg_convert_to, message,
 									  CStringGetDatum("utf8"));
 
-	/*
-	 * Connect to SPI manager.
-	 * Every operations now occurs in the SPI memory context!
-	 */
-	if ((ret = SPI_connect()) < 0)
-		/* internal error */
-		elog(ERROR, "%s on %s: SPI_connect returned %d", tgname, relname, ret);
-
-	// FIXME: error when not found
-	parseTypeString("uuid", &uuidtype, NULL, false);
-
-	/* Fetch key_id and key_context from pgsodium key table */
-	ret = SPI_execute_with_args(
-		"SELECT key_id, key_context  "
-		"FROM pgsodium.valid_key v   " // FIXME: use decrypted_key?
-		"WHERE id = $1               "
-		"  AND key_type = 'aead-det' ",
-		1,  &uuidtype, &keyuuid, NULL, true, 1
-	);
-
-	if (ret < 0)
-		elog(ERROR, "%s on %s: SPI_execute_with_args returned %d", tgname,
-			 relname, ret);
-
-	if ((ret == SPI_OK_SELECT) && (SPI_processed > 1))
-		elog(ERROR, "%s on %s: more than one key found for uuid %s", tgname,
-			 relname,
-			 TextDatumGetCString(DirectFunctionCall1(uuid_out, keyuuid)));
-
-	if ((ret == SPI_OK_SELECT) && (SPI_processed == 0))
-		elog(ERROR, "%s on %s: no key found for uuid %s", tgname, relname,
-			 TextDatumGetCString(DirectFunctionCall1(uuid_out, keyuuid)));
-
-	if (ret != SPI_OK_SELECT)
-		elog(ERROR, "%s on %s: unexpected query result (return: %d)",
-			 tgname, relname, ret);
-
-	/* Get key_id Datum from the query result */
-	key_id = SPI_getbinval(SPI_tuptable->vals[0], SPI_tuptable->tupdesc, 1,
-						  &isnull);
-	if (isnull)
-		elog(ERROR, "%s on %s: key found for uuid %s is NULL", tgname, relname,
-			 TextDatumGetCString(DirectFunctionCall1(uuid_out, keyuuid)));
-
-	/* Get key_context Datum from the query result */
-	key_context = SPI_getbinval(SPI_tuptable->vals[0],
-							   SPI_tuptable->tupdesc, 2, &isnull);
-	if (isnull)
-		elog(ERROR, "%s on %s: key context for uuid %s is NULL", tgname,
-			 relname,
-			 TextDatumGetCString(DirectFunctionCall1(uuid_out, keyuuid)));
+	fetch_key_meta_using_uuid(keyuuid, &key_id, &key_context);
 
 	/* init fields of the function call structs */
 	InitFunctionCallInfoData(*fcencinfo, NULL, 5, InvalidOid, NULL, NULL);
@@ -189,15 +195,6 @@ static Datum tg_tce_encrypt(PG_FUNCTION_ARGS, Datum keyuuid)
 	isnull = false;
 	rettuple = heap_modify_tuple_by_cols(rettuple, tupdesc, 1, &msgattnum,
 										 &encmsg, &isnull);
-
-	/*
-	 * copy the resulting row to the trigger memory context before losing
-	 * it during memory context destruction in SPI_finish()
-	 */
-	rettuple = SPI_copytuple(rettuple);
-
-	/* releasing spi db connection and its memory context */
-	SPI_finish();
 
 	return PointerGetDatum(rettuple);
 }
