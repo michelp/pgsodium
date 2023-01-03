@@ -265,4 +265,8 @@ Datum       pgsodium_cmp (PG_FUNCTION_ARGS);
 Datum       pgsodium_sodium_bin2base64 (PG_FUNCTION_ARGS);
 Datum       pgsodium_sodium_base642bin (PG_FUNCTION_ARGS);
 
+/* Triggers */
+
+Datum       tg_aead_det_encrypt_by_uuid_text(PG_FUNCTION_ARGS);
+
 #endif /* PGSODIUM_H */

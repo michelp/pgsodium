@@ -45,24 +45,280 @@ GRANT pgsodium_keyiduser TO pgsodium_keyholder;
 --                              TRIGGERS
 --==============================================================================
 
+CREATE FUNCTION pgsodium.tg_tce_encrypt_using_key_col()
+  RETURNS trigger
+  AS '$libdir/pgsodium'
+  LANGUAGE C;
+
+CREATE FUNCTION pgsodium.tg_tce_encrypt_using_key_id()
+  RETURNS trigger
+  AS '$libdir/pgsodium'
+  LANGUAGE C;
+
+-- FIXME: owner?
+-- FIXME: revoke?
+-- FIXME: grant?
 
 /*
- * trg_mask_update()
+ * tce_update_view(oid)
+ *
+ * Build if needed:
+ * - decrypting view
  */
-CREATE FUNCTION pgsodium.trg_mask_update()
+CREATE FUNCTION pgsodium.tce_update_view(relid oid)
+  RETURNS void AS $$
+    DECLARE
+      r record;
+      origrelpath text;
+      viewname text;
+      body text = '';
+      enc_cols text[];
+      dec_col text;
+      dec_col_alias text;
+      ad text;
+      view_owner regrole = session_user;
+      privs aclitem[];
+    BEGIN
+      SELECT
+        pg_catalog.format('%I.%I', relnamespace::regnamespace::text, relname)
+        INTO STRICT origrelpath
+      FROM pg_catalog.pg_class
+      WHERE oid = relid;
+
+      FOR r IN
+        SELECT *
+        FROM pgsodium.masking_rule AS mr
+        WHERE mr.attrelid = tce_update_view.relid
+      LOOP
+        IF viewname IS NULL THEN
+          viewname = r.view_name;
+        END IF;
+
+        dec_col = pg_catalog.format('%I', r.attname);
+        dec_col_alias = 'decrypted_' || r.attname;
+
+        IF r.key_id IS NOT NULL THEN
+          dec_col = pg_catalog.format('%s, UUID %L', dec_col, r.key_id);
+        ELSIF r.key_id_column IS NOT NULL THEN
+          dec_col = pg_catalog.format('%s, %I', dec_col, r.key_id_column);
+        ELSE
+          enc_cols = enc_cols || ARRAY[
+              pg_catalog.format('NULL AS %I', dec_col_alias)
+          ];
+          CONTINUE;
+        END IF;
+
+        IF r.nonce_column IS NOT NULL THEN
+          dec_col = pg_catalog.format('%s, %I', dec_col, r.nonce_column);
+        END IF;
+
+        IF r.associated_columns IS NOT NULL THEN
+          WITH a AS (
+              SELECT pg_catalog.array_agg( format('%I::text', trim(v)) ) AS r
+              FROM pg_catalog.regexp_split_to_table(r.associated_columns,
+                                                    '\s*,\s*') as v
+          )
+          SELECT pg_catalog.array_to_string(a.r, ' || ') INTO ad
+          FROM a;
+
+          dec_col = pg_catalog.format('%s, ad => %s', dec_col, ad);
+        END IF;
+
+        enc_cols = enc_cols
+            || pg_catalog.format(E'pgsodium.tce_decrypt_col(%s) AS %s',
+                                 dec_col, dec_col_alias);
+      END LOOP;
+
+      IF (viewname IS NULL) THEN
+        RAISE 'relation % has no encrypted columns', relid::regclass;
+      END IF;
+
+      body = pg_catalog.format('
+        DROP VIEW IF EXISTS %s;
+        CREATE VIEW %1$s AS
+        SELECT *,
+          %s
+        FROM %s;
+        ALTER VIEW %1$s OWNER TO %4$I;
+        REVOKE ALL ON %1$s FROM public;
+        ',
+        viewname, -- supposed to be already escaped
+        array_to_string(enc_cols, E',\n'),
+        origrelpath,
+        view_owner
+      );
+
+      IF pg_catalog.current_setting('pgsodium.debug')::bool THEN
+        RAISE NOTICE '%', body;
+      END IF;
+
+      EXECUTE body;
+
+      BEGIN
+        SELECT relacl INTO STRICT privs
+        FROM pg_catalog.pg_class
+        WHERE oid = rule.view_name::regclass::oid;
+      EXCEPTION
+        WHEN undefined_table THEN
+          SELECT relacl INTO STRICT privs
+          FROM pg_catalog.pg_class
+          WHERE oid = relid;
+      END;
+
+      -- FIXME: missing revoke DDL?
+      FOR r IN SELECT * FROM pg_catalog.aclexplode(privs) LOOP
+        body = format(
+          'GRANT %s ON %s TO %I',
+          r.privilege_type,
+          viewname, -- supposed to be already escaped
+          r.grantee::regrole::text
+        );
+
+        IF pg_catalog.current_setting('pgsodium.debug')::bool THEN
+          RAISE NOTICE '%', body;
+        END IF;
+
+        EXECUTE body;
+      END LOOP;
+
+      PERFORM pgsodium.mask_role(oid::regrole, origrelpath, viewname)
+      FROM pg_catalog.pg_roles
+      WHERE pgsodium.has_mask(oid::regrole, origrelpath);
+    END
+  $$
+  LANGUAGE plpgsql
+  SET search_path='';
+
+-- FIXME: owner?
+-- FIXME: revoke?
+-- FIXME: grant?
+
+/*
+ * tce_update_attr_tg(oid, integer)
+ *
+ * Build if needed:
+ * - encrypting triggers on tables with encrypted cols
+ * - decrypting view
+ */
+CREATE FUNCTION pgsodium.tce_update_attr_tg(relid oid, attnum integer)
+  RETURNS void AS $$
+    DECLARE
+      body text;
+      rule pgsodium.masking_rule;
+      raw_key bytea;
+      key_id bigint;
+      tgname text;
+      tgf text;
+      tgargs text;
+      attname text;
+    BEGIN
+      -- get encryption rules for given field
+      SELECT DISTINCT * INTO STRICT rule
+      FROM pgsodium.masking_rule AS mr
+      WHERE mr.attrelid = relid
+        AND mr.attnum = tce_update_attr_tg.attnum;
+
+     tgname = 'encrypt_' || rule.attname;
+     tgargs = pg_catalog.quote_literal(rule.attname);
+
+      IF rule.key_id_column IS NOT NULL THEN
+        tgf = 'tg_tce_encrypt_using_key_col';
+        tgargs = pg_catalog.format('%s, %L', tgargs, rule.key_id_column);
+      ELSIF rule.key_id IS NOT NULL THEN
+        tgf = 'tg_tce_encrypt_using_key_id';
+        tgargs = pg_catalog.format('%s, %L', tgargs, rule.key_id);
+      ELSE
+          -- FIXME trigger set col to NULL
+      END IF;
+
+      IF rule.nonce_column IS NOT NULL THEN
+        tgargs = pg_catalog.format('%s, %L', tgargs, rule.nonce_column);
+      END IF;
+
+      IF rule.associated_columns IS NOT NULL THEN
+        IF rule.nonce_column IS NULL THEN
+          /*
+           * empty nonce is required because associated cols starts at
+           * the 4th argument.
+           */
+          tgargs = pg_catalog.format('%s, %L', tgargs, '');
+        END IF;
+
+        FOR attname IN
+            SELECT pg_catalog.regexp_split_to_table(rule.associated_columns,
+                                                    '\s*,\s*')
+        LOOP
+            tgargs = pg_catalog.format('%s, %L', tgargs, attname);
+        END LOOP;
+      END IF;
+
+      body = pg_catalog.format('
+          DROP TRIGGER IF EXISTS %1$I ON %3$I.%4$I;
+
+          CREATE TRIGGER %1$I BEFORE INSERT OR UPDATE OF %2$I
+            ON %3$I.%4$I FOR EACH ROW EXECUTE FUNCTION
+            pgsodium.%5$I(%6$s);',
+        tgname,            -- 1
+        rule.attname,      -- 2
+        rule.relnamespace, -- 3
+        rule.relname,      -- 4
+        tgf,               -- 5
+        tgargs             -- 6
+      );
+
+      IF pg_catalog.current_setting('pgsodium.debug')::bool THEN
+        RAISE NOTICE '%', body;
+      END IF;
+
+      EXECUTE body;
+
+      PERFORM pgsodium.disable_security_label_trigger();
+      PERFORM pgsodium.tce_update_view(relid);
+      PERFORM pgsodium.enable_security_label_trigger();
+
+      RETURN;
+    END
+  $$
+  LANGUAGE plpgsql
+  SET search_path='';
+
+/*
+ * tg_tce_update()
+ */
+CREATE FUNCTION pgsodium.tg_tce_update()
   RETURNS EVENT_TRIGGER
   AS $$
+    DECLARE r record;
     BEGIN
-      -- FIXME: should we filter out all extensions BUT pgsodium?
-      --        This would allow the extension to generate the decrypted_key
-      --        view when creating the security label without explicitly call
-      --        "update_masks()" at the end of this script.
       IF ( SELECT bool_or(in_extension) FROM pg_event_trigger_ddl_commands() )
       THEN
         RAISE NOTICE 'skipping pgsodium mask regeneration in extension';
         RETURN;
       END IF;
-      PERFORM pgsodium.update_masks();
+
+      FOR r IN
+        SELECT e.*
+        FROM pg_event_trigger_ddl_commands() e
+        WHERE EXISTS (
+          SELECT FROM pg_catalog.pg_class c
+          JOIN pg_catalog.pg_seclabel s ON s.classoid = c.tableoid
+                                       AND s.objoid = c.oid
+          WHERE c.tableoid = e.classid
+            AND e.objid = c.oid
+        )
+      LOOP
+        IF pg_catalog.current_setting('pgsodium.debug')::bool THEN
+          RAISE NOTICE 'trg_mask_update: classid: %, objid: %, objsubid: %, tag: %, obj_type: %, schema: %, identity: %, in_ext: %',
+            r.classid, r.objid, r.objsubid, r.command_tag, r.object_type,
+            r.schema_name, r.object_identity, r.in_extension;
+        END IF;
+
+        /*
+         * Create/update encryption trigger for given attribute. This triggers
+         * the creation/update of the related decrypting view as well.
+         */
+        PERFORM pgsodium.tce_update_attr_tg(r.objid, r.objsubid);
+      END LOOP;
     END
   $$
   LANGUAGE plpgsql
@@ -73,13 +329,13 @@ CREATE FUNCTION pgsodium.trg_mask_update()
 -- FIXME: grant?
 
 /* */
-CREATE EVENT TRIGGER pgsodium_trg_mask_update
+CREATE EVENT TRIGGER pgsodium_tg_tce_update
   ON ddl_command_end
   WHEN TAG IN (
     'SECURITY LABEL',
     'ALTER TABLE'
   )
-  EXECUTE PROCEDURE pgsodium.trg_mask_update();
+  EXECUTE PROCEDURE pgsodium.tg_tce_update();
 
 --==============================================================================
 --                               TYPES
@@ -186,7 +442,7 @@ SELECT pg_catalog.pg_extension_config_dump('pgsodium.key', '');
 --==============================================================================
 
 /* */ 
-CREATE OR REPLACE VIEW pgsodium.valid_key AS
+CREATE VIEW pgsodium.valid_key AS
   SELECT id, name, status, key_type, key_id, key_context, created, expires, associated_data
     FROM pgsodium.key
    WHERE  status IN ('valid', 'default')
@@ -197,7 +453,7 @@ CREATE OR REPLACE VIEW pgsodium.valid_key AS
 GRANT SELECT ON pgsodium.valid_key TO pgsodium_keyiduser;
 
 /* */
-CREATE OR REPLACE VIEW pgsodium.masking_rule AS
+CREATE VIEW pgsodium.masking_rule AS
   WITH const AS (
     SELECT
       'encrypt +with +key +id +([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})'
@@ -225,7 +481,7 @@ CREATE OR REPLACE VIEW pgsodium.masking_rule AS
       (regexp_match(sl.label, k.pattern_associated_columns, 'i'))[1] AS associated_columns,
       (regexp_match(sl.label, k.pattern_nonce_column, 'i'))[1] AS nonce_column,
       coalesce((regexp_match(sl2.label, k.pattern_view_name, 'i'))[1],
-               c.relnamespace::regnamespace || '.' || quote_ident('decrypted_' || c.relname)) AS view_name,
+               quote_ident(c.relnamespace::regnamespace::text) || '.' || quote_ident('decrypted_' || c.relname)) AS view_name,
       100 AS priority
       FROM const k,
            pg_catalog.pg_seclabel sl
@@ -246,26 +502,6 @@ CREATE OR REPLACE VIEW pgsodium.masking_rule AS
 -- FIXME: owner?
 -- FIXME: revoke?
 GRANT SELECT ON pgsodium.masking_rule TO PUBLIC;
-
-/* */
-CREATE VIEW pgsodium.mask_columns AS SELECT
-  a.attname,
-  a.attrelid,
-  m.key_id,
-  m.key_id_column,
-  m.associated_columns,
-  m.nonce_column,
-  m.format_type
-FROM pg_attribute a
-LEFT JOIN pgsodium.masking_rule m ON m.attrelid = a.attrelid
-                                 AND m.attname = a.attname
-WHERE  a.attnum > 0 -- exclude ctid, cmin, cmax
-  AND  NOT a.attisdropped
-ORDER BY a.attnum;
-
--- FIXME: owner?
--- FIXME: revoke?
--- FIXME: grant?
 
 --==============================================================================
 --                               FUNCTIONS
@@ -331,156 +567,6 @@ CREATE FUNCTION pgsodium.create_key(
 ALTER FUNCTION            pgsodium.create_key(pgsodium.key_type, text, bytea, bytea, uuid, bytea, timestamptz, text) OWNER TO pgsodium_keymaker;
 -- FIXME: REVOKE?
 GRANT EXECUTE ON FUNCTION pgsodium.create_key(pgsodium.key_type, text, bytea, bytea, uuid, bytea, timestamptz, text) TO pgsodium_keyiduser;
-
-
-/*
- * create_mask_view(oid, integer, boolean)
- *
- * - drop and create view "decrypted_<relname>" for given relation
- * - restore privileges on view if applicable
- * - drop and create associated triggers to encrypt data on INSERT OR UPDATE for given relation
- */
-CREATE FUNCTION pgsodium.create_mask_view(relid oid, subid integer, debug boolean = false)
-  RETURNS void AS $$
-    DECLARE
-      m record;
-      body text;
-      source_name text;
-      view_owner regrole = session_user;
-      rule pgsodium.masking_rule;
-      privs aclitem[];
-      priv record;
-    BEGIN
-      SELECT DISTINCT * INTO STRICT rule
-      FROM pgsodium.masking_rule
-      WHERE attrelid = relid
-        AND attnum = subid;
-
-      source_name := relid::regclass::text;
-
-      BEGIN
-        SELECT relacl INTO STRICT privs
-        FROM pg_catalog.pg_class
-        WHERE oid = rule.view_name::regclass::oid;
-      EXCEPTION
-        WHEN undefined_table THEN
-          SELECT relacl INTO STRICT privs FROM pg_catalog.pg_class WHERE oid = relid;
-      END;
-
-      body = format(
-        $c$
-        DROP VIEW IF EXISTS %s;
-        CREATE VIEW %s AS SELECT %s
-        FROM %s;
-        ALTER VIEW %s OWNER TO %s;
-        $c$,
-        rule.view_name,
-        rule.view_name,
-        pgsodium.decrypted_columns(relid),
-        source_name,
-        rule.view_name,
-        view_owner
-      );
-
-      IF debug THEN
-        RAISE NOTICE '%', body;
-      END IF;
-
-      EXECUTE body;
-
-      -- FIXME: missing revoke DDL?
-      FOR priv IN SELECT * FROM pg_catalog.aclexplode(privs) LOOP
-        body = format(
-          'GRANT %s ON %s TO %s',
-          priv.privilege_type,
-          rule.view_name,
-          priv.grantee::regrole::text
-        );
-
-        IF debug THEN
-          RAISE NOTICE '%', body;
-        END IF;
-
-        EXECUTE body;
-      END LOOP;
-
-      FOR m IN
-        SELECT *
-        FROM pgsodium.mask_columns
-        WHERE attrelid = relid
-      LOOP
-        IF m.key_id IS NULL AND m.key_id_column IS NULL THEN
-          CONTINUE;
-        ELSE
-          body = format(
-            $c$
-            DROP FUNCTION IF EXISTS %s."%s_encrypt_secret_%s"() CASCADE;
-
-            CREATE OR REPLACE FUNCTION %s."%s_encrypt_secret_%s"()
-              RETURNS TRIGGER
-              LANGUAGE plpgsql
-              AS $t$
-            BEGIN
-            %s;
-            RETURN new;
-            END;
-            $t$;
-
-            ALTER FUNCTION  %s."%s_encrypt_secret_%s"() OWNER TO %s;
-
-            DROP TRIGGER IF EXISTS "%s_encrypt_secret_trigger_%s" ON %s;
-
-            CREATE TRIGGER "%s_encrypt_secret_trigger_%s"
-              BEFORE INSERT OR UPDATE OF "%s" ON %s
-              FOR EACH ROW
-              EXECUTE FUNCTION %s."%s_encrypt_secret_%s" ();
-              $c$,
-            rule.relnamespace,
-            rule.relname,
-            m.attname,
-            rule.relnamespace,
-            rule.relname,
-            m.attname,
-            pgsodium.encrypted_column(relid, m),
-            rule.relnamespace,
-            rule.relname,
-            m.attname,
-            view_owner,
-            rule.relname,
-            m.attname,
-            source_name,
-            rule.relname,
-            m.attname,
-            m.attname,
-            source_name,
-            rule.relnamespace,
-            rule.relname,
-            m.attname
-          );
-
-          IF debug THEN
-            RAISE NOTICE '%', body;
-          END IF;
-
-          EXECUTE body;
-
-        END IF;
-      END LOOP;
-
-      PERFORM pgsodium.mask_role(oid::regrole, source_name, rule.view_name)
-      FROM pg_catalog.pg_roles
-      WHERE pgsodium.has_mask(oid::regrole, source_name);
-
-      RETURN;
-    END
-  $$
-  LANGUAGE plpgsql
-  VOLATILE
-  SET search_path='';
-
--- FIXME no OWNER
--- FIXME no REVOKE ?
--- FIXME no GRANT
 
 /*
  * crypto_aead_det_decrypt(bytea, bytea, bytea, bytea)
@@ -1930,7 +2016,7 @@ COMMENT ON FUNCTION pgsodium.crypto_sign_update_agg2(bytea, bytea, bytea) IS
 initializes state to the state passed to the aggregate as a parameter,
 if it has not already been initialized.';
 
-CREATE OR REPLACE AGGREGATE pgsodium.crypto_sign_update_agg(message bytea)
+CREATE AGGREGATE pgsodium.crypto_sign_update_agg(message bytea)
 (
   SFUNC = pgsodium.crypto_sign_update_agg1,
   STYPE = bytea,
@@ -1947,7 +2033,7 @@ Note that when signing mutli-part messages using aggregates, the order
 in which message parts is processed is critical. You *must* ensure
 that the order of messages passed to the aggregate is invariant.';
 
-CREATE OR REPLACE AGGREGATE pgsodium.crypto_sign_update_agg(state bytea, message bytea)
+CREATE AGGREGATE pgsodium.crypto_sign_update_agg(state bytea, message bytea)
 (
   SFUNC = pgsodium.crypto_sign_update_agg2,
   STYPE = bytea,
@@ -2159,80 +2245,6 @@ CREATE FUNCTION pgsodium.crypto_stream_xchacha20_xor_ic(bytea, bytea, bigint, bi
 -- FIXME: grant?
 
 /*
- * decrypted_columns(oid)
- */
-CREATE FUNCTION pgsodium.decrypted_columns(relid OID)
-  RETURNS TEXT AS $$
-    DECLARE
-      m RECORD;
-      expression TEXT;
-      comma TEXT;
-      padding text = '        ';
-    BEGIN
-      expression := E'\n';
-      comma := padding;
-      FOR m IN SELECT * FROM pgsodium.mask_columns where attrelid = relid LOOP
-        expression := expression || comma;
-        IF m.key_id IS NULL AND m.key_id_column IS NULL THEN
-          expression := expression || padding || quote_ident(m.attname);
-        ELSE
-          expression := expression || padding || quote_ident(m.attname) || E',\n';
-          IF m.format_type = 'text' THEN
-              expression := expression || format(
-                $f$
-                CASE WHEN %s IS NULL THEN NULL ELSE
-                    CASE WHEN %s IS NULL THEN NULL ELSE pg_catalog.convert_from(
-                      pgsodium.crypto_aead_det_decrypt(
-                        pg_catalog.decode(%s, 'base64'),
-                        pg_catalog.convert_to((%s)::text, 'utf8'),
-                        %s::uuid,
-                        %s
-                      ),
-                        'utf8') END
-                    END AS %s$f$,
-                    quote_ident(m.attname),
-                    coalesce(quote_ident(m.key_id_column), quote_literal(m.key_id)),
-                    quote_ident(m.attname),
-                    coalesce(pgsodium.quote_assoc(m.associated_columns), quote_literal('')),
-                    coalesce(quote_ident(m.key_id_column), quote_literal(m.key_id)),
-                    coalesce(quote_ident(m.nonce_column), 'NULL'),
-                    quote_ident('decrypted_' || m.attname)
-              );
-          ELSIF m.format_type = 'bytea' THEN
-              expression := expression || format(
-                $f$
-                CASE WHEN %s IS NULL THEN NULL ELSE
-                    CASE WHEN %s IS NULL THEN NULL ELSE pgsodium.crypto_aead_det_decrypt(
-                        %s::bytea,
-                        pg_catalog.convert_to((%s)::text, 'utf8'),
-                        %s::uuid,
-                        %s
-                      ) END
-                    END AS %s$f$,
-                    quote_ident(m.attname),
-                    coalesce(quote_ident(m.key_id_column), quote_literal(m.key_id)),
-                    quote_ident(m.attname),
-                    coalesce(pgsodium.quote_assoc(m.associated_columns), quote_literal('')),
-                    coalesce(quote_ident(m.key_id_column), quote_literal(m.key_id)),
-                    coalesce(quote_ident(m.nonce_column), 'NULL'),
-                    'decrypted_' || quote_ident(m.attname)
-              );
-          END IF;
-        END IF;
-        comma := E',       \n';
-      END LOOP;
-      RETURN expression;
-    END
-  $$
-  LANGUAGE plpgsql
-  VOLATILE
-  SET search_path='';
-
--- FIXME: owner?
--- FIXME: revoke?
--- FIXME: grant?
-
-/*
  * derive_key(bigint, integer, bytea)
  */
 CREATE FUNCTION pgsodium.derive_key(key_id bigint, key_len integer = 32, context bytea = 'pgsodium')
@@ -2250,7 +2262,7 @@ GRANT EXECUTE ON FUNCTION pgsodium.derive_key TO pgsodium_keymaker;
  */
 CREATE FUNCTION pgsodium.disable_security_label_trigger()
   RETURNS void AS $$
-    ALTER EVENT TRIGGER pgsodium_trg_mask_update DISABLE;
+    ALTER EVENT TRIGGER pgsodium_tg_tce_update DISABLE;
   $$
   LANGUAGE sql
   SECURITY DEFINER
@@ -2265,64 +2277,10 @@ CREATE FUNCTION pgsodium.disable_security_label_trigger()
  */
 CREATE FUNCTION pgsodium.enable_security_label_trigger()
   RETURNS void AS $$
-    ALTER EVENT TRIGGER pgsodium_trg_mask_update ENABLE;
+    ALTER EVENT TRIGGER pgsodium_tg_tce_update ENABLE;
   $$
   LANGUAGE sql
   SECURITY DEFINER
-  SET search_path='';
-
--- FIXME: owner?
--- FIXME: revoke?
--- FIXME: grant?
-
-/*
- * encrypted_column(oid, record)
- */
-CREATE FUNCTION pgsodium.encrypted_column(relid OID, m record)
-  RETURNS TEXT AS $$
-    BEGIN
-      IF m.format_type = 'text' THEN
-          RETURN format(
-            $f$%s = CASE WHEN %s IS NULL THEN NULL ELSE
-                CASE WHEN %s IS NULL THEN NULL ELSE pg_catalog.encode(
-                  pgsodium.crypto_aead_det_encrypt(
-                    pg_catalog.convert_to(%s, 'utf8'),
-                    pg_catalog.convert_to((%s)::text, 'utf8'),
-                    %s::uuid,
-                    %s
-                  ),
-                    'base64') END END$f$,
-                'new.' || quote_ident(m.attname),
-                'new.' || quote_ident(m.attname),
-                COALESCE('new.' || quote_ident(m.key_id_column), quote_literal(m.key_id)),
-                'new.' || quote_ident(m.attname),
-                COALESCE(pgsodium.quote_assoc(m.associated_columns, true), quote_literal('')),
-                COALESCE('new.' || quote_ident(m.key_id_column), quote_literal(m.key_id)),
-                COALESCE('new.' || quote_ident(m.nonce_column), 'NULL')
-          );
-      ELSIF m.format_type = 'bytea' THEN
-          RETURN format(
-            $f$%s = CASE WHEN %s IS NULL THEN NULL ELSE
-                CASE WHEN %s IS NULL THEN NULL ELSE
-                        pgsodium.crypto_aead_det_encrypt(%s::bytea, pg_catalog.convert_to((%s)::text, 'utf8'),
-                %s::uuid,
-                %s
-              ) END END$f$,
-                'new.' || quote_ident(m.attname),
-                'new.' || quote_ident(m.attname),
-                COALESCE('new.' || quote_ident(m.key_id_column), quote_literal(m.key_id)),
-                'new.' || quote_ident(m.attname),
-                COALESCE(pgsodium.quote_assoc(m.associated_columns, true), quote_literal('')),
-                COALESCE('new.' || quote_ident(m.key_id_column), quote_literal(m.key_id)),
-                COALESCE('new.' || quote_ident(m.nonce_column), 'NULL')
-          );
-      END IF;
-      RAISE 'Not supported type % for encryoted column %',
-        m.format_type, m.attname;
-    END
-  $$
-  LANGUAGE plpgsql
-  VOLATILE
   SET search_path='';
 
 -- FIXME: owner?
@@ -2377,16 +2335,19 @@ CREATE FUNCTION pgsodium.get_named_keys(filter text='%')
 
 /*
  * has_mask(regrole, text)
+ * FIXME: matching on 'ACCESS%<tablename>%' could match other table where
+ *        <tablename> is a sub-string
  */
 CREATE FUNCTION pgsodium.has_mask(role regrole, source_name text)
   RETURNS boolean AS $$
     SELECT EXISTS(
       SELECT 1
-        FROM pg_shseclabel
+        FROM pg_catalog.pg_shseclabel
        WHERE  objoid = role
          AND provider = 'pgsodium'
          AND label ilike 'ACCESS%' || source_name || '%')
   $$
+  SET search_path='pg_catalog'
   LANGUAGE sql;
 
 -- FIXME: owner?
@@ -2545,53 +2506,6 @@ CREATE FUNCTION pgsodium.sodium_bin2base64(bin bytea) RETURNS text
 -- FIXME: grant?
 
 /*
- * update_mask(oid, boolean)
- */
-CREATE FUNCTION pgsodium.update_mask(target oid, debug boolean = false)
-  RETURNS void AS $$
-    BEGIN
-      PERFORM pgsodium.disable_security_label_trigger();
-      PERFORM pgsodium.create_mask_view(objoid, objsubid, debug)
-        FROM pg_catalog.pg_seclabel sl
-        WHERE sl.objoid = target
-          AND sl.label ILIKE 'ENCRYPT%'
-          AND sl.provider = 'pgsodium';
-      PERFORM pgsodium.enable_security_label_trigger();
-      RETURN;
-    END
-  $$
-  LANGUAGE plpgsql
-  SECURITY DEFINER
-  SET search_path='';
-
--- FIXME: owner?
--- FIXME: revoke?
--- FIXME: grant?
-
-/*
- * update_masks(boolean)
- */
-CREATE FUNCTION pgsodium.update_masks(debug boolean = false)
-  RETURNS void AS $$
-    BEGIN
-      PERFORM pgsodium.update_mask(objoid, debug)
-        FROM pg_catalog.pg_seclabel sl
-        JOIN pg_catalog.pg_class cl ON (cl.oid = sl.objoid)
-        WHERE label ILIKE 'ENCRYPT%'
-           AND cl.relowner = session_user::regrole::oid
-           AND provider = 'pgsodium'
-           AND objoid::regclass != 'pgsodium.key'::regclass;
-      RETURN;
-    END
-  $$
-  LANGUAGE plpgsql
-  SET search_path='';
-
--- FIXME: owner?
--- FIXME: revoke?
--- FIXME: grant?
-
-/*
  * version()
  */
 CREATE FUNCTION pgsodium.version()
@@ -2601,6 +2515,62 @@ CREATE FUNCTION pgsodium.version()
     WHERE extname = 'pgsodium'
   $$
   LANGUAGE sql
+  SET search_path='';
+
+-- FIXME: owner?
+-- FIXME: revoke?
+-- FIXME: grant?
+
+CREATE FUNCTION pgsodium.tce_decrypt_col(
+    message bytea,
+    keyid uuid,
+    nonce bytea DEFAULT NULL,
+    ad text DEFAULT '')
+  RETURNS bytea AS $$
+    DECLARE
+    BEGIN
+      IF message IS NULL OR keyid IS NULL THEN
+        RETURN NULL;
+      END IF;
+
+      RETURN pgsodium.crypto_aead_det_decrypt(
+        message,
+        pg_catalog.convert_to(ad, 'utf8'),
+        keyid,
+        nonce
+      );
+    END
+  $$
+  LANGUAGE plpgsql
+  SET search_path='';
+
+-- FIXME: owner?
+-- FIXME: revoke?
+-- FIXME: grant?
+
+CREATE FUNCTION pgsodium.tce_decrypt_col(
+    message text,
+    keyid uuid,
+    nonce bytea DEFAULT NULL,
+    ad text DEFAULT '')
+  RETURNS text AS $tce_decrypt_col$
+    DECLARE
+    BEGIN
+      IF message IS NULL OR keyid IS NULL THEN
+        RETURN NULL;
+      END IF;
+
+      RETURN pg_catalog.convert_from(
+        pgsodium.crypto_aead_det_decrypt(
+          pg_catalog.decode(message, 'base64'),
+          pg_catalog.convert_to(ad, 'utf8'),
+          keyid,
+          nonce
+        ), 'utf8' -- FIXME: this should use the column encoding?
+      );
+    END
+  $tce_decrypt_col$
+  LANGUAGE plpgsql
   SET search_path='';
 
 -- FIXME: owner?
@@ -2647,9 +2617,13 @@ GRANT ALL ON ALL SEQUENCES IN SCHEMA pgsodium TO pgsodium_keymaker;
 SECURITY LABEL FOR pgsodium ON COLUMN pgsodium.key.raw_key
   IS 'ENCRYPT WITH KEY COLUMN parent_key ASSOCIATED (id, associated_data) NONCE raw_key_nonce';
 
-SELECT * FROM pgsodium.update_mask('pgsodium.key'::regclass::oid);
+-- TT SELECT * FROM pgsodium.update_mask('pgsodium.key'::regclass::oid);
 
 -- FIXME: why revoke not generated ?
 -- FIXME: why grant not generated ?
 
-GRANT SELECT ON pgsodium.decrypted_key TO pgsodium_keymaker;
+-- GRANT SELECT ON pgsodium.decrypted_key TO pgsodium_keymaker;
+SELECT pgsodium.tce_update_attr_tg(a.attrelid, a.attnum)
+FROM pg_catalog.pg_attribute a
+WHERE a.attrelid = 'pgsodium.key'::regclass
+  AND a.attname = 'raw_key';

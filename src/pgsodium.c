@@ -4,6 +4,7 @@ PG_MODULE_MAGIC;
 
 bytea      *pgsodium_secret_key;
 static char *getkey_script = NULL;
+static bool pgsodium_debug = false;
 
 /*
  * Checking the syntax of the masking rules
@@ -101,6 +102,9 @@ _PG_init (void)
 	path = (char *) palloc0 (MAXPGPATH);
 	get_share_path (my_exec_path, sharepath);
 	snprintf (path, MAXPGPATH, "%s/extension/%s", sharepath, PG_GETKEY_EXEC);
+
+	DefineCustomBoolVariable("pgsodium.debug", "show pgsodium debug messages",
+		NULL, &pgsodium_debug, false, PGC_SUSET, 0, NULL, NULL, NULL);
 
 	DefineCustomStringVariable ("pgsodium.getkey_script",
 		"path to script that returns pgsodium root key",
