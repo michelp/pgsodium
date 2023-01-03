@@ -29,7 +29,7 @@ static void fetch_key_meta_using_uuid(Datum keyuuid, Datum *key_id,
 		"FROM pgsodium.decrypted_key v "
 		"WHERE id = $1                 "
 		"  AND key_type = 'aead-det'   ",
-		1,  &uuidtype, &keyuuid, NULL, true, 1
+		1,  &uuidtype, &keyuuid, NULL, false, 1
 	);
 
 	if (ret < 0)
