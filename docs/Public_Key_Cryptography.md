@@ -1,21 +1,8 @@
-# Public Key Encryption with `crypto_box`
+# Public Key Cryptography
 
 The `box` API uses public key encryption to securely send messages between two parties who only know each others public keys.  Each party has a secret key that is used to encrypt messages.
 
 [Libsodium Documentation](https://doc.libsodium.org/public-key_cryptography/authenticated_encryption)
-
-Functions:
-```
-    crypto_box_new_keypair() -> crypto_box_keypair
-
-    crypto_box_noncegen() -> bytea
-
-    crypto_box(message bytea, nonce bytea,
-               public bytea, secret bytea) -> bytea
-
-    crypto_box_open(ciphertext bytea, nonce bytea,
-                    public bytea, secret bytea) -> bytea
-```
 
 `crypto_box_new_keypair()` returns a new, randomly generated, pair of
 keys for public key encryption.  The public key can be shared with
@@ -92,7 +79,7 @@ box = box[0][0]
 print('Encrypted message from Alice to Bob is: ', box)
 ```
 
-    Encrypted message from Alice to Bob is:  \x29cc6c99a1a086bd7e5776b23b92bb309d90e2448f36d7b4e7
+    Encrypted message from Alice to Bob is:  \xdc9fd86dfe2a909706a99b0baa99470f44668f497a1e00a06c
 
 
 ## Decryption

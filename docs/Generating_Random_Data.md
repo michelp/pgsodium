@@ -32,7 +32,7 @@ CREATE EXTENSION IF NOT EXISTS pgsodium;
 
 
 
-### randombytes_random()
+### `randombytes_random()`
 
 Returns a random 32-bit signed integer.
 
@@ -70,7 +70,7 @@ Returns a random 32-bit signed integer.
 
 
 
-### randombytes_uniform()
+### `randombytes_uniform(upper_bound interger)`
 
 Returns a uniformally distributed random number between zero and the upper bound argument.
 
@@ -108,7 +108,7 @@ Returns a uniformally distributed random number between zero and the upper bound
 
 
 
-### randombytes_buf()
+### `randombytes_buf(buffer_size integer)`
 
 Returns a random buffer of bytes the size of the argument.
 

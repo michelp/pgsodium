@@ -9,19 +9,19 @@ Authenticated Encryption with Associated Data (AEAD) is a form of [Authenticated
 
 The IETF variant of the ChaCha20-Poly1305 construction can safely encrypt a practically unlimited number of messages, but individual messages cannot exceed 64*(2^32)-64 bytes (approximatively 256 GiB).
 
-### crypto_aead_ietf_keygen
+### `crypto_aead_ietf_keygen()`
 
 Creates a cryptographically random key for IETF AEAD.
 
-### crypto_aead_ietf_noncegen
+### `crypto_aead_ietf_noncegen()`
 
 Creates a cryptographically random nonce for IETF AEAD.
 
-### crypto_aead_ietf_encrypt
+### `crypto_aead_ietf_encrypt()`
 
 Encrypt and Authenticate a message with the given key and associated data.  This function only returns the encrypted and signed confidential part, it is up to the caller to preserve the non-confidential part. 
 
-### crypto_aead_ietf_decrypt
+### `crypto_aead_ietf_decrypt()`
 
 Decrypt a ciphertext with the provided key and associated data.
 
@@ -30,19 +30,19 @@ Decrypt a ciphertext with the provided key and associated data.
 
 Deterministic/nonce-reuse resistant authenticated encryption scheme using XChaCha20, implemented on libsodium.
 
-### crypto_aead_det_keygen
+### `crypto_aead_det_keygen()`
 
 Creates a cryptographically random key for deterministic AEAD.
 
-### crypto_aead_det_noncegen
+### `crypto_aead_det_noncegen()`
 
 Creates a cryptographically random nonce for deterministic AEAD.
 
-### crypto_aead_det_encrypt
+### `crypto_aead_det_encrypt()`
 
 Encrypt and Authenticate a message with the given key and associated data.  This function only returns the encrypted and signed confidential part, it is up to the caller to preserve the non-confidential part. 
 
-### crypto_aead_det_decrypt
+### `crypto_aead_det_decrypt()`
 
 Decrypt a ciphertext with the provided key and associated data.
 

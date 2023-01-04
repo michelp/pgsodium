@@ -27,7 +27,7 @@ CREATE EXTENSION IF NOT EXISTS pgsodium;
 
 ## Authenticated Encryption
 
-### crypto_secretbox_keygen()
+### `crypto_secretbox_keygen()`
 
 
 ```python
@@ -39,7 +39,7 @@ print(key)
     b"\xb7\x8e\x1f\xefc\xc8\xaa\x9b\xd45\xa5\xf2\x14'\n\xeb\x82\x9a\x945\x07Z}\xf33\x17JA\x84\xa7}f"
 
 
-### crypto_secretbox_noncegen()
+### `crypto_secretbox_noncegen()`
 
 
 ```python
@@ -51,7 +51,7 @@ print(nonce)
     b'\x08\xa8\xf4O\xfe8\x03\xd5\x02\x8b\x9e\xce\n*\xe8\xec\x02U\x00x(\xe0\x1d\xea'
 
 
-### crypto_secretbox()
+### `crypto_secretbox(message bytea, nonce bytea, key bytea)`
 
 
 ```python
@@ -63,7 +63,7 @@ print(ciphertext)
     b'\n!\x03\xa1x\n\xdd<*\xa07o\xde\xcb,"t\xce\xa1\xb0\x13nX\xf9#q\xe8\xedo\x19~.\xb0'
 
 
-### crypto_secretbox_open()
+### `crypto_secretbox_open(ciphertext bytea, nonce bytea, key bytea)`
 
 
 ```python
@@ -74,5 +74,3 @@ print(message)
 
     b'bob is your uncle'
 
-
-## Authentication

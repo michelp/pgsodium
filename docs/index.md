@@ -13,18 +13,15 @@ inaccessible root key can then be used to derive sub-keys that are used
 for encryption and decryption instead of the raw keys themselves.
 
 
-- Using pgsodium to Encrypt Data
-  - [Configuration](Configuration.md)
-
-- SQL API to libsodium
-  - [Generating Random Data](Generating_Random_Data.md)
-  - [Hashing](Hashing.md)
-  - [Password Hashing](Password_Hashing.md)
-  - [Hash-Based Message Authentication Codes (HMAC)](HMAC.md)
-  - [Secret Key Cryptography](Secret_Key_Cryptography.md)
-  - [Public Key Cryptography](Public_Key_Cryptography.md)
-  - [Authenticated Encryption With Additional Data (AEAD)](Authenticated_Encryption_With_Additional_Data.md)
-  - [Key Derivation](Key_Derivation.md)
-  - [Key Exchange](Key_Exchange.md)
-  - [Signcryption](Signcryption.md)
+- [Configuration](Configuration.md)
+- [Generating Random Data](Generating_Random_Data.md)
+- [Hashing](Hashing.md)
+- [Password Hashing](Password_Hashing.md)
+- [Hash-Based Message Authentication Codes (HMAC)](HMAC.md)
+- [Secret Key Cryptography](Secret_Key_Cryptography.md)
+- [Public Key Cryptography](Public_Key_Cryptography.md)
+- [Authenticated Encryption With Additional Data (AEAD)](Authenticated_Encryption_With_Additional_Data.md)
+- [Key Derivation](Key_Derivation.md)
+- [Key Exchange](Key_Exchange.md)
+- [Signcryption](Signcryption.md)
 
