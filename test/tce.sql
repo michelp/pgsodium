@@ -122,7 +122,8 @@ GRANT USAGE ON ALL SEQUENCES IN SCHEMA "private-test" TO bobo;
 SELECT * FROM finish();
 COMMIT;
 
-select pgsodium.update_masks();
+-- force regeneration
+SELECT pgsodium.tce_update_views();
 
 select ok(has_table_privilege('bobo', 'private.bar', 'SELECT'),
 	'user keeps privs after regeneration');
@@ -260,7 +261,7 @@ SELECT results_eq(
 
 SELECT lives_ok(
     $test$
-    select pgsodium.update_masks()
+    SELECT pgsodium.tce_update_views()
     $test$,
     'can update only objects owned by session user');
 
