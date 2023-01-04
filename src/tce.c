@@ -1,8 +1,10 @@
 #include "pgsodium.h"
 #include "executor/spi.h"
 #include "parser/parse_type.h"
-#include "lib/stringinfo.h"
 #include "utils/lsyscache.h"
+#if PG_VERSION_NUM < 150000
+#include "utils/rel.h"
+#endif
 
 static void fetch_key_meta_using_uuid(Datum keyuuid, Datum *key_id,
 									  Datum *key_context)
