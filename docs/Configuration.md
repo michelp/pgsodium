@@ -20,7 +20,7 @@ used without putting it in `shared_preload_libraries`, but you will
 need to provide your own key management.  
 
 See the file
-[`getkey_scripts/pgsodium_getkey_urandom.sh`](../getkey_scripts/pgsodium_getkey_urandom.sh)
+[`../getkey_scripts/pgsodium_getkey_urandom.sh`](../getkey_scripts/pgsodium_getkey_urandom.sh)
 for an example script that returns a libsodium key using the linux
 `/dev/urandom` CSPRNG.
 

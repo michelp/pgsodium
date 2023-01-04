@@ -43,7 +43,7 @@ CREATE EXTENSION IF NOT EXISTS pgsodium;
 
 
 
-### crypto_pwhash_saltgen()
+### `crypto_pwhash_saltgen()`
 
 
 ```python
@@ -55,7 +55,7 @@ print(salt)
     b'@\xb0\x86\x1c\xcb9\xf0\x03\xfb\x91xt\r\xad\xffG'
 
 
-### crypto_pwhash()
+### `crypto_pwhash(password bytea, salt bytea)`
 
 
 ```python
@@ -67,7 +67,7 @@ print(hash)
     b'!\xd6\x11\xab\xdey\xdc\x93.\xb1a7\xd8\xf1Q\xc7\xc4f\xc0\xc0\xa0\x96\xbe<(\xa3(\x87\x1a\x11(='
 
 
-### crypto_pwhash_str()
+### `crypto_pwhash_str(password bytea)`
 
 
 ```python
@@ -78,6 +78,8 @@ print(hash)
 
     \x246172676f6e32696424763d3139246d3d3236323134342c743d332c703d312437654669655843796f6f736e734736626c42514856672437726a6f6c6c757058596643557838464f494948745651434268643644486d6738707a446f767934493638000000000000000000000000000000000000000000000000000000000000
 
+
+### `crypto_pwhash_str_verify(hash bytea, password bytea)`
 
 
 ```python
