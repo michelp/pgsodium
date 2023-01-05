@@ -21,9 +21,15 @@ pgsodium_object_relabel (const ObjectAddress * object, const char *seclabel)
 	  case RelationRelationId:
 
 		  /* SECURITY LABEL FOR pgsodium ON TABLE ...' */
-		  if (object->objectSubId == 0
-			  && pg_strncasecmp (seclabel, "DECRYPT WITH VIEW", 17) == 0)
-			  return;
+		  if (object->objectSubId == 0)
+		  {
+			  if (pg_strncasecmp (seclabel, "DECRYPT WITH VIEW", 17) == 0)
+				  return;
+			  ereport (ERROR,
+				  (errcode (ERRCODE_INVALID_NAME),
+					  errmsg ("'%s' is not a valid label for a table",
+						  seclabel)));
+		  }
 
 		  /* SECURITY LABEL FOR pgsodium ON COLUMN t.i IS '...' */
 		  if (pg_strncasecmp (seclabel, "ENCRYPT WITH", 12) == 0)
