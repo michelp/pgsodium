@@ -1,4 +1,4 @@
-CREATE OR REPLACE FUNCTION @extschema@.encrypted_columns(
+CREATE OR REPLACE FUNCTION pgsodium.encrypted_columns(
   relid OID
 )
 RETURNS TEXT AS
@@ -10,14 +10,14 @@ DECLARE
 BEGIN
   expression := '';
   comma := E'        ';
-  FOR m IN SELECT * FROM @extschema@.mask_columns(relid) LOOP
+  FOR m IN SELECT * FROM pgsodium.mask_columns(relid) LOOP
     IF m.key_id IS NULL AND m.key_id_column is NULL THEN
       CONTINUE;
     ELSE
       expression := expression || comma;
       expression := expression || format(
         $f$%s = pg_catalog.encode(
-          @extschema@.crypto_aead_det_encrypt(
+          pgsodium.crypto_aead_det_encrypt(
             pg_catalog.convert_to(%s, 'utf8'),
             pg_catalog.convert_to(%s::text, 'utf8'),
             %s::uuid,
@@ -41,7 +41,7 @@ $$
   SET search_path=''
   ;
 
-CREATE OR REPLACE FUNCTION @extschema@.decrypted_columns(
+CREATE OR REPLACE FUNCTION pgsodium.decrypted_columns(
   relid OID
 )
 RETURNS TEXT AS
@@ -54,7 +54,7 @@ DECLARE
 BEGIN
   expression := E'\n';
   comma := padding;
-  FOR m IN SELECT * FROM @extschema@.mask_columns(relid) LOOP
+  FOR m IN SELECT * FROM pgsodium.mask_columns(relid) LOOP
     expression := expression || comma;
     IF m.key_id IS NULL AND m.key_id_column IS NULL THEN
       expression := expression || padding || quote_ident(m.attname);
@@ -63,7 +63,7 @@ BEGIN
       expression := expression || format(
         $f$
         pg_catalog.convert_from(
-          @extschema@.crypto_aead_det_decrypt(
+          pgsodium.crypto_aead_det_decrypt(
             pg_catalog.decode(%s, 'base64'),
             pg_catalog.convert_to(%s::text, 'utf8'),
             %s::uuid,
