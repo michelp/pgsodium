@@ -46,3 +46,4 @@ SELECT EXISTS (SELECT * FROM pg_settings
 \ir helpers.sql
 \ir tce.sql
 \ir keys.sql
+\ir signcryption.sql
