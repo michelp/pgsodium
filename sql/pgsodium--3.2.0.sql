@@ -151,7 +151,7 @@ CREATE FUNCTION pgsodium.tce_update_view(relid oid)
         view_owner
       );
 
-      IF pg_catalog.current_setting('pgsodium.debug')::bool THEN
+      IF pg_catalog.current_setting('pgsodium.debug', true)::bool THEN
         RAISE NOTICE '%', body;
       END IF;
 
@@ -176,7 +176,7 @@ CREATE FUNCTION pgsodium.tce_update_view(relid oid)
           r.grantee::regrole::text
         );
 
-        IF pg_catalog.current_setting('pgsodium.debug')::bool THEN
+        IF pg_catalog.current_setting('pgsodium.debug', true)::bool THEN
           RAISE NOTICE '%', body;
         END IF;
 
@@ -268,7 +268,7 @@ CREATE FUNCTION pgsodium.tce_update_attr_tg(relid oid, attnum integer)
         tgargs        -- 6
       );
 
-      IF pg_catalog.current_setting('pgsodium.debug')::bool THEN
+      IF pg_catalog.current_setting('pgsodium.debug', true)::bool THEN
         RAISE NOTICE '%', body;
       END IF;
 
@@ -309,7 +309,7 @@ CREATE FUNCTION pgsodium.tg_tce_update()
             AND e.objid = c.oid
         )
       LOOP
-        IF pg_catalog.current_setting('pgsodium.debug')::bool THEN
+        IF pg_catalog.current_setting('pgsodium.debug', true)::bool THEN
           RAISE NOTICE 'trg_mask_update: classid: %, objid: %, objsubid: %, tag: %, obj_type: %, schema: %, identity: %, in_ext: %',
             r.classid, r.objid, r.objsubid, r.command_tag, r.object_type,
             r.schema_name, r.object_identity, r.in_extension;
@@ -2356,7 +2356,7 @@ CREATE FUNCTION pgsodium.mask_role(masked_role regrole, source_name text, view_n
         view_name -- this one is supposed to be already quoted correctly.
       );
 
-      IF pg_catalog.current_setting('pgsodium.debug')::bool THEN
+      IF pg_catalog.current_setting('pgsodium.debug', true)::bool THEN
         RAISE NOTICE '%', body;
       END IF;
 
