@@ -1010,7 +1010,7 @@ CREATE FUNCTION pgsodium.crypto_auth_hmacsha256_verify(hash bytea, message bytea
   RETURNS bool
   AS '$libdir/pgsodium', 'pgsodium_crypto_auth_hmacsha256_verify'
   LANGUAGE C
-  IMMUTABLE STRICT;
+  IMMUTABLE;
 
 -- FIXME: owner?
 REVOKE ALL ON FUNCTION    pgsodium.crypto_auth_hmacsha256_verify(bytea, bytea, bytea) FROM PUBLIC;
