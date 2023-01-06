@@ -29,7 +29,7 @@ GRANT USAGE ON SCHEMA pgsodium_masks TO pgsodium_keyiduser;
 
 CREATE OR REPLACE FUNCTION pgsodium.version()
   RETURNS text
-  AS $$ SELECT extversion FROM pg_extension WHERE extname = 'pgsodium') $$
+  AS $$ SELECT extversion FROM pg_extension WHERE extname = 'pgsodium' $$
   LANGUAGE sql;
 
 -- Internal Key Management
