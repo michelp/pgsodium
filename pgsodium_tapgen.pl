@@ -45,7 +45,8 @@ $dbh->do(q{CREATE EXTENSION pgsodium});
 
 print "BEGIN;\n",
       "CREATE EXTENSION IF NOT EXISTS pgtap;\n",
-      "CREATE EXTENSION IF NOT EXISTS pgsodium;\n";
+      "CREATE EXTENSION IF NOT EXISTS pgsodium;\n\n",
+      "SET search_path TO '';\n\n";
 
 print "SELECT no_plan();\n";
 

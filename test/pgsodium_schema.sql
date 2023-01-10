@@ -1,6 +1,9 @@
 BEGIN;
 CREATE EXTENSION IF NOT EXISTS pgtap;
 CREATE EXTENSION IF NOT EXISTS pgsodium;
+
+SET search_path TO '';
+
 SELECT no_plan();
 
 
