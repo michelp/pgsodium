@@ -2,7 +2,7 @@ BEGIN;
 CREATE EXTENSION IF NOT EXISTS pgtap;
 CREATE EXTENSION IF NOT EXISTS pgsodium;
 
-SET search_path TO '';
+SET search_path TO 'public';
 
 SELECT no_plan();
 
