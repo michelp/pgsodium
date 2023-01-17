@@ -39,7 +39,7 @@ my $dbh = DBI->connect($dsn, $opts->{username}, $ENV{PGPASSWORD}, {
 $dbh->do(q{SET client_encoding = 'UTF-8'});
 $dbh->begin_work;
 #$dbh->do(q{BEGIN});
-$dbh->do(q{CREATE EXTENSION pgsodium});
+$dbh->do(qq{CREATE EXTENSION pgsodium VERSION "$PGSODIUM_VERSION" });
 
 ################################################################################
 
