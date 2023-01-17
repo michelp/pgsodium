@@ -4795,4 +4795,42 @@ SELECT function_privs_are('pgsodium'::name, proname, proargtypes::regtype[]::tex
 
 
 
+
+---- TYPES
+
+SELECT types_are('pgsodium', ARRAY[
+    '_key_id_context',
+    'crypto_box_keypair',
+    'crypto_kx_keypair',
+    'crypto_kx_session',
+    'crypto_sign_keypair',
+    'crypto_signcrypt_keypair',
+    'crypto_signcrypt_state_key',
+    'key_status',
+    'key_type'
+]);
+
+SELECT type_owner_is('pgsodium'::name, '_key_id_context'::name, 'postgres'::name);
+SELECT type_owner_is('pgsodium'::name, 'crypto_box_keypair'::name, 'postgres'::name);
+SELECT type_owner_is('pgsodium'::name, 'crypto_kx_keypair'::name, 'postgres'::name);
+SELECT type_owner_is('pgsodium'::name, 'crypto_kx_session'::name, 'postgres'::name);
+SELECT type_owner_is('pgsodium'::name, 'crypto_sign_keypair'::name, 'postgres'::name);
+SELECT type_owner_is('pgsodium'::name, 'crypto_signcrypt_keypair'::name, 'postgres'::name);
+SELECT type_owner_is('pgsodium'::name, 'crypto_signcrypt_state_key'::name, 'postgres'::name);
+SELECT type_owner_is('pgsodium'::name, 'key_status'::name, 'postgres'::name);
+SELECT type_owner_is('pgsodium'::name, 'key_type'::name, 'postgres'::name);
+
+
+
+---- ENUMS
+
+SELECT enums_are('pgsodium', ARRAY[
+    'key_status',
+    'key_type'
+]);
+
+SELECT enum_has_labels('pgsodium','key_status', ARRAY['default','valid','invalid','expired']);
+SELECT enum_has_labels('pgsodium','key_type', ARRAY['aead-ietf','aead-det','hmacsha512','hmacsha256','auth','shorthash','generichash','kdf','secretbox','secretstream','stream_xchacha20']);
+
+
 ROLLBACK;

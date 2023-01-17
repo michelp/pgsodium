@@ -292,6 +292,50 @@ for my $row (@$allfuncs) {
     }
 }
 
+print "\n\n\n---- TYPES\n\n";
+
+$rs = $dbh->selectall_arrayref(q{
+SELECT quote_literal(t.typname), quote_literal(pg_catalog.pg_get_userbyid(t.typowner))
+  FROM pg_catalog.pg_type t
+  JOIN pg_catalog.pg_namespace n ON n.oid = t.typnamespace
+  LEFT JOIN pg_class c ON t.typrelid = c.oid
+ WHERE n.nspname = 'pgsodium'
+   AND (c.relkind IS NULL OR c.relkind = 'c')
+   AND NOT EXISTS (SELECT FROM pg_type e WHERE e.oid = t.typelem AND e.typarray = t.oid)
+ORDER BY t.typname;
+});
+
+print "SELECT types_are('pgsodium', ARRAY[\n    ",
+    join(",\n    ", map { $_->[0] } @{ $rs }),
+"\n]);\n\n";
+
+for my $t ( @$rs ) {
+    printf "SELECT type_owner_is('pgsodium'::name, %s::name, %s::name);\n", @$t;
+}
+
+print "\n\n\n---- ENUMS\n\n";
+
+$rs = $dbh->selectall_arrayref(q{
+SELECT quote_literal(t.typname), array_agg(quote_literal(e.enumlabel) ORDER BY e.enumsortorder)
+  FROM pg_catalog.pg_type t
+  JOIN pg_catalog.pg_namespace n ON n.oid = t.typnamespace
+  JOIN pg_catalog.pg_enum e ON e.enumtypid = t.oid
+ WHERE t.typtype = 'e'
+   AND n.nspname = 'pgsodium'
+GROUP BY t.oid, t.typname ORDER BY t.typname;
+});
+
+print "SELECT enums_are('pgsodium', ARRAY[\n    ",
+    join(",\n    ", map { $_->[0] } @{ $rs }),
+"\n]);\n\n";
+
+for my $e ( @$rs ) {
+
+  print "SELECT enum_has_labels('pgsodium',$e->[0], ARRAY[",
+      join(",", @{ $e->[1] }),
+  "]);\n";
+}
+
 print "\n\nROLLBACK;\n";
 
 $dbh->rollback;
