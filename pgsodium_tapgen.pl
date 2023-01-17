@@ -8,6 +8,8 @@ use Getopt::Long;
 use File::Spec;
 
 my $PGSODIUM_VERSION = '3.1.5';
+
+my $curr;
 my $rs;
 
 Getopt::Long::Configure (qw(bundling));
@@ -48,7 +50,7 @@ print "BEGIN;\n",
       "CREATE EXTENSION IF NOT EXISTS pgsodium;\n\n",
       "SET search_path TO 'public';\n\n";
 
-print "SELECT no_plan();\n";
+print "SELECT plan(1); -- FIXME!\n";
 
 print "\n\n\n---- EXTENSION VERSION\n";
 
@@ -98,7 +100,7 @@ foreach my $r (@$rs) {
 }
 
 $rs = $dbh->selectall_arrayref(q{
-SELECT quote_literal(m.roleid::regrole), quote_literal(r.rolname)
+SELECT quote_literal(pg_catalog.pg_get_userbyid(m.roleid)), quote_literal(r.rolname)
 FROM pg_catalog.pg_roles r
 JOIN pg_catalog.pg_auth_members m
   ON r.oid = m.member
@@ -216,80 +218,105 @@ for my $r (@$rs) {
 print "\n\n\n---- FUNCTIONS\n\n";
 
 my $allfuncs = $dbh->selectall_arrayref(q{
-    SELECT p.proname, md5(p.prosrc) as md5,
-      oidvectortypes(proargtypes) as proargs, proowner::regrole
-    FROM pg_catalog.pg_proc p
-    JOIN pg_catalog.pg_namespace n ON p.pronamespace = n.oid
-    WHERE n.nspname = 'pgsodium'
-    ORDER BY p.proname, proargs
+    SELECT p.oid,
+        md5(p.prosrc),
+        quote_literal(p.lanname),
+        quote_literal(pg_catalog.pg_get_userbyid(p.proowner)),
+        quote_literal(g.rolname) AS grantee,
+        array_agg(p.privilege_type::text ORDER BY privilege_type)::text,
+        quote_literal(p.proname),
+        oidvectortypes(proargtypes) AS proargs,
+        CASE WHEN p.proretset THEN 'setof '||p.prorettype
+        ELSE p.prorettype END AS prorettype,
+        p.prosecdef, p.proisstrict, p.prokind,
+        CASE p.provolatile
+        WHEN 'i' THEN 'immutable'
+        WHEN 's' THEN 'stable'
+        WHEN 'v' THEN 'volatile'
+        ELSE ''
+        END
+    FROM
+      ( SELECT pg_proc.oid,
+               pg_proc.prosrc,
+               pg_proc.proname,
+               pg_proc.proowner,
+               pg_proc.proargtypes,
+               pg_proc.prorettype::regtype::text,
+               pg_proc.proretset,
+               pg_proc.prosecdef,
+               pg_proc.proisstrict,
+               pg_proc.prokind,
+               pg_proc.provolatile,
+               l.lanname,
+               (aclexplode(COALESCE(pg_proc.proacl, acldefault('f'::"char", pg_proc.proowner)))).grantee AS grantee,
+               (aclexplode(COALESCE(pg_proc.proacl, acldefault('f'::"char", pg_proc.proowner)))).privilege_type AS privilege_type
+        FROM pg_catalog.pg_proc
+        JOIN pg_catalog.pg_namespace n ON pg_proc.pronamespace = n.oid
+        JOIN pg_catalog.pg_language l ON l.oid = pg_proc.prolang
+        WHERE n.nspname = 'pgsodium'
+      ) p
+    JOIN ( SELECT r.oid, r.rolname
+           FROM pg_roles r
+           UNION ALL
+           SELECT 0::oid AS oid, 'public'::name
+         ) g(oid, rolname) ON g.oid = p.grantee
+    GROUP BY p.proowner, p.proargtypes, g.rolname, p.proname, p.oid, p.prosrc,
+             p.lanname, p.prorettype, proretset, p.prosecdef, p.proisstrict,
+             p.prokind, p.provolatile
+    ORDER BY p.proname, proargs, grantee
 }, undef);
 
 my @funcs = do {
     my %seen;
-    grep { !$seen{$_}++ } map { $_->[0] } @$allfuncs;
+    grep { !$seen{$_}++ } map { $_->[6] } @$allfuncs;
 };
 
-print "SELECT functions_are('pgsodium', ARRAY[\n    '",
-    join("',\n    '", @funcs),
-    "'\n]);\n\n";
+print "SELECT functions_are('pgsodium', ARRAY[\n    ",
+    join(",\n    ", @funcs),
+    "\n]);\n\n";
 
+$curr = -1;
 for my $row (@$allfuncs) {
-    my ($proname, $md5, $proargs, $owner) = @$row;
-    my $allprivs = $dbh->selectall_arrayref(q{
-          SELECT quote_literal(p.proowner::regrole), quote_literal(g.rolname),
-          array_agg(p.privilege_type::text ORDER BY privilege_type)::text,
-          quote_literal(p.proname)
-      FROM 
-        ( SELECT pg_proc.oid,
-                 pg_proc.proname,
-                 pg_proc.proowner,
-                 pg_proc.proargtypes,
-                 (aclexplode(COALESCE(pg_proc.proacl, acldefault('f'::"char", pg_proc.proowner)))).grantee AS grantee,
-                 (aclexplode(COALESCE(pg_proc.proacl, acldefault('f'::"char", pg_proc.proowner)))).privilege_type AS privilege_type
-          FROM pg_catalog.pg_proc
-          JOIN pg_catalog.pg_namespace n ON pg_proc.pronamespace = n.oid
-          WHERE n.nspname = 'pgsodium'
-            AND pg_proc.proname = ?
-            AND oidvectortypes(pg_proc.proargtypes) = ?
-        ) p
-      JOIN ( SELECT r.oid, r.rolname
-             FROM pg_roles r
-             UNION ALL
-             SELECT 0::oid AS oid, 'public'::name
-           ) g(oid, rolname) ON g.oid = p.grantee
-      GROUP BY p.proowner, p.proargtypes, g.rolname, p.proname
-    }, undef, $proname, $proargs);
+    my ($oid, $md5, $qlang, $qpowner, $qgrantee, $privs, $qproname, $proargs,
+        $prorettype, $isdefiner, $isstrict, $prokind, $provol) = @$row;
 
-    my ($qpowner, $qgrantee, $privs, $qproname) = @{ $allprivs->[0] };
+    if ($curr != $oid ) {
+        $curr = $oid;
+        my $fn_def = ($isdefiner ? 'is_definer': 'isnt_definer');
+        my $fn_strict = ($isstrict ? 'is_strict': 'isnt_strict');
+        my $fn_kind = ($prokind eq 'f' ? 'is_normal_function': 'is_aggregate');
 
-    printf "SELECT unnest(ARRAY[\n"
-          ."    is(md5(prosrc), '%s',\n"
-          ."       format('Function pgsodium.%%s(%%s) body should match checksum',\n"
-          ."              proname, pg_get_function_identity_arguments(oid))\n"
-          ."    ),\n"
-          ."    function_owner_is(\n"
-          ."      'pgsodium'::name, proname,\n"
-          ."      proargtypes::regtype[]::name[], %s::name,\n"
-          ."      format('Function pgsodium.%%s(%%s) owner is %%s',\n"
-          ."             proname, pg_get_function_identity_arguments(oid), %2\$s)\n"
-          ."    )\n"
-          ."])\n"
-          ."  FROM pg_catalog.pg_proc\n"
-          ."  WHERE pronamespace = 'pgsodium'::regnamespace\n"
-          ."    AND proname = %s\n"
-          ."    AND oidvectortypes(proargtypes) = '%s';\n\n",
-          $md5, $qpowner, $qproname, $proargs;
-
-    foreach my $p (@{ $allprivs }) {
-        ($qpowner, $qgrantee, $privs, $qproname) = @$p;
-        printf "SELECT function_privs_are('pgsodium'::name, proname, proargtypes::regtype[]::text[], %s, '%s'::text[])\n"
+        printf "SELECT unnest(ARRAY[\n"
+              ."    is(md5(prosrc), '%s',\n"
+              ."       format('Function pgsodium.%%s(%%s) body should match checksum',\n"
+              ."              proname, pg_get_function_identity_arguments(oid))\n"
+              ."    ),\n"
+              ."    function_owner_is(\n"
+              ."      'pgsodium'::name, proname,\n"
+              ."      proargtypes::regtype[]::name[], %s::name,\n"
+              ."      format('Function pgsodium.%%s(%%s) owner is %%s',\n"
+              ."             proname, pg_get_function_identity_arguments(oid), %2\$s)\n"
+              ."    ),\n"
+              ."    function_lang_is('pgsodium'::name, proname, proargtypes::regtype[]::name[], %s::name ),\n"
+              ."    function_returns('pgsodium'::name, proname, proargtypes::regtype[]::name[], '%s' ),\n"
+              ."    volatility_is('pgsodium'::name, proname, proargtypes::regtype[]::name[], '%s'),\n"
+              ."    %s('pgsodium'::name, proname, proargtypes::regtype[]::name[]),\n"
+              ."    %s('pgsodium'::name, proname, proargtypes::regtype[]::name[]),\n"
+              ."    %s('pgsodium'::name, proname, proargtypes::regtype[]::name[])\n"
+              ."])\n"
               ."  FROM pg_catalog.pg_proc\n"
               ."  WHERE pronamespace = 'pgsodium'::regnamespace\n"
               ."    AND proname = %s\n"
               ."    AND oidvectortypes(proargtypes) = '%s';\n\n",
-                   $qgrantee, $privs, $qproname, $proargs;
-    
+              $md5, $qpowner, $qlang, $prorettype, $provol, $fn_def, $fn_strict, $fn_kind, $qproname, $proargs;
     }
+
+    printf "SELECT function_privs_are('pgsodium'::name, proname, proargtypes::regtype[]::text[], %s, '%s'::text[])\n"
+          ."  FROM pg_catalog.pg_proc\n"
+          ."  WHERE pronamespace = 'pgsodium'::regnamespace\n"
+          ."    AND proname = %s\n"
+          ."    AND oidvectortypes(proargtypes) = '%s';\n\n",
+           $qgrantee, $privs, $qproname, $proargs;
 }
 
 print "\n\n\n---- TYPES\n\n";

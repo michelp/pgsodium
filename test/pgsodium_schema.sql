@@ -4,7 +4,7 @@ CREATE EXTENSION IF NOT EXISTS pgsodium;
 
 SET search_path TO 'public';
 
-SELECT no_plan();
+SELECT plan(1729); -- FIXME!
 
 
 
@@ -812,7 +812,13 @@ SELECT unnest(ARRAY[
       proargtypes::regtype[]::name[], 'pgsodium_keymaker'::name,
       format('Function pgsodium.%s(%s) owner is %s',
              proname, pg_get_function_identity_arguments(oid), 'pgsodium_keymaker')
-    )
+    ),
+    function_lang_is('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'plpgsql'::name ),
+    function_returns('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'pgsodium.valid_key' ),
+    volatility_is('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'volatile'),
+    is_definer('pgsodium'::name, proname, proargtypes::regtype[]::name[]),
+    isnt_strict('pgsodium'::name, proname, proargtypes::regtype[]::name[]),
+    is_normal_function('pgsodium'::name, proname, proargtypes::regtype[]::name[])
 ])
   FROM pg_catalog.pg_proc
   WHERE pronamespace = 'pgsodium'::regnamespace
@@ -847,7 +853,13 @@ SELECT unnest(ARRAY[
       proargtypes::regtype[]::name[], 'postgres'::name,
       format('Function pgsodium.%s(%s) owner is %s',
              proname, pg_get_function_identity_arguments(oid), 'postgres')
-    )
+    ),
+    function_lang_is('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'plpgsql'::name ),
+    function_returns('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'void' ),
+    volatility_is('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'volatile'),
+    isnt_definer('pgsodium'::name, proname, proargtypes::regtype[]::name[]),
+    isnt_strict('pgsodium'::name, proname, proargtypes::regtype[]::name[]),
+    is_normal_function('pgsodium'::name, proname, proargtypes::regtype[]::name[])
 ])
   FROM pg_catalog.pg_proc
   WHERE pronamespace = 'pgsodium'::regnamespace
@@ -876,7 +888,13 @@ SELECT unnest(ARRAY[
       proargtypes::regtype[]::name[], 'postgres'::name,
       format('Function pgsodium.%s(%s) owner is %s',
              proname, pg_get_function_identity_arguments(oid), 'postgres')
-    )
+    ),
+    function_lang_is('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'plpgsql'::name ),
+    function_returns('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'void' ),
+    volatility_is('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'volatile'),
+    isnt_definer('pgsodium'::name, proname, proargtypes::regtype[]::name[]),
+    isnt_strict('pgsodium'::name, proname, proargtypes::regtype[]::name[]),
+    is_normal_function('pgsodium'::name, proname, proargtypes::regtype[]::name[])
 ])
   FROM pg_catalog.pg_proc
   WHERE pronamespace = 'pgsodium'::regnamespace
@@ -905,7 +923,13 @@ SELECT unnest(ARRAY[
       proargtypes::regtype[]::name[], 'postgres'::name,
       format('Function pgsodium.%s(%s) owner is %s',
              proname, pg_get_function_identity_arguments(oid), 'postgres')
-    )
+    ),
+    function_lang_is('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'c'::name ),
+    function_returns('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'bytea' ),
+    volatility_is('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'immutable'),
+    isnt_definer('pgsodium'::name, proname, proargtypes::regtype[]::name[]),
+    isnt_strict('pgsodium'::name, proname, proargtypes::regtype[]::name[]),
+    is_normal_function('pgsodium'::name, proname, proargtypes::regtype[]::name[])
 ])
   FROM pg_catalog.pg_proc
   WHERE pronamespace = 'pgsodium'::regnamespace
@@ -934,7 +958,13 @@ SELECT unnest(ARRAY[
       proargtypes::regtype[]::name[], 'postgres'::name,
       format('Function pgsodium.%s(%s) owner is %s',
              proname, pg_get_function_identity_arguments(oid), 'postgres')
-    )
+    ),
+    function_lang_is('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'c'::name ),
+    function_returns('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'bytea' ),
+    volatility_is('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'immutable'),
+    isnt_definer('pgsodium'::name, proname, proargtypes::regtype[]::name[]),
+    isnt_strict('pgsodium'::name, proname, proargtypes::regtype[]::name[]),
+    is_normal_function('pgsodium'::name, proname, proargtypes::regtype[]::name[])
 ])
   FROM pg_catalog.pg_proc
   WHERE pronamespace = 'pgsodium'::regnamespace
@@ -963,7 +993,13 @@ SELECT unnest(ARRAY[
       proargtypes::regtype[]::name[], 'pgsodium_keymaker'::name,
       format('Function pgsodium.%s(%s) owner is %s',
              proname, pg_get_function_identity_arguments(oid), 'pgsodium_keymaker')
-    )
+    ),
+    function_lang_is('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'plpgsql'::name ),
+    function_returns('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'bytea' ),
+    volatility_is('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'stable'),
+    is_definer('pgsodium'::name, proname, proargtypes::regtype[]::name[]),
+    isnt_strict('pgsodium'::name, proname, proargtypes::regtype[]::name[]),
+    is_normal_function('pgsodium'::name, proname, proargtypes::regtype[]::name[])
 ])
   FROM pg_catalog.pg_proc
   WHERE pronamespace = 'pgsodium'::regnamespace
@@ -992,7 +1028,13 @@ SELECT unnest(ARRAY[
       proargtypes::regtype[]::name[], 'pgsodium_keymaker'::name,
       format('Function pgsodium.%s(%s) owner is %s',
              proname, pg_get_function_identity_arguments(oid), 'pgsodium_keymaker')
-    )
+    ),
+    function_lang_is('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'plpgsql'::name ),
+    function_returns('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'bytea' ),
+    volatility_is('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'stable'),
+    is_definer('pgsodium'::name, proname, proargtypes::regtype[]::name[]),
+    isnt_strict('pgsodium'::name, proname, proargtypes::regtype[]::name[]),
+    is_normal_function('pgsodium'::name, proname, proargtypes::regtype[]::name[])
 ])
   FROM pg_catalog.pg_proc
   WHERE pronamespace = 'pgsodium'::regnamespace
@@ -1021,7 +1063,13 @@ SELECT unnest(ARRAY[
       proargtypes::regtype[]::name[], 'postgres'::name,
       format('Function pgsodium.%s(%s) owner is %s',
              proname, pg_get_function_identity_arguments(oid), 'postgres')
-    )
+    ),
+    function_lang_is('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'c'::name ),
+    function_returns('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'bytea' ),
+    volatility_is('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'immutable'),
+    isnt_definer('pgsodium'::name, proname, proargtypes::regtype[]::name[]),
+    isnt_strict('pgsodium'::name, proname, proargtypes::regtype[]::name[]),
+    is_normal_function('pgsodium'::name, proname, proargtypes::regtype[]::name[])
 ])
   FROM pg_catalog.pg_proc
   WHERE pronamespace = 'pgsodium'::regnamespace
@@ -1050,7 +1098,13 @@ SELECT unnest(ARRAY[
       proargtypes::regtype[]::name[], 'postgres'::name,
       format('Function pgsodium.%s(%s) owner is %s',
              proname, pg_get_function_identity_arguments(oid), 'postgres')
-    )
+    ),
+    function_lang_is('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'c'::name ),
+    function_returns('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'bytea' ),
+    volatility_is('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'immutable'),
+    isnt_definer('pgsodium'::name, proname, proargtypes::regtype[]::name[]),
+    isnt_strict('pgsodium'::name, proname, proargtypes::regtype[]::name[]),
+    is_normal_function('pgsodium'::name, proname, proargtypes::regtype[]::name[])
 ])
   FROM pg_catalog.pg_proc
   WHERE pronamespace = 'pgsodium'::regnamespace
@@ -1079,7 +1133,13 @@ SELECT unnest(ARRAY[
       proargtypes::regtype[]::name[], 'pgsodium_keymaker'::name,
       format('Function pgsodium.%s(%s) owner is %s',
              proname, pg_get_function_identity_arguments(oid), 'pgsodium_keymaker')
-    )
+    ),
+    function_lang_is('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'plpgsql'::name ),
+    function_returns('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'bytea' ),
+    volatility_is('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'stable'),
+    is_definer('pgsodium'::name, proname, proargtypes::regtype[]::name[]),
+    isnt_strict('pgsodium'::name, proname, proargtypes::regtype[]::name[]),
+    is_normal_function('pgsodium'::name, proname, proargtypes::regtype[]::name[])
 ])
   FROM pg_catalog.pg_proc
   WHERE pronamespace = 'pgsodium'::regnamespace
@@ -1108,7 +1168,13 @@ SELECT unnest(ARRAY[
       proargtypes::regtype[]::name[], 'pgsodium_keymaker'::name,
       format('Function pgsodium.%s(%s) owner is %s',
              proname, pg_get_function_identity_arguments(oid), 'pgsodium_keymaker')
-    )
+    ),
+    function_lang_is('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'plpgsql'::name ),
+    function_returns('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'bytea' ),
+    volatility_is('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'stable'),
+    is_definer('pgsodium'::name, proname, proargtypes::regtype[]::name[]),
+    isnt_strict('pgsodium'::name, proname, proargtypes::regtype[]::name[]),
+    is_normal_function('pgsodium'::name, proname, proargtypes::regtype[]::name[])
 ])
   FROM pg_catalog.pg_proc
   WHERE pronamespace = 'pgsodium'::regnamespace
@@ -1137,7 +1203,13 @@ SELECT unnest(ARRAY[
       proargtypes::regtype[]::name[], 'postgres'::name,
       format('Function pgsodium.%s(%s) owner is %s',
              proname, pg_get_function_identity_arguments(oid), 'postgres')
-    )
+    ),
+    function_lang_is('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'c'::name ),
+    function_returns('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'bytea' ),
+    volatility_is('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'volatile'),
+    isnt_definer('pgsodium'::name, proname, proargtypes::regtype[]::name[]),
+    isnt_strict('pgsodium'::name, proname, proargtypes::regtype[]::name[]),
+    is_normal_function('pgsodium'::name, proname, proargtypes::regtype[]::name[])
 ])
   FROM pg_catalog.pg_proc
   WHERE pronamespace = 'pgsodium'::regnamespace
@@ -1166,7 +1238,13 @@ SELECT unnest(ARRAY[
       proargtypes::regtype[]::name[], 'postgres'::name,
       format('Function pgsodium.%s(%s) owner is %s',
              proname, pg_get_function_identity_arguments(oid), 'postgres')
-    )
+    ),
+    function_lang_is('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'c'::name ),
+    function_returns('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'bytea' ),
+    volatility_is('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'volatile'),
+    isnt_definer('pgsodium'::name, proname, proargtypes::regtype[]::name[]),
+    isnt_strict('pgsodium'::name, proname, proargtypes::regtype[]::name[]),
+    is_normal_function('pgsodium'::name, proname, proargtypes::regtype[]::name[])
 ])
   FROM pg_catalog.pg_proc
   WHERE pronamespace = 'pgsodium'::regnamespace
@@ -1201,7 +1279,13 @@ SELECT unnest(ARRAY[
       proargtypes::regtype[]::name[], 'postgres'::name,
       format('Function pgsodium.%s(%s) owner is %s',
              proname, pg_get_function_identity_arguments(oid), 'postgres')
-    )
+    ),
+    function_lang_is('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'c'::name ),
+    function_returns('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'bytea' ),
+    volatility_is('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'immutable'),
+    isnt_definer('pgsodium'::name, proname, proargtypes::regtype[]::name[]),
+    isnt_strict('pgsodium'::name, proname, proargtypes::regtype[]::name[]),
+    is_normal_function('pgsodium'::name, proname, proargtypes::regtype[]::name[])
 ])
   FROM pg_catalog.pg_proc
   WHERE pronamespace = 'pgsodium'::regnamespace
@@ -1230,7 +1314,13 @@ SELECT unnest(ARRAY[
       proargtypes::regtype[]::name[], 'postgres'::name,
       format('Function pgsodium.%s(%s) owner is %s',
              proname, pg_get_function_identity_arguments(oid), 'postgres')
-    )
+    ),
+    function_lang_is('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'c'::name ),
+    function_returns('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'bytea' ),
+    volatility_is('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'immutable'),
+    isnt_definer('pgsodium'::name, proname, proargtypes::regtype[]::name[]),
+    isnt_strict('pgsodium'::name, proname, proargtypes::regtype[]::name[]),
+    is_normal_function('pgsodium'::name, proname, proargtypes::regtype[]::name[])
 ])
   FROM pg_catalog.pg_proc
   WHERE pronamespace = 'pgsodium'::regnamespace
@@ -1259,7 +1349,13 @@ SELECT unnest(ARRAY[
       proargtypes::regtype[]::name[], 'pgsodium_keymaker'::name,
       format('Function pgsodium.%s(%s) owner is %s',
              proname, pg_get_function_identity_arguments(oid), 'pgsodium_keymaker')
-    )
+    ),
+    function_lang_is('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'plpgsql'::name ),
+    function_returns('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'bytea' ),
+    volatility_is('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'stable'),
+    is_definer('pgsodium'::name, proname, proargtypes::regtype[]::name[]),
+    isnt_strict('pgsodium'::name, proname, proargtypes::regtype[]::name[]),
+    is_normal_function('pgsodium'::name, proname, proargtypes::regtype[]::name[])
 ])
   FROM pg_catalog.pg_proc
   WHERE pronamespace = 'pgsodium'::regnamespace
@@ -1288,7 +1384,13 @@ SELECT unnest(ARRAY[
       proargtypes::regtype[]::name[], 'postgres'::name,
       format('Function pgsodium.%s(%s) owner is %s',
              proname, pg_get_function_identity_arguments(oid), 'postgres')
-    )
+    ),
+    function_lang_is('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'c'::name ),
+    function_returns('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'bytea' ),
+    volatility_is('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'immutable'),
+    isnt_definer('pgsodium'::name, proname, proargtypes::regtype[]::name[]),
+    isnt_strict('pgsodium'::name, proname, proargtypes::regtype[]::name[]),
+    is_normal_function('pgsodium'::name, proname, proargtypes::regtype[]::name[])
 ])
   FROM pg_catalog.pg_proc
   WHERE pronamespace = 'pgsodium'::regnamespace
@@ -1317,7 +1419,13 @@ SELECT unnest(ARRAY[
       proargtypes::regtype[]::name[], 'postgres'::name,
       format('Function pgsodium.%s(%s) owner is %s',
              proname, pg_get_function_identity_arguments(oid), 'postgres')
-    )
+    ),
+    function_lang_is('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'c'::name ),
+    function_returns('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'bytea' ),
+    volatility_is('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'immutable'),
+    isnt_definer('pgsodium'::name, proname, proargtypes::regtype[]::name[]),
+    isnt_strict('pgsodium'::name, proname, proargtypes::regtype[]::name[]),
+    is_normal_function('pgsodium'::name, proname, proargtypes::regtype[]::name[])
 ])
   FROM pg_catalog.pg_proc
   WHERE pronamespace = 'pgsodium'::regnamespace
@@ -1346,7 +1454,13 @@ SELECT unnest(ARRAY[
       proargtypes::regtype[]::name[], 'pgsodium_keymaker'::name,
       format('Function pgsodium.%s(%s) owner is %s',
              proname, pg_get_function_identity_arguments(oid), 'pgsodium_keymaker')
-    )
+    ),
+    function_lang_is('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'plpgsql'::name ),
+    function_returns('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'bytea' ),
+    volatility_is('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'stable'),
+    is_definer('pgsodium'::name, proname, proargtypes::regtype[]::name[]),
+    isnt_strict('pgsodium'::name, proname, proargtypes::regtype[]::name[]),
+    is_normal_function('pgsodium'::name, proname, proargtypes::regtype[]::name[])
 ])
   FROM pg_catalog.pg_proc
   WHERE pronamespace = 'pgsodium'::regnamespace
@@ -1375,7 +1489,13 @@ SELECT unnest(ARRAY[
       proargtypes::regtype[]::name[], 'postgres'::name,
       format('Function pgsodium.%s(%s) owner is %s',
              proname, pg_get_function_identity_arguments(oid), 'postgres')
-    )
+    ),
+    function_lang_is('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'c'::name ),
+    function_returns('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'bytea' ),
+    volatility_is('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'volatile'),
+    isnt_definer('pgsodium'::name, proname, proargtypes::regtype[]::name[]),
+    isnt_strict('pgsodium'::name, proname, proargtypes::regtype[]::name[]),
+    is_normal_function('pgsodium'::name, proname, proargtypes::regtype[]::name[])
 ])
   FROM pg_catalog.pg_proc
   WHERE pronamespace = 'pgsodium'::regnamespace
@@ -1404,7 +1524,13 @@ SELECT unnest(ARRAY[
       proargtypes::regtype[]::name[], 'postgres'::name,
       format('Function pgsodium.%s(%s) owner is %s',
              proname, pg_get_function_identity_arguments(oid), 'postgres')
-    )
+    ),
+    function_lang_is('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'c'::name ),
+    function_returns('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'bytea' ),
+    volatility_is('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'volatile'),
+    isnt_definer('pgsodium'::name, proname, proargtypes::regtype[]::name[]),
+    isnt_strict('pgsodium'::name, proname, proargtypes::regtype[]::name[]),
+    is_normal_function('pgsodium'::name, proname, proargtypes::regtype[]::name[])
 ])
   FROM pg_catalog.pg_proc
   WHERE pronamespace = 'pgsodium'::regnamespace
@@ -1433,7 +1559,13 @@ SELECT unnest(ARRAY[
       proargtypes::regtype[]::name[], 'postgres'::name,
       format('Function pgsodium.%s(%s) owner is %s',
              proname, pg_get_function_identity_arguments(oid), 'postgres')
-    )
+    ),
+    function_lang_is('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'c'::name ),
+    function_returns('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'bytea' ),
+    volatility_is('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'immutable'),
+    isnt_definer('pgsodium'::name, proname, proargtypes::regtype[]::name[]),
+    isnt_strict('pgsodium'::name, proname, proargtypes::regtype[]::name[]),
+    is_normal_function('pgsodium'::name, proname, proargtypes::regtype[]::name[])
 ])
   FROM pg_catalog.pg_proc
   WHERE pronamespace = 'pgsodium'::regnamespace
@@ -1462,7 +1594,13 @@ SELECT unnest(ARRAY[
       proargtypes::regtype[]::name[], 'postgres'::name,
       format('Function pgsodium.%s(%s) owner is %s',
              proname, pg_get_function_identity_arguments(oid), 'postgres')
-    )
+    ),
+    function_lang_is('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'c'::name ),
+    function_returns('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'bytea' ),
+    volatility_is('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'immutable'),
+    isnt_definer('pgsodium'::name, proname, proargtypes::regtype[]::name[]),
+    isnt_strict('pgsodium'::name, proname, proargtypes::regtype[]::name[]),
+    is_normal_function('pgsodium'::name, proname, proargtypes::regtype[]::name[])
 ])
   FROM pg_catalog.pg_proc
   WHERE pronamespace = 'pgsodium'::regnamespace
@@ -1491,7 +1629,13 @@ SELECT unnest(ARRAY[
       proargtypes::regtype[]::name[], 'pgsodium_keymaker'::name,
       format('Function pgsodium.%s(%s) owner is %s',
              proname, pg_get_function_identity_arguments(oid), 'pgsodium_keymaker')
-    )
+    ),
+    function_lang_is('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'plpgsql'::name ),
+    function_returns('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'bytea' ),
+    volatility_is('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'stable'),
+    is_definer('pgsodium'::name, proname, proargtypes::regtype[]::name[]),
+    isnt_strict('pgsodium'::name, proname, proargtypes::regtype[]::name[]),
+    is_normal_function('pgsodium'::name, proname, proargtypes::regtype[]::name[])
 ])
   FROM pg_catalog.pg_proc
   WHERE pronamespace = 'pgsodium'::regnamespace
@@ -1520,7 +1664,13 @@ SELECT unnest(ARRAY[
       proargtypes::regtype[]::name[], 'postgres'::name,
       format('Function pgsodium.%s(%s) owner is %s',
              proname, pg_get_function_identity_arguments(oid), 'postgres')
-    )
+    ),
+    function_lang_is('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'c'::name ),
+    function_returns('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'bytea' ),
+    volatility_is('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'immutable'),
+    isnt_definer('pgsodium'::name, proname, proargtypes::regtype[]::name[]),
+    isnt_strict('pgsodium'::name, proname, proargtypes::regtype[]::name[]),
+    is_normal_function('pgsodium'::name, proname, proargtypes::regtype[]::name[])
 ])
   FROM pg_catalog.pg_proc
   WHERE pronamespace = 'pgsodium'::regnamespace
@@ -1549,7 +1699,13 @@ SELECT unnest(ARRAY[
       proargtypes::regtype[]::name[], 'postgres'::name,
       format('Function pgsodium.%s(%s) owner is %s',
              proname, pg_get_function_identity_arguments(oid), 'postgres')
-    )
+    ),
+    function_lang_is('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'c'::name ),
+    function_returns('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'bytea' ),
+    volatility_is('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'immutable'),
+    isnt_definer('pgsodium'::name, proname, proargtypes::regtype[]::name[]),
+    isnt_strict('pgsodium'::name, proname, proargtypes::regtype[]::name[]),
+    is_normal_function('pgsodium'::name, proname, proargtypes::regtype[]::name[])
 ])
   FROM pg_catalog.pg_proc
   WHERE pronamespace = 'pgsodium'::regnamespace
@@ -1578,7 +1734,13 @@ SELECT unnest(ARRAY[
       proargtypes::regtype[]::name[], 'pgsodium_keymaker'::name,
       format('Function pgsodium.%s(%s) owner is %s',
              proname, pg_get_function_identity_arguments(oid), 'pgsodium_keymaker')
-    )
+    ),
+    function_lang_is('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'plpgsql'::name ),
+    function_returns('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'bytea' ),
+    volatility_is('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'stable'),
+    is_definer('pgsodium'::name, proname, proargtypes::regtype[]::name[]),
+    isnt_strict('pgsodium'::name, proname, proargtypes::regtype[]::name[]),
+    is_normal_function('pgsodium'::name, proname, proargtypes::regtype[]::name[])
 ])
   FROM pg_catalog.pg_proc
   WHERE pronamespace = 'pgsodium'::regnamespace
@@ -1607,7 +1769,13 @@ SELECT unnest(ARRAY[
       proargtypes::regtype[]::name[], 'postgres'::name,
       format('Function pgsodium.%s(%s) owner is %s',
              proname, pg_get_function_identity_arguments(oid), 'postgres')
-    )
+    ),
+    function_lang_is('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'c'::name ),
+    function_returns('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'bytea' ),
+    volatility_is('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'volatile'),
+    isnt_definer('pgsodium'::name, proname, proargtypes::regtype[]::name[]),
+    isnt_strict('pgsodium'::name, proname, proargtypes::regtype[]::name[]),
+    is_normal_function('pgsodium'::name, proname, proargtypes::regtype[]::name[])
 ])
   FROM pg_catalog.pg_proc
   WHERE pronamespace = 'pgsodium'::regnamespace
@@ -1636,7 +1804,13 @@ SELECT unnest(ARRAY[
       proargtypes::regtype[]::name[], 'postgres'::name,
       format('Function pgsodium.%s(%s) owner is %s',
              proname, pg_get_function_identity_arguments(oid), 'postgres')
-    )
+    ),
+    function_lang_is('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'c'::name ),
+    function_returns('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'boolean' ),
+    volatility_is('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'immutable'),
+    isnt_definer('pgsodium'::name, proname, proargtypes::regtype[]::name[]),
+    isnt_strict('pgsodium'::name, proname, proargtypes::regtype[]::name[]),
+    is_normal_function('pgsodium'::name, proname, proargtypes::regtype[]::name[])
 ])
   FROM pg_catalog.pg_proc
   WHERE pronamespace = 'pgsodium'::regnamespace
@@ -1665,7 +1839,13 @@ SELECT unnest(ARRAY[
       proargtypes::regtype[]::name[], 'postgres'::name,
       format('Function pgsodium.%s(%s) owner is %s',
              proname, pg_get_function_identity_arguments(oid), 'postgres')
-    )
+    ),
+    function_lang_is('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'c'::name ),
+    function_returns('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'boolean' ),
+    volatility_is('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'immutable'),
+    isnt_definer('pgsodium'::name, proname, proargtypes::regtype[]::name[]),
+    isnt_strict('pgsodium'::name, proname, proargtypes::regtype[]::name[]),
+    is_normal_function('pgsodium'::name, proname, proargtypes::regtype[]::name[])
 ])
   FROM pg_catalog.pg_proc
   WHERE pronamespace = 'pgsodium'::regnamespace
@@ -1694,7 +1874,13 @@ SELECT unnest(ARRAY[
       proargtypes::regtype[]::name[], 'pgsodium_keymaker'::name,
       format('Function pgsodium.%s(%s) owner is %s',
              proname, pg_get_function_identity_arguments(oid), 'pgsodium_keymaker')
-    )
+    ),
+    function_lang_is('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'plpgsql'::name ),
+    function_returns('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'boolean' ),
+    volatility_is('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'stable'),
+    is_definer('pgsodium'::name, proname, proargtypes::regtype[]::name[]),
+    isnt_strict('pgsodium'::name, proname, proargtypes::regtype[]::name[]),
+    is_normal_function('pgsodium'::name, proname, proargtypes::regtype[]::name[])
 ])
   FROM pg_catalog.pg_proc
   WHERE pronamespace = 'pgsodium'::regnamespace
@@ -1723,7 +1909,13 @@ SELECT unnest(ARRAY[
       proargtypes::regtype[]::name[], 'postgres'::name,
       format('Function pgsodium.%s(%s) owner is %s',
              proname, pg_get_function_identity_arguments(oid), 'postgres')
-    )
+    ),
+    function_lang_is('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'c'::name ),
+    function_returns('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'bytea' ),
+    volatility_is('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'immutable'),
+    isnt_definer('pgsodium'::name, proname, proargtypes::regtype[]::name[]),
+    isnt_strict('pgsodium'::name, proname, proargtypes::regtype[]::name[]),
+    is_normal_function('pgsodium'::name, proname, proargtypes::regtype[]::name[])
 ])
   FROM pg_catalog.pg_proc
   WHERE pronamespace = 'pgsodium'::regnamespace
@@ -1752,7 +1944,13 @@ SELECT unnest(ARRAY[
       proargtypes::regtype[]::name[], 'postgres'::name,
       format('Function pgsodium.%s(%s) owner is %s',
              proname, pg_get_function_identity_arguments(oid), 'postgres')
-    )
+    ),
+    function_lang_is('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'c'::name ),
+    function_returns('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'bytea' ),
+    volatility_is('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'immutable'),
+    isnt_definer('pgsodium'::name, proname, proargtypes::regtype[]::name[]),
+    isnt_strict('pgsodium'::name, proname, proargtypes::regtype[]::name[]),
+    is_normal_function('pgsodium'::name, proname, proargtypes::regtype[]::name[])
 ])
   FROM pg_catalog.pg_proc
   WHERE pronamespace = 'pgsodium'::regnamespace
@@ -1781,7 +1979,13 @@ SELECT unnest(ARRAY[
       proargtypes::regtype[]::name[], 'pgsodium_keymaker'::name,
       format('Function pgsodium.%s(%s) owner is %s',
              proname, pg_get_function_identity_arguments(oid), 'pgsodium_keymaker')
-    )
+    ),
+    function_lang_is('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'plpgsql'::name ),
+    function_returns('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'bytea' ),
+    volatility_is('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'stable'),
+    is_definer('pgsodium'::name, proname, proargtypes::regtype[]::name[]),
+    isnt_strict('pgsodium'::name, proname, proargtypes::regtype[]::name[]),
+    is_normal_function('pgsodium'::name, proname, proargtypes::regtype[]::name[])
 ])
   FROM pg_catalog.pg_proc
   WHERE pronamespace = 'pgsodium'::regnamespace
@@ -1810,7 +2014,13 @@ SELECT unnest(ARRAY[
       proargtypes::regtype[]::name[], 'postgres'::name,
       format('Function pgsodium.%s(%s) owner is %s',
              proname, pg_get_function_identity_arguments(oid), 'postgres')
-    )
+    ),
+    function_lang_is('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'c'::name ),
+    function_returns('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'bytea' ),
+    volatility_is('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'volatile'),
+    isnt_definer('pgsodium'::name, proname, proargtypes::regtype[]::name[]),
+    isnt_strict('pgsodium'::name, proname, proargtypes::regtype[]::name[]),
+    is_normal_function('pgsodium'::name, proname, proargtypes::regtype[]::name[])
 ])
   FROM pg_catalog.pg_proc
   WHERE pronamespace = 'pgsodium'::regnamespace
@@ -1839,7 +2049,13 @@ SELECT unnest(ARRAY[
       proargtypes::regtype[]::name[], 'postgres'::name,
       format('Function pgsodium.%s(%s) owner is %s',
              proname, pg_get_function_identity_arguments(oid), 'postgres')
-    )
+    ),
+    function_lang_is('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'c'::name ),
+    function_returns('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'boolean' ),
+    volatility_is('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'immutable'),
+    isnt_definer('pgsodium'::name, proname, proargtypes::regtype[]::name[]),
+    isnt_strict('pgsodium'::name, proname, proargtypes::regtype[]::name[]),
+    is_normal_function('pgsodium'::name, proname, proargtypes::regtype[]::name[])
 ])
   FROM pg_catalog.pg_proc
   WHERE pronamespace = 'pgsodium'::regnamespace
@@ -1868,7 +2084,13 @@ SELECT unnest(ARRAY[
       proargtypes::regtype[]::name[], 'postgres'::name,
       format('Function pgsodium.%s(%s) owner is %s',
              proname, pg_get_function_identity_arguments(oid), 'postgres')
-    )
+    ),
+    function_lang_is('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'c'::name ),
+    function_returns('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'boolean' ),
+    volatility_is('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'immutable'),
+    isnt_definer('pgsodium'::name, proname, proargtypes::regtype[]::name[]),
+    isnt_strict('pgsodium'::name, proname, proargtypes::regtype[]::name[]),
+    is_normal_function('pgsodium'::name, proname, proargtypes::regtype[]::name[])
 ])
   FROM pg_catalog.pg_proc
   WHERE pronamespace = 'pgsodium'::regnamespace
@@ -1897,7 +2119,13 @@ SELECT unnest(ARRAY[
       proargtypes::regtype[]::name[], 'pgsodium_keymaker'::name,
       format('Function pgsodium.%s(%s) owner is %s',
              proname, pg_get_function_identity_arguments(oid), 'pgsodium_keymaker')
-    )
+    ),
+    function_lang_is('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'plpgsql'::name ),
+    function_returns('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'boolean' ),
+    volatility_is('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'stable'),
+    is_definer('pgsodium'::name, proname, proargtypes::regtype[]::name[]),
+    isnt_strict('pgsodium'::name, proname, proargtypes::regtype[]::name[]),
+    is_normal_function('pgsodium'::name, proname, proargtypes::regtype[]::name[])
 ])
   FROM pg_catalog.pg_proc
   WHERE pronamespace = 'pgsodium'::regnamespace
@@ -1926,7 +2154,13 @@ SELECT unnest(ARRAY[
       proargtypes::regtype[]::name[], 'postgres'::name,
       format('Function pgsodium.%s(%s) owner is %s',
              proname, pg_get_function_identity_arguments(oid), 'postgres')
-    )
+    ),
+    function_lang_is('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'c'::name ),
+    function_returns('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'bytea' ),
+    volatility_is('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'volatile'),
+    isnt_definer('pgsodium'::name, proname, proargtypes::regtype[]::name[]),
+    isnt_strict('pgsodium'::name, proname, proargtypes::regtype[]::name[]),
+    is_normal_function('pgsodium'::name, proname, proargtypes::regtype[]::name[])
 ])
   FROM pg_catalog.pg_proc
   WHERE pronamespace = 'pgsodium'::regnamespace
@@ -1955,7 +2189,13 @@ SELECT unnest(ARRAY[
       proargtypes::regtype[]::name[], 'postgres'::name,
       format('Function pgsodium.%s(%s) owner is %s',
              proname, pg_get_function_identity_arguments(oid), 'postgres')
-    )
+    ),
+    function_lang_is('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'c'::name ),
+    function_returns('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'boolean' ),
+    volatility_is('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'immutable'),
+    isnt_definer('pgsodium'::name, proname, proargtypes::regtype[]::name[]),
+    isnt_strict('pgsodium'::name, proname, proargtypes::regtype[]::name[]),
+    is_normal_function('pgsodium'::name, proname, proargtypes::regtype[]::name[])
 ])
   FROM pg_catalog.pg_proc
   WHERE pronamespace = 'pgsodium'::regnamespace
@@ -1984,7 +2224,13 @@ SELECT unnest(ARRAY[
       proargtypes::regtype[]::name[], 'postgres'::name,
       format('Function pgsodium.%s(%s) owner is %s',
              proname, pg_get_function_identity_arguments(oid), 'postgres')
-    )
+    ),
+    function_lang_is('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'c'::name ),
+    function_returns('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'boolean' ),
+    volatility_is('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'immutable'),
+    isnt_definer('pgsodium'::name, proname, proargtypes::regtype[]::name[]),
+    isnt_strict('pgsodium'::name, proname, proargtypes::regtype[]::name[]),
+    is_normal_function('pgsodium'::name, proname, proargtypes::regtype[]::name[])
 ])
   FROM pg_catalog.pg_proc
   WHERE pronamespace = 'pgsodium'::regnamespace
@@ -2013,7 +2259,13 @@ SELECT unnest(ARRAY[
       proargtypes::regtype[]::name[], 'pgsodium_keymaker'::name,
       format('Function pgsodium.%s(%s) owner is %s',
              proname, pg_get_function_identity_arguments(oid), 'pgsodium_keymaker')
-    )
+    ),
+    function_lang_is('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'plpgsql'::name ),
+    function_returns('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'boolean' ),
+    volatility_is('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'stable'),
+    is_definer('pgsodium'::name, proname, proargtypes::regtype[]::name[]),
+    isnt_strict('pgsodium'::name, proname, proargtypes::regtype[]::name[]),
+    is_normal_function('pgsodium'::name, proname, proargtypes::regtype[]::name[])
 ])
   FROM pg_catalog.pg_proc
   WHERE pronamespace = 'pgsodium'::regnamespace
@@ -2042,7 +2294,13 @@ SELECT unnest(ARRAY[
       proargtypes::regtype[]::name[], 'postgres'::name,
       format('Function pgsodium.%s(%s) owner is %s',
              proname, pg_get_function_identity_arguments(oid), 'postgres')
-    )
+    ),
+    function_lang_is('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'c'::name ),
+    function_returns('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'bytea' ),
+    volatility_is('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'immutable'),
+    isnt_definer('pgsodium'::name, proname, proargtypes::regtype[]::name[]),
+    isnt_strict('pgsodium'::name, proname, proargtypes::regtype[]::name[]),
+    is_normal_function('pgsodium'::name, proname, proargtypes::regtype[]::name[])
 ])
   FROM pg_catalog.pg_proc
   WHERE pronamespace = 'pgsodium'::regnamespace
@@ -2071,7 +2329,13 @@ SELECT unnest(ARRAY[
       proargtypes::regtype[]::name[], 'postgres'::name,
       format('Function pgsodium.%s(%s) owner is %s',
              proname, pg_get_function_identity_arguments(oid), 'postgres')
-    )
+    ),
+    function_lang_is('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'c'::name ),
+    function_returns('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'pgsodium.crypto_box_keypair' ),
+    volatility_is('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'volatile'),
+    isnt_definer('pgsodium'::name, proname, proargtypes::regtype[]::name[]),
+    isnt_strict('pgsodium'::name, proname, proargtypes::regtype[]::name[]),
+    is_normal_function('pgsodium'::name, proname, proargtypes::regtype[]::name[])
 ])
   FROM pg_catalog.pg_proc
   WHERE pronamespace = 'pgsodium'::regnamespace
@@ -2100,7 +2364,13 @@ SELECT unnest(ARRAY[
       proargtypes::regtype[]::name[], 'postgres'::name,
       format('Function pgsodium.%s(%s) owner is %s',
              proname, pg_get_function_identity_arguments(oid), 'postgres')
-    )
+    ),
+    function_lang_is('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'c'::name ),
+    function_returns('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'bytea' ),
+    volatility_is('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'volatile'),
+    isnt_definer('pgsodium'::name, proname, proargtypes::regtype[]::name[]),
+    isnt_strict('pgsodium'::name, proname, proargtypes::regtype[]::name[]),
+    is_normal_function('pgsodium'::name, proname, proargtypes::regtype[]::name[])
 ])
   FROM pg_catalog.pg_proc
   WHERE pronamespace = 'pgsodium'::regnamespace
@@ -2129,7 +2399,13 @@ SELECT unnest(ARRAY[
       proargtypes::regtype[]::name[], 'postgres'::name,
       format('Function pgsodium.%s(%s) owner is %s',
              proname, pg_get_function_identity_arguments(oid), 'postgres')
-    )
+    ),
+    function_lang_is('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'c'::name ),
+    function_returns('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'bytea' ),
+    volatility_is('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'volatile'),
+    isnt_definer('pgsodium'::name, proname, proargtypes::regtype[]::name[]),
+    isnt_strict('pgsodium'::name, proname, proargtypes::regtype[]::name[]),
+    is_normal_function('pgsodium'::name, proname, proargtypes::regtype[]::name[])
 ])
   FROM pg_catalog.pg_proc
   WHERE pronamespace = 'pgsodium'::regnamespace
@@ -2158,7 +2434,13 @@ SELECT unnest(ARRAY[
       proargtypes::regtype[]::name[], 'postgres'::name,
       format('Function pgsodium.%s(%s) owner is %s',
              proname, pg_get_function_identity_arguments(oid), 'postgres')
-    )
+    ),
+    function_lang_is('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'c'::name ),
+    function_returns('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'bytea' ),
+    volatility_is('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'immutable'),
+    isnt_definer('pgsodium'::name, proname, proargtypes::regtype[]::name[]),
+    isnt_strict('pgsodium'::name, proname, proargtypes::regtype[]::name[]),
+    is_normal_function('pgsodium'::name, proname, proargtypes::regtype[]::name[])
 ])
   FROM pg_catalog.pg_proc
   WHERE pronamespace = 'pgsodium'::regnamespace
@@ -2187,7 +2469,13 @@ SELECT unnest(ARRAY[
       proargtypes::regtype[]::name[], 'postgres'::name,
       format('Function pgsodium.%s(%s) owner is %s',
              proname, pg_get_function_identity_arguments(oid), 'postgres')
-    )
+    ),
+    function_lang_is('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'c'::name ),
+    function_returns('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'bytea' ),
+    volatility_is('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'immutable'),
+    isnt_definer('pgsodium'::name, proname, proargtypes::regtype[]::name[]),
+    isnt_strict('pgsodium'::name, proname, proargtypes::regtype[]::name[]),
+    is_normal_function('pgsodium'::name, proname, proargtypes::regtype[]::name[])
 ])
   FROM pg_catalog.pg_proc
   WHERE pronamespace = 'pgsodium'::regnamespace
@@ -2216,7 +2504,13 @@ SELECT unnest(ARRAY[
       proargtypes::regtype[]::name[], 'postgres'::name,
       format('Function pgsodium.%s(%s) owner is %s',
              proname, pg_get_function_identity_arguments(oid), 'postgres')
-    )
+    ),
+    function_lang_is('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'c'::name ),
+    function_returns('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'bytea' ),
+    volatility_is('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'immutable'),
+    isnt_definer('pgsodium'::name, proname, proargtypes::regtype[]::name[]),
+    isnt_strict('pgsodium'::name, proname, proargtypes::regtype[]::name[]),
+    is_normal_function('pgsodium'::name, proname, proargtypes::regtype[]::name[])
 ])
   FROM pg_catalog.pg_proc
   WHERE pronamespace = 'pgsodium'::regnamespace
@@ -2245,7 +2539,13 @@ SELECT unnest(ARRAY[
       proargtypes::regtype[]::name[], 'postgres'::name,
       format('Function pgsodium.%s(%s) owner is %s',
              proname, pg_get_function_identity_arguments(oid), 'postgres')
-    )
+    ),
+    function_lang_is('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'c'::name ),
+    function_returns('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'pgsodium.crypto_box_keypair' ),
+    volatility_is('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'immutable'),
+    isnt_definer('pgsodium'::name, proname, proargtypes::regtype[]::name[]),
+    isnt_strict('pgsodium'::name, proname, proargtypes::regtype[]::name[]),
+    is_normal_function('pgsodium'::name, proname, proargtypes::regtype[]::name[])
 ])
   FROM pg_catalog.pg_proc
   WHERE pronamespace = 'pgsodium'::regnamespace
@@ -2274,7 +2574,13 @@ SELECT unnest(ARRAY[
       proargtypes::regtype[]::name[], 'postgres'::name,
       format('Function pgsodium.%s(%s) owner is %s',
              proname, pg_get_function_identity_arguments(oid), 'postgres')
-    )
+    ),
+    function_lang_is('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'c'::name ),
+    function_returns('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'boolean' ),
+    volatility_is('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'immutable'),
+    isnt_definer('pgsodium'::name, proname, proargtypes::regtype[]::name[]),
+    is_strict('pgsodium'::name, proname, proargtypes::regtype[]::name[]),
+    is_normal_function('pgsodium'::name, proname, proargtypes::regtype[]::name[])
 ])
   FROM pg_catalog.pg_proc
   WHERE pronamespace = 'pgsodium'::regnamespace
@@ -2303,7 +2609,13 @@ SELECT unnest(ARRAY[
       proargtypes::regtype[]::name[], 'postgres'::name,
       format('Function pgsodium.%s(%s) owner is %s',
              proname, pg_get_function_identity_arguments(oid), 'postgres')
-    )
+    ),
+    function_lang_is('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'c'::name ),
+    function_returns('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'bytea' ),
+    volatility_is('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'immutable'),
+    isnt_definer('pgsodium'::name, proname, proargtypes::regtype[]::name[]),
+    isnt_strict('pgsodium'::name, proname, proargtypes::regtype[]::name[]),
+    is_normal_function('pgsodium'::name, proname, proargtypes::regtype[]::name[])
 ])
   FROM pg_catalog.pg_proc
   WHERE pronamespace = 'pgsodium'::regnamespace
@@ -2332,7 +2644,13 @@ SELECT unnest(ARRAY[
       proargtypes::regtype[]::name[], 'postgres'::name,
       format('Function pgsodium.%s(%s) owner is %s',
              proname, pg_get_function_identity_arguments(oid), 'postgres')
-    )
+    ),
+    function_lang_is('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'c'::name ),
+    function_returns('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'bytea' ),
+    volatility_is('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'immutable'),
+    isnt_definer('pgsodium'::name, proname, proargtypes::regtype[]::name[]),
+    isnt_strict('pgsodium'::name, proname, proargtypes::regtype[]::name[]),
+    is_normal_function('pgsodium'::name, proname, proargtypes::regtype[]::name[])
 ])
   FROM pg_catalog.pg_proc
   WHERE pronamespace = 'pgsodium'::regnamespace
@@ -2361,7 +2679,13 @@ SELECT unnest(ARRAY[
       proargtypes::regtype[]::name[], 'pgsodium_keymaker'::name,
       format('Function pgsodium.%s(%s) owner is %s',
              proname, pg_get_function_identity_arguments(oid), 'pgsodium_keymaker')
-    )
+    ),
+    function_lang_is('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'plpgsql'::name ),
+    function_returns('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'bytea' ),
+    volatility_is('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'stable'),
+    is_definer('pgsodium'::name, proname, proargtypes::regtype[]::name[]),
+    isnt_strict('pgsodium'::name, proname, proargtypes::regtype[]::name[]),
+    is_normal_function('pgsodium'::name, proname, proargtypes::regtype[]::name[])
 ])
   FROM pg_catalog.pg_proc
   WHERE pronamespace = 'pgsodium'::regnamespace
@@ -2390,7 +2714,13 @@ SELECT unnest(ARRAY[
       proargtypes::regtype[]::name[], 'postgres'::name,
       format('Function pgsodium.%s(%s) owner is %s',
              proname, pg_get_function_identity_arguments(oid), 'postgres')
-    )
+    ),
+    function_lang_is('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'c'::name ),
+    function_returns('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'bytea' ),
+    volatility_is('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'volatile'),
+    isnt_definer('pgsodium'::name, proname, proargtypes::regtype[]::name[]),
+    isnt_strict('pgsodium'::name, proname, proargtypes::regtype[]::name[]),
+    is_normal_function('pgsodium'::name, proname, proargtypes::regtype[]::name[])
 ])
   FROM pg_catalog.pg_proc
   WHERE pronamespace = 'pgsodium'::regnamespace
@@ -2419,7 +2749,13 @@ SELECT unnest(ARRAY[
       proargtypes::regtype[]::name[], 'postgres'::name,
       format('Function pgsodium.%s(%s) owner is %s',
              proname, pg_get_function_identity_arguments(oid), 'postgres')
-    )
+    ),
+    function_lang_is('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'c'::name ),
+    function_returns('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'bytea' ),
+    volatility_is('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'immutable'),
+    isnt_definer('pgsodium'::name, proname, proargtypes::regtype[]::name[]),
+    isnt_strict('pgsodium'::name, proname, proargtypes::regtype[]::name[]),
+    is_normal_function('pgsodium'::name, proname, proargtypes::regtype[]::name[])
 ])
   FROM pg_catalog.pg_proc
   WHERE pronamespace = 'pgsodium'::regnamespace
@@ -2448,7 +2784,13 @@ SELECT unnest(ARRAY[
       proargtypes::regtype[]::name[], 'postgres'::name,
       format('Function pgsodium.%s(%s) owner is %s',
              proname, pg_get_function_identity_arguments(oid), 'postgres')
-    )
+    ),
+    function_lang_is('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'c'::name ),
+    function_returns('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'bytea' ),
+    volatility_is('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'immutable'),
+    isnt_definer('pgsodium'::name, proname, proargtypes::regtype[]::name[]),
+    isnt_strict('pgsodium'::name, proname, proargtypes::regtype[]::name[]),
+    is_normal_function('pgsodium'::name, proname, proargtypes::regtype[]::name[])
 ])
   FROM pg_catalog.pg_proc
   WHERE pronamespace = 'pgsodium'::regnamespace
@@ -2477,7 +2819,13 @@ SELECT unnest(ARRAY[
       proargtypes::regtype[]::name[], 'postgres'::name,
       format('Function pgsodium.%s(%s) owner is %s',
              proname, pg_get_function_identity_arguments(oid), 'postgres')
-    )
+    ),
+    function_lang_is('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'c'::name ),
+    function_returns('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'bytea' ),
+    volatility_is('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'immutable'),
+    isnt_definer('pgsodium'::name, proname, proargtypes::regtype[]::name[]),
+    isnt_strict('pgsodium'::name, proname, proargtypes::regtype[]::name[]),
+    is_normal_function('pgsodium'::name, proname, proargtypes::regtype[]::name[])
 ])
   FROM pg_catalog.pg_proc
   WHERE pronamespace = 'pgsodium'::regnamespace
@@ -2506,7 +2854,13 @@ SELECT unnest(ARRAY[
       proargtypes::regtype[]::name[], 'pgsodium_keymaker'::name,
       format('Function pgsodium.%s(%s) owner is %s',
              proname, pg_get_function_identity_arguments(oid), 'pgsodium_keymaker')
-    )
+    ),
+    function_lang_is('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'plpgsql'::name ),
+    function_returns('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'bytea' ),
+    volatility_is('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'stable'),
+    is_definer('pgsodium'::name, proname, proargtypes::regtype[]::name[]),
+    is_strict('pgsodium'::name, proname, proargtypes::regtype[]::name[]),
+    is_normal_function('pgsodium'::name, proname, proargtypes::regtype[]::name[])
 ])
   FROM pg_catalog.pg_proc
   WHERE pronamespace = 'pgsodium'::regnamespace
@@ -2535,7 +2889,13 @@ SELECT unnest(ARRAY[
       proargtypes::regtype[]::name[], 'postgres'::name,
       format('Function pgsodium.%s(%s) owner is %s',
              proname, pg_get_function_identity_arguments(oid), 'postgres')
-    )
+    ),
+    function_lang_is('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'c'::name ),
+    function_returns('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'bytea' ),
+    volatility_is('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'volatile'),
+    isnt_definer('pgsodium'::name, proname, proargtypes::regtype[]::name[]),
+    isnt_strict('pgsodium'::name, proname, proargtypes::regtype[]::name[]),
+    is_normal_function('pgsodium'::name, proname, proargtypes::regtype[]::name[])
 ])
   FROM pg_catalog.pg_proc
   WHERE pronamespace = 'pgsodium'::regnamespace
@@ -2564,7 +2924,13 @@ SELECT unnest(ARRAY[
       proargtypes::regtype[]::name[], 'postgres'::name,
       format('Function pgsodium.%s(%s) owner is %s',
              proname, pg_get_function_identity_arguments(oid), 'postgres')
-    )
+    ),
+    function_lang_is('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'c'::name ),
+    function_returns('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'pgsodium.crypto_kx_session' ),
+    volatility_is('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'volatile'),
+    isnt_definer('pgsodium'::name, proname, proargtypes::regtype[]::name[]),
+    isnt_strict('pgsodium'::name, proname, proargtypes::regtype[]::name[]),
+    is_normal_function('pgsodium'::name, proname, proargtypes::regtype[]::name[])
 ])
   FROM pg_catalog.pg_proc
   WHERE pronamespace = 'pgsodium'::regnamespace
@@ -2593,7 +2959,13 @@ SELECT unnest(ARRAY[
       proargtypes::regtype[]::name[], 'postgres'::name,
       format('Function pgsodium.%s(%s) owner is %s',
              proname, pg_get_function_identity_arguments(oid), 'postgres')
-    )
+    ),
+    function_lang_is('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'c'::name ),
+    function_returns('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'pgsodium.crypto_kx_keypair' ),
+    volatility_is('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'volatile'),
+    isnt_definer('pgsodium'::name, proname, proargtypes::regtype[]::name[]),
+    isnt_strict('pgsodium'::name, proname, proargtypes::regtype[]::name[]),
+    is_normal_function('pgsodium'::name, proname, proargtypes::regtype[]::name[])
 ])
   FROM pg_catalog.pg_proc
   WHERE pronamespace = 'pgsodium'::regnamespace
@@ -2622,7 +2994,13 @@ SELECT unnest(ARRAY[
       proargtypes::regtype[]::name[], 'postgres'::name,
       format('Function pgsodium.%s(%s) owner is %s',
              proname, pg_get_function_identity_arguments(oid), 'postgres')
-    )
+    ),
+    function_lang_is('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'c'::name ),
+    function_returns('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'bytea' ),
+    volatility_is('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'volatile'),
+    isnt_definer('pgsodium'::name, proname, proargtypes::regtype[]::name[]),
+    isnt_strict('pgsodium'::name, proname, proargtypes::regtype[]::name[]),
+    is_normal_function('pgsodium'::name, proname, proargtypes::regtype[]::name[])
 ])
   FROM pg_catalog.pg_proc
   WHERE pronamespace = 'pgsodium'::regnamespace
@@ -2651,7 +3029,13 @@ SELECT unnest(ARRAY[
       proargtypes::regtype[]::name[], 'postgres'::name,
       format('Function pgsodium.%s(%s) owner is %s',
              proname, pg_get_function_identity_arguments(oid), 'postgres')
-    )
+    ),
+    function_lang_is('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'c'::name ),
+    function_returns('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'pgsodium.crypto_kx_keypair' ),
+    volatility_is('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'immutable'),
+    isnt_definer('pgsodium'::name, proname, proargtypes::regtype[]::name[]),
+    is_strict('pgsodium'::name, proname, proargtypes::regtype[]::name[]),
+    is_normal_function('pgsodium'::name, proname, proargtypes::regtype[]::name[])
 ])
   FROM pg_catalog.pg_proc
   WHERE pronamespace = 'pgsodium'::regnamespace
@@ -2680,7 +3064,13 @@ SELECT unnest(ARRAY[
       proargtypes::regtype[]::name[], 'postgres'::name,
       format('Function pgsodium.%s(%s) owner is %s',
              proname, pg_get_function_identity_arguments(oid), 'postgres')
-    )
+    ),
+    function_lang_is('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'c'::name ),
+    function_returns('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'pgsodium.crypto_kx_session' ),
+    volatility_is('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'volatile'),
+    isnt_definer('pgsodium'::name, proname, proargtypes::regtype[]::name[]),
+    isnt_strict('pgsodium'::name, proname, proargtypes::regtype[]::name[]),
+    is_normal_function('pgsodium'::name, proname, proargtypes::regtype[]::name[])
 ])
   FROM pg_catalog.pg_proc
   WHERE pronamespace = 'pgsodium'::regnamespace
@@ -2709,7 +3099,13 @@ SELECT unnest(ARRAY[
       proargtypes::regtype[]::name[], 'postgres'::name,
       format('Function pgsodium.%s(%s) owner is %s',
              proname, pg_get_function_identity_arguments(oid), 'postgres')
-    )
+    ),
+    function_lang_is('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'c'::name ),
+    function_returns('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'bytea' ),
+    volatility_is('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'immutable'),
+    isnt_definer('pgsodium'::name, proname, proargtypes::regtype[]::name[]),
+    isnt_strict('pgsodium'::name, proname, proargtypes::regtype[]::name[]),
+    is_normal_function('pgsodium'::name, proname, proargtypes::regtype[]::name[])
 ])
   FROM pg_catalog.pg_proc
   WHERE pronamespace = 'pgsodium'::regnamespace
@@ -2738,7 +3134,13 @@ SELECT unnest(ARRAY[
       proargtypes::regtype[]::name[], 'postgres'::name,
       format('Function pgsodium.%s(%s) owner is %s',
              proname, pg_get_function_identity_arguments(oid), 'postgres')
-    )
+    ),
+    function_lang_is('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'c'::name ),
+    function_returns('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'bytea' ),
+    volatility_is('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'volatile'),
+    isnt_definer('pgsodium'::name, proname, proargtypes::regtype[]::name[]),
+    isnt_strict('pgsodium'::name, proname, proargtypes::regtype[]::name[]),
+    is_normal_function('pgsodium'::name, proname, proargtypes::regtype[]::name[])
 ])
   FROM pg_catalog.pg_proc
   WHERE pronamespace = 'pgsodium'::regnamespace
@@ -2767,7 +3169,13 @@ SELECT unnest(ARRAY[
       proargtypes::regtype[]::name[], 'postgres'::name,
       format('Function pgsodium.%s(%s) owner is %s',
              proname, pg_get_function_identity_arguments(oid), 'postgres')
-    )
+    ),
+    function_lang_is('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'c'::name ),
+    function_returns('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'bytea' ),
+    volatility_is('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'volatile'),
+    isnt_definer('pgsodium'::name, proname, proargtypes::regtype[]::name[]),
+    isnt_strict('pgsodium'::name, proname, proargtypes::regtype[]::name[]),
+    is_normal_function('pgsodium'::name, proname, proargtypes::regtype[]::name[])
 ])
   FROM pg_catalog.pg_proc
   WHERE pronamespace = 'pgsodium'::regnamespace
@@ -2796,7 +3204,13 @@ SELECT unnest(ARRAY[
       proargtypes::regtype[]::name[], 'postgres'::name,
       format('Function pgsodium.%s(%s) owner is %s',
              proname, pg_get_function_identity_arguments(oid), 'postgres')
-    )
+    ),
+    function_lang_is('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'c'::name ),
+    function_returns('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'boolean' ),
+    volatility_is('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'immutable'),
+    isnt_definer('pgsodium'::name, proname, proargtypes::regtype[]::name[]),
+    isnt_strict('pgsodium'::name, proname, proargtypes::regtype[]::name[]),
+    is_normal_function('pgsodium'::name, proname, proargtypes::regtype[]::name[])
 ])
   FROM pg_catalog.pg_proc
   WHERE pronamespace = 'pgsodium'::regnamespace
@@ -2825,7 +3239,13 @@ SELECT unnest(ARRAY[
       proargtypes::regtype[]::name[], 'postgres'::name,
       format('Function pgsodium.%s(%s) owner is %s',
              proname, pg_get_function_identity_arguments(oid), 'postgres')
-    )
+    ),
+    function_lang_is('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'c'::name ),
+    function_returns('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'bytea' ),
+    volatility_is('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'immutable'),
+    isnt_definer('pgsodium'::name, proname, proargtypes::regtype[]::name[]),
+    isnt_strict('pgsodium'::name, proname, proargtypes::regtype[]::name[]),
+    is_normal_function('pgsodium'::name, proname, proargtypes::regtype[]::name[])
 ])
   FROM pg_catalog.pg_proc
   WHERE pronamespace = 'pgsodium'::regnamespace
@@ -2854,7 +3274,13 @@ SELECT unnest(ARRAY[
       proargtypes::regtype[]::name[], 'postgres'::name,
       format('Function pgsodium.%s(%s) owner is %s',
              proname, pg_get_function_identity_arguments(oid), 'postgres')
-    )
+    ),
+    function_lang_is('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'c'::name ),
+    function_returns('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'bytea' ),
+    volatility_is('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'immutable'),
+    isnt_definer('pgsodium'::name, proname, proargtypes::regtype[]::name[]),
+    isnt_strict('pgsodium'::name, proname, proargtypes::regtype[]::name[]),
+    is_normal_function('pgsodium'::name, proname, proargtypes::regtype[]::name[])
 ])
   FROM pg_catalog.pg_proc
   WHERE pronamespace = 'pgsodium'::regnamespace
@@ -2883,7 +3309,13 @@ SELECT unnest(ARRAY[
       proargtypes::regtype[]::name[], 'pgsodium_keymaker'::name,
       format('Function pgsodium.%s(%s) owner is %s',
              proname, pg_get_function_identity_arguments(oid), 'pgsodium_keymaker')
-    )
+    ),
+    function_lang_is('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'plpgsql'::name ),
+    function_returns('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'bytea' ),
+    volatility_is('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'stable'),
+    is_definer('pgsodium'::name, proname, proargtypes::regtype[]::name[]),
+    isnt_strict('pgsodium'::name, proname, proargtypes::regtype[]::name[]),
+    is_normal_function('pgsodium'::name, proname, proargtypes::regtype[]::name[])
 ])
   FROM pg_catalog.pg_proc
   WHERE pronamespace = 'pgsodium'::regnamespace
@@ -2912,7 +3344,13 @@ SELECT unnest(ARRAY[
       proargtypes::regtype[]::name[], 'postgres'::name,
       format('Function pgsodium.%s(%s) owner is %s',
              proname, pg_get_function_identity_arguments(oid), 'postgres')
-    )
+    ),
+    function_lang_is('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'c'::name ),
+    function_returns('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'bytea' ),
+    volatility_is('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'volatile'),
+    isnt_definer('pgsodium'::name, proname, proargtypes::regtype[]::name[]),
+    isnt_strict('pgsodium'::name, proname, proargtypes::regtype[]::name[]),
+    is_normal_function('pgsodium'::name, proname, proargtypes::regtype[]::name[])
 ])
   FROM pg_catalog.pg_proc
   WHERE pronamespace = 'pgsodium'::regnamespace
@@ -2941,7 +3379,13 @@ SELECT unnest(ARRAY[
       proargtypes::regtype[]::name[], 'postgres'::name,
       format('Function pgsodium.%s(%s) owner is %s',
              proname, pg_get_function_identity_arguments(oid), 'postgres')
-    )
+    ),
+    function_lang_is('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'c'::name ),
+    function_returns('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'bytea' ),
+    volatility_is('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'volatile'),
+    isnt_definer('pgsodium'::name, proname, proargtypes::regtype[]::name[]),
+    isnt_strict('pgsodium'::name, proname, proargtypes::regtype[]::name[]),
+    is_normal_function('pgsodium'::name, proname, proargtypes::regtype[]::name[])
 ])
   FROM pg_catalog.pg_proc
   WHERE pronamespace = 'pgsodium'::regnamespace
@@ -2970,7 +3414,13 @@ SELECT unnest(ARRAY[
       proargtypes::regtype[]::name[], 'postgres'::name,
       format('Function pgsodium.%s(%s) owner is %s',
              proname, pg_get_function_identity_arguments(oid), 'postgres')
-    )
+    ),
+    function_lang_is('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'c'::name ),
+    function_returns('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'bytea' ),
+    volatility_is('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'immutable'),
+    isnt_definer('pgsodium'::name, proname, proargtypes::regtype[]::name[]),
+    isnt_strict('pgsodium'::name, proname, proargtypes::regtype[]::name[]),
+    is_normal_function('pgsodium'::name, proname, proargtypes::regtype[]::name[])
 ])
   FROM pg_catalog.pg_proc
   WHERE pronamespace = 'pgsodium'::regnamespace
@@ -2999,7 +3449,13 @@ SELECT unnest(ARRAY[
       proargtypes::regtype[]::name[], 'postgres'::name,
       format('Function pgsodium.%s(%s) owner is %s',
              proname, pg_get_function_identity_arguments(oid), 'postgres')
-    )
+    ),
+    function_lang_is('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'c'::name ),
+    function_returns('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'bytea' ),
+    volatility_is('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'immutable'),
+    isnt_definer('pgsodium'::name, proname, proargtypes::regtype[]::name[]),
+    isnt_strict('pgsodium'::name, proname, proargtypes::regtype[]::name[]),
+    is_normal_function('pgsodium'::name, proname, proargtypes::regtype[]::name[])
 ])
   FROM pg_catalog.pg_proc
   WHERE pronamespace = 'pgsodium'::regnamespace
@@ -3028,7 +3484,13 @@ SELECT unnest(ARRAY[
       proargtypes::regtype[]::name[], 'pgsodium_keymaker'::name,
       format('Function pgsodium.%s(%s) owner is %s',
              proname, pg_get_function_identity_arguments(oid), 'pgsodium_keymaker')
-    )
+    ),
+    function_lang_is('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'plpgsql'::name ),
+    function_returns('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'bytea' ),
+    volatility_is('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'stable'),
+    is_definer('pgsodium'::name, proname, proargtypes::regtype[]::name[]),
+    isnt_strict('pgsodium'::name, proname, proargtypes::regtype[]::name[]),
+    is_normal_function('pgsodium'::name, proname, proargtypes::regtype[]::name[])
 ])
   FROM pg_catalog.pg_proc
   WHERE pronamespace = 'pgsodium'::regnamespace
@@ -3057,7 +3519,13 @@ SELECT unnest(ARRAY[
       proargtypes::regtype[]::name[], 'postgres'::name,
       format('Function pgsodium.%s(%s) owner is %s',
              proname, pg_get_function_identity_arguments(oid), 'postgres')
-    )
+    ),
+    function_lang_is('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'c'::name ),
+    function_returns('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'bytea' ),
+    volatility_is('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'volatile'),
+    isnt_definer('pgsodium'::name, proname, proargtypes::regtype[]::name[]),
+    isnt_strict('pgsodium'::name, proname, proargtypes::regtype[]::name[]),
+    is_normal_function('pgsodium'::name, proname, proargtypes::regtype[]::name[])
 ])
   FROM pg_catalog.pg_proc
   WHERE pronamespace = 'pgsodium'::regnamespace
@@ -3086,7 +3554,13 @@ SELECT unnest(ARRAY[
       proargtypes::regtype[]::name[], 'postgres'::name,
       format('Function pgsodium.%s(%s) owner is %s',
              proname, pg_get_function_identity_arguments(oid), 'postgres')
-    )
+    ),
+    function_lang_is('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'c'::name ),
+    function_returns('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'bytea' ),
+    volatility_is('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'immutable'),
+    isnt_definer('pgsodium'::name, proname, proargtypes::regtype[]::name[]),
+    isnt_strict('pgsodium'::name, proname, proargtypes::regtype[]::name[]),
+    is_normal_function('pgsodium'::name, proname, proargtypes::regtype[]::name[])
 ])
   FROM pg_catalog.pg_proc
   WHERE pronamespace = 'pgsodium'::regnamespace
@@ -3115,7 +3589,13 @@ SELECT unnest(ARRAY[
       proargtypes::regtype[]::name[], 'postgres'::name,
       format('Function pgsodium.%s(%s) owner is %s',
              proname, pg_get_function_identity_arguments(oid), 'postgres')
-    )
+    ),
+    function_lang_is('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'c'::name ),
+    function_returns('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'bytea' ),
+    volatility_is('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'immutable'),
+    isnt_definer('pgsodium'::name, proname, proargtypes::regtype[]::name[]),
+    isnt_strict('pgsodium'::name, proname, proargtypes::regtype[]::name[]),
+    is_normal_function('pgsodium'::name, proname, proargtypes::regtype[]::name[])
 ])
   FROM pg_catalog.pg_proc
   WHERE pronamespace = 'pgsodium'::regnamespace
@@ -3144,7 +3624,13 @@ SELECT unnest(ARRAY[
       proargtypes::regtype[]::name[], 'pgsodium_keymaker'::name,
       format('Function pgsodium.%s(%s) owner is %s',
              proname, pg_get_function_identity_arguments(oid), 'pgsodium_keymaker')
-    )
+    ),
+    function_lang_is('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'plpgsql'::name ),
+    function_returns('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'bytea' ),
+    volatility_is('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'stable'),
+    is_definer('pgsodium'::name, proname, proargtypes::regtype[]::name[]),
+    isnt_strict('pgsodium'::name, proname, proargtypes::regtype[]::name[]),
+    is_normal_function('pgsodium'::name, proname, proargtypes::regtype[]::name[])
 ])
   FROM pg_catalog.pg_proc
   WHERE pronamespace = 'pgsodium'::regnamespace
@@ -3173,7 +3659,13 @@ SELECT unnest(ARRAY[
       proargtypes::regtype[]::name[], 'postgres'::name,
       format('Function pgsodium.%s(%s) owner is %s',
              proname, pg_get_function_identity_arguments(oid), 'postgres')
-    )
+    ),
+    function_lang_is('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'c'::name ),
+    function_returns('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'bytea' ),
+    volatility_is('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'volatile'),
+    isnt_definer('pgsodium'::name, proname, proargtypes::regtype[]::name[]),
+    isnt_strict('pgsodium'::name, proname, proargtypes::regtype[]::name[]),
+    is_normal_function('pgsodium'::name, proname, proargtypes::regtype[]::name[])
 ])
   FROM pg_catalog.pg_proc
   WHERE pronamespace = 'pgsodium'::regnamespace
@@ -3202,7 +3694,13 @@ SELECT unnest(ARRAY[
       proargtypes::regtype[]::name[], 'postgres'::name,
       format('Function pgsodium.%s(%s) owner is %s',
              proname, pg_get_function_identity_arguments(oid), 'postgres')
-    )
+    ),
+    function_lang_is('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'c'::name ),
+    function_returns('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'bytea' ),
+    volatility_is('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'immutable'),
+    isnt_definer('pgsodium'::name, proname, proargtypes::regtype[]::name[]),
+    isnt_strict('pgsodium'::name, proname, proargtypes::regtype[]::name[]),
+    is_normal_function('pgsodium'::name, proname, proargtypes::regtype[]::name[])
 ])
   FROM pg_catalog.pg_proc
   WHERE pronamespace = 'pgsodium'::regnamespace
@@ -3231,7 +3729,13 @@ SELECT unnest(ARRAY[
       proargtypes::regtype[]::name[], 'postgres'::name,
       format('Function pgsodium.%s(%s) owner is %s',
              proname, pg_get_function_identity_arguments(oid), 'postgres')
-    )
+    ),
+    function_lang_is('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'c'::name ),
+    function_returns('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'bytea' ),
+    volatility_is('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'immutable'),
+    isnt_definer('pgsodium'::name, proname, proargtypes::regtype[]::name[]),
+    isnt_strict('pgsodium'::name, proname, proargtypes::regtype[]::name[]),
+    is_normal_function('pgsodium'::name, proname, proargtypes::regtype[]::name[])
 ])
   FROM pg_catalog.pg_proc
   WHERE pronamespace = 'pgsodium'::regnamespace
@@ -3260,7 +3764,13 @@ SELECT unnest(ARRAY[
       proargtypes::regtype[]::name[], 'postgres'::name,
       format('Function pgsodium.%s(%s) owner is %s',
              proname, pg_get_function_identity_arguments(oid), 'postgres')
-    )
+    ),
+    function_lang_is('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'c'::name ),
+    function_returns('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'bytea' ),
+    volatility_is('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'immutable'),
+    isnt_definer('pgsodium'::name, proname, proargtypes::regtype[]::name[]),
+    isnt_strict('pgsodium'::name, proname, proargtypes::regtype[]::name[]),
+    is_normal_function('pgsodium'::name, proname, proargtypes::regtype[]::name[])
 ])
   FROM pg_catalog.pg_proc
   WHERE pronamespace = 'pgsodium'::regnamespace
@@ -3289,7 +3799,13 @@ SELECT unnest(ARRAY[
       proargtypes::regtype[]::name[], 'postgres'::name,
       format('Function pgsodium.%s(%s) owner is %s',
              proname, pg_get_function_identity_arguments(oid), 'postgres')
-    )
+    ),
+    function_lang_is('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'c'::name ),
+    function_returns('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'boolean' ),
+    volatility_is('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'immutable'),
+    isnt_definer('pgsodium'::name, proname, proargtypes::regtype[]::name[]),
+    isnt_strict('pgsodium'::name, proname, proargtypes::regtype[]::name[]),
+    is_normal_function('pgsodium'::name, proname, proargtypes::regtype[]::name[])
 ])
   FROM pg_catalog.pg_proc
   WHERE pronamespace = 'pgsodium'::regnamespace
@@ -3318,7 +3834,13 @@ SELECT unnest(ARRAY[
       proargtypes::regtype[]::name[], 'postgres'::name,
       format('Function pgsodium.%s(%s) owner is %s',
              proname, pg_get_function_identity_arguments(oid), 'postgres')
-    )
+    ),
+    function_lang_is('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'c'::name ),
+    function_returns('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'bytea' ),
+    volatility_is('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'immutable'),
+    isnt_definer('pgsodium'::name, proname, proargtypes::regtype[]::name[]),
+    is_strict('pgsodium'::name, proname, proargtypes::regtype[]::name[]),
+    is_normal_function('pgsodium'::name, proname, proargtypes::regtype[]::name[])
 ])
   FROM pg_catalog.pg_proc
   WHERE pronamespace = 'pgsodium'::regnamespace
@@ -3347,7 +3869,13 @@ SELECT unnest(ARRAY[
       proargtypes::regtype[]::name[], 'postgres'::name,
       format('Function pgsodium.%s(%s) owner is %s',
              proname, pg_get_function_identity_arguments(oid), 'postgres')
-    )
+    ),
+    function_lang_is('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'c'::name ),
+    function_returns('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'pgsodium.crypto_sign_keypair' ),
+    volatility_is('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'volatile'),
+    isnt_definer('pgsodium'::name, proname, proargtypes::regtype[]::name[]),
+    isnt_strict('pgsodium'::name, proname, proargtypes::regtype[]::name[]),
+    is_normal_function('pgsodium'::name, proname, proargtypes::regtype[]::name[])
 ])
   FROM pg_catalog.pg_proc
   WHERE pronamespace = 'pgsodium'::regnamespace
@@ -3376,7 +3904,13 @@ SELECT unnest(ARRAY[
       proargtypes::regtype[]::name[], 'postgres'::name,
       format('Function pgsodium.%s(%s) owner is %s',
              proname, pg_get_function_identity_arguments(oid), 'postgres')
-    )
+    ),
+    function_lang_is('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'c'::name ),
+    function_returns('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'bytea' ),
+    volatility_is('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'volatile'),
+    isnt_definer('pgsodium'::name, proname, proargtypes::regtype[]::name[]),
+    isnt_strict('pgsodium'::name, proname, proargtypes::regtype[]::name[]),
+    is_normal_function('pgsodium'::name, proname, proargtypes::regtype[]::name[])
 ])
   FROM pg_catalog.pg_proc
   WHERE pronamespace = 'pgsodium'::regnamespace
@@ -3405,7 +3939,13 @@ SELECT unnest(ARRAY[
       proargtypes::regtype[]::name[], 'postgres'::name,
       format('Function pgsodium.%s(%s) owner is %s',
              proname, pg_get_function_identity_arguments(oid), 'postgres')
-    )
+    ),
+    function_lang_is('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'c'::name ),
+    function_returns('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'bytea' ),
+    volatility_is('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'immutable'),
+    isnt_definer('pgsodium'::name, proname, proargtypes::regtype[]::name[]),
+    isnt_strict('pgsodium'::name, proname, proargtypes::regtype[]::name[]),
+    is_normal_function('pgsodium'::name, proname, proargtypes::regtype[]::name[])
 ])
   FROM pg_catalog.pg_proc
   WHERE pronamespace = 'pgsodium'::regnamespace
@@ -3434,7 +3974,13 @@ SELECT unnest(ARRAY[
       proargtypes::regtype[]::name[], 'postgres'::name,
       format('Function pgsodium.%s(%s) owner is %s',
              proname, pg_get_function_identity_arguments(oid), 'postgres')
-    )
+    ),
+    function_lang_is('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'c'::name ),
+    function_returns('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'pgsodium.crypto_sign_keypair' ),
+    volatility_is('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'immutable'),
+    isnt_definer('pgsodium'::name, proname, proargtypes::regtype[]::name[]),
+    isnt_strict('pgsodium'::name, proname, proargtypes::regtype[]::name[]),
+    is_normal_function('pgsodium'::name, proname, proargtypes::regtype[]::name[])
 ])
   FROM pg_catalog.pg_proc
   WHERE pronamespace = 'pgsodium'::regnamespace
@@ -3463,7 +4009,13 @@ SELECT unnest(ARRAY[
       proargtypes::regtype[]::name[], 'postgres'::name,
       format('Function pgsodium.%s(%s) owner is %s',
              proname, pg_get_function_identity_arguments(oid), 'postgres')
-    )
+    ),
+    function_lang_is('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'c'::name ),
+    function_returns('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'bytea' ),
+    volatility_is('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'immutable'),
+    isnt_definer('pgsodium'::name, proname, proargtypes::regtype[]::name[]),
+    isnt_strict('pgsodium'::name, proname, proargtypes::regtype[]::name[]),
+    is_normal_function('pgsodium'::name, proname, proargtypes::regtype[]::name[])
 ])
   FROM pg_catalog.pg_proc
   WHERE pronamespace = 'pgsodium'::regnamespace
@@ -3492,7 +4044,13 @@ SELECT unnest(ARRAY[
       proargtypes::regtype[]::name[], 'postgres'::name,
       format('Function pgsodium.%s(%s) owner is %s',
              proname, pg_get_function_identity_arguments(oid), 'postgres')
-    )
+    ),
+    function_lang_is('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'internal'::name ),
+    function_returns('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'bytea' ),
+    volatility_is('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'immutable'),
+    isnt_definer('pgsodium'::name, proname, proargtypes::regtype[]::name[]),
+    isnt_strict('pgsodium'::name, proname, proargtypes::regtype[]::name[]),
+    is_aggregate('pgsodium'::name, proname, proargtypes::regtype[]::name[])
 ])
   FROM pg_catalog.pg_proc
   WHERE pronamespace = 'pgsodium'::regnamespace
@@ -3521,7 +4079,13 @@ SELECT unnest(ARRAY[
       proargtypes::regtype[]::name[], 'postgres'::name,
       format('Function pgsodium.%s(%s) owner is %s',
              proname, pg_get_function_identity_arguments(oid), 'postgres')
-    )
+    ),
+    function_lang_is('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'internal'::name ),
+    function_returns('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'bytea' ),
+    volatility_is('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'immutable'),
+    isnt_definer('pgsodium'::name, proname, proargtypes::regtype[]::name[]),
+    isnt_strict('pgsodium'::name, proname, proargtypes::regtype[]::name[]),
+    is_aggregate('pgsodium'::name, proname, proargtypes::regtype[]::name[])
 ])
   FROM pg_catalog.pg_proc
   WHERE pronamespace = 'pgsodium'::regnamespace
@@ -3550,7 +4114,13 @@ SELECT unnest(ARRAY[
       proargtypes::regtype[]::name[], 'postgres'::name,
       format('Function pgsodium.%s(%s) owner is %s',
              proname, pg_get_function_identity_arguments(oid), 'postgres')
-    )
+    ),
+    function_lang_is('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'sql'::name ),
+    function_returns('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'bytea' ),
+    volatility_is('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'immutable'),
+    isnt_definer('pgsodium'::name, proname, proargtypes::regtype[]::name[]),
+    isnt_strict('pgsodium'::name, proname, proargtypes::regtype[]::name[]),
+    is_normal_function('pgsodium'::name, proname, proargtypes::regtype[]::name[])
 ])
   FROM pg_catalog.pg_proc
   WHERE pronamespace = 'pgsodium'::regnamespace
@@ -3579,7 +4149,13 @@ SELECT unnest(ARRAY[
       proargtypes::regtype[]::name[], 'postgres'::name,
       format('Function pgsodium.%s(%s) owner is %s',
              proname, pg_get_function_identity_arguments(oid), 'postgres')
-    )
+    ),
+    function_lang_is('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'sql'::name ),
+    function_returns('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'bytea' ),
+    volatility_is('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'immutable'),
+    isnt_definer('pgsodium'::name, proname, proargtypes::regtype[]::name[]),
+    isnt_strict('pgsodium'::name, proname, proargtypes::regtype[]::name[]),
+    is_normal_function('pgsodium'::name, proname, proargtypes::regtype[]::name[])
 ])
   FROM pg_catalog.pg_proc
   WHERE pronamespace = 'pgsodium'::regnamespace
@@ -3608,7 +4184,13 @@ SELECT unnest(ARRAY[
       proargtypes::regtype[]::name[], 'postgres'::name,
       format('Function pgsodium.%s(%s) owner is %s',
              proname, pg_get_function_identity_arguments(oid), 'postgres')
-    )
+    ),
+    function_lang_is('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'c'::name ),
+    function_returns('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'boolean' ),
+    volatility_is('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'immutable'),
+    isnt_definer('pgsodium'::name, proname, proargtypes::regtype[]::name[]),
+    isnt_strict('pgsodium'::name, proname, proargtypes::regtype[]::name[]),
+    is_normal_function('pgsodium'::name, proname, proargtypes::regtype[]::name[])
 ])
   FROM pg_catalog.pg_proc
   WHERE pronamespace = 'pgsodium'::regnamespace
@@ -3637,7 +4219,13 @@ SELECT unnest(ARRAY[
       proargtypes::regtype[]::name[], 'postgres'::name,
       format('Function pgsodium.%s(%s) owner is %s',
              proname, pg_get_function_identity_arguments(oid), 'postgres')
-    )
+    ),
+    function_lang_is('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'c'::name ),
+    function_returns('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'pgsodium.crypto_signcrypt_keypair' ),
+    volatility_is('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'volatile'),
+    isnt_definer('pgsodium'::name, proname, proargtypes::regtype[]::name[]),
+    isnt_strict('pgsodium'::name, proname, proargtypes::regtype[]::name[]),
+    is_normal_function('pgsodium'::name, proname, proargtypes::regtype[]::name[])
 ])
   FROM pg_catalog.pg_proc
   WHERE pronamespace = 'pgsodium'::regnamespace
@@ -3666,7 +4254,13 @@ SELECT unnest(ARRAY[
       proargtypes::regtype[]::name[], 'postgres'::name,
       format('Function pgsodium.%s(%s) owner is %s',
              proname, pg_get_function_identity_arguments(oid), 'postgres')
-    )
+    ),
+    function_lang_is('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'c'::name ),
+    function_returns('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'bytea' ),
+    volatility_is('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'volatile'),
+    isnt_definer('pgsodium'::name, proname, proargtypes::regtype[]::name[]),
+    isnt_strict('pgsodium'::name, proname, proargtypes::regtype[]::name[]),
+    is_normal_function('pgsodium'::name, proname, proargtypes::regtype[]::name[])
 ])
   FROM pg_catalog.pg_proc
   WHERE pronamespace = 'pgsodium'::regnamespace
@@ -3695,7 +4289,13 @@ SELECT unnest(ARRAY[
       proargtypes::regtype[]::name[], 'postgres'::name,
       format('Function pgsodium.%s(%s) owner is %s',
              proname, pg_get_function_identity_arguments(oid), 'postgres')
-    )
+    ),
+    function_lang_is('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'c'::name ),
+    function_returns('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'pgsodium.crypto_signcrypt_state_key' ),
+    volatility_is('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'volatile'),
+    isnt_definer('pgsodium'::name, proname, proargtypes::regtype[]::name[]),
+    isnt_strict('pgsodium'::name, proname, proargtypes::regtype[]::name[]),
+    is_normal_function('pgsodium'::name, proname, proargtypes::regtype[]::name[])
 ])
   FROM pg_catalog.pg_proc
   WHERE pronamespace = 'pgsodium'::regnamespace
@@ -3724,7 +4324,13 @@ SELECT unnest(ARRAY[
       proargtypes::regtype[]::name[], 'postgres'::name,
       format('Function pgsodium.%s(%s) owner is %s',
              proname, pg_get_function_identity_arguments(oid), 'postgres')
-    )
+    ),
+    function_lang_is('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'c'::name ),
+    function_returns('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'boolean' ),
+    volatility_is('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'volatile'),
+    isnt_definer('pgsodium'::name, proname, proargtypes::regtype[]::name[]),
+    isnt_strict('pgsodium'::name, proname, proargtypes::regtype[]::name[]),
+    is_normal_function('pgsodium'::name, proname, proargtypes::regtype[]::name[])
 ])
   FROM pg_catalog.pg_proc
   WHERE pronamespace = 'pgsodium'::regnamespace
@@ -3753,7 +4359,13 @@ SELECT unnest(ARRAY[
       proargtypes::regtype[]::name[], 'postgres'::name,
       format('Function pgsodium.%s(%s) owner is %s',
              proname, pg_get_function_identity_arguments(oid), 'postgres')
-    )
+    ),
+    function_lang_is('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'c'::name ),
+    function_returns('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'pgsodium.crypto_signcrypt_state_key' ),
+    volatility_is('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'volatile'),
+    isnt_definer('pgsodium'::name, proname, proargtypes::regtype[]::name[]),
+    isnt_strict('pgsodium'::name, proname, proargtypes::regtype[]::name[]),
+    is_normal_function('pgsodium'::name, proname, proargtypes::regtype[]::name[])
 ])
   FROM pg_catalog.pg_proc
   WHERE pronamespace = 'pgsodium'::regnamespace
@@ -3782,7 +4394,13 @@ SELECT unnest(ARRAY[
       proargtypes::regtype[]::name[], 'postgres'::name,
       format('Function pgsodium.%s(%s) owner is %s',
              proname, pg_get_function_identity_arguments(oid), 'postgres')
-    )
+    ),
+    function_lang_is('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'c'::name ),
+    function_returns('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'boolean' ),
+    volatility_is('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'volatile'),
+    isnt_definer('pgsodium'::name, proname, proargtypes::regtype[]::name[]),
+    isnt_strict('pgsodium'::name, proname, proargtypes::regtype[]::name[]),
+    is_normal_function('pgsodium'::name, proname, proargtypes::regtype[]::name[])
 ])
   FROM pg_catalog.pg_proc
   WHERE pronamespace = 'pgsodium'::regnamespace
@@ -3811,7 +4429,13 @@ SELECT unnest(ARRAY[
       proargtypes::regtype[]::name[], 'postgres'::name,
       format('Function pgsodium.%s(%s) owner is %s',
              proname, pg_get_function_identity_arguments(oid), 'postgres')
-    )
+    ),
+    function_lang_is('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'c'::name ),
+    function_returns('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'bytea' ),
+    volatility_is('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'immutable'),
+    isnt_definer('pgsodium'::name, proname, proargtypes::regtype[]::name[]),
+    isnt_strict('pgsodium'::name, proname, proargtypes::regtype[]::name[]),
+    is_normal_function('pgsodium'::name, proname, proargtypes::regtype[]::name[])
 ])
   FROM pg_catalog.pg_proc
   WHERE pronamespace = 'pgsodium'::regnamespace
@@ -3840,7 +4464,13 @@ SELECT unnest(ARRAY[
       proargtypes::regtype[]::name[], 'postgres'::name,
       format('Function pgsodium.%s(%s) owner is %s',
              proname, pg_get_function_identity_arguments(oid), 'postgres')
-    )
+    ),
+    function_lang_is('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'c'::name ),
+    function_returns('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'bytea' ),
+    volatility_is('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'immutable'),
+    isnt_definer('pgsodium'::name, proname, proargtypes::regtype[]::name[]),
+    isnt_strict('pgsodium'::name, proname, proargtypes::regtype[]::name[]),
+    is_normal_function('pgsodium'::name, proname, proargtypes::regtype[]::name[])
 ])
   FROM pg_catalog.pg_proc
   WHERE pronamespace = 'pgsodium'::regnamespace
@@ -3869,7 +4499,13 @@ SELECT unnest(ARRAY[
       proargtypes::regtype[]::name[], 'postgres'::name,
       format('Function pgsodium.%s(%s) owner is %s',
              proname, pg_get_function_identity_arguments(oid), 'postgres')
-    )
+    ),
+    function_lang_is('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'c'::name ),
+    function_returns('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'bytea' ),
+    volatility_is('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'volatile'),
+    isnt_definer('pgsodium'::name, proname, proargtypes::regtype[]::name[]),
+    isnt_strict('pgsodium'::name, proname, proargtypes::regtype[]::name[]),
+    is_normal_function('pgsodium'::name, proname, proargtypes::regtype[]::name[])
 ])
   FROM pg_catalog.pg_proc
   WHERE pronamespace = 'pgsodium'::regnamespace
@@ -3898,7 +4534,13 @@ SELECT unnest(ARRAY[
       proargtypes::regtype[]::name[], 'postgres'::name,
       format('Function pgsodium.%s(%s) owner is %s',
              proname, pg_get_function_identity_arguments(oid), 'postgres')
-    )
+    ),
+    function_lang_is('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'c'::name ),
+    function_returns('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'bytea' ),
+    volatility_is('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'volatile'),
+    isnt_definer('pgsodium'::name, proname, proargtypes::regtype[]::name[]),
+    isnt_strict('pgsodium'::name, proname, proargtypes::regtype[]::name[]),
+    is_normal_function('pgsodium'::name, proname, proargtypes::regtype[]::name[])
 ])
   FROM pg_catalog.pg_proc
   WHERE pronamespace = 'pgsodium'::regnamespace
@@ -3927,7 +4569,13 @@ SELECT unnest(ARRAY[
       proargtypes::regtype[]::name[], 'postgres'::name,
       format('Function pgsodium.%s(%s) owner is %s',
              proname, pg_get_function_identity_arguments(oid), 'postgres')
-    )
+    ),
+    function_lang_is('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'c'::name ),
+    function_returns('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'bytea' ),
+    volatility_is('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'immutable'),
+    isnt_definer('pgsodium'::name, proname, proargtypes::regtype[]::name[]),
+    isnt_strict('pgsodium'::name, proname, proargtypes::regtype[]::name[]),
+    is_normal_function('pgsodium'::name, proname, proargtypes::regtype[]::name[])
 ])
   FROM pg_catalog.pg_proc
   WHERE pronamespace = 'pgsodium'::regnamespace
@@ -3956,7 +4604,13 @@ SELECT unnest(ARRAY[
       proargtypes::regtype[]::name[], 'postgres'::name,
       format('Function pgsodium.%s(%s) owner is %s',
              proname, pg_get_function_identity_arguments(oid), 'postgres')
-    )
+    ),
+    function_lang_is('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'c'::name ),
+    function_returns('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'bytea' ),
+    volatility_is('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'immutable'),
+    isnt_definer('pgsodium'::name, proname, proargtypes::regtype[]::name[]),
+    isnt_strict('pgsodium'::name, proname, proargtypes::regtype[]::name[]),
+    is_normal_function('pgsodium'::name, proname, proargtypes::regtype[]::name[])
 ])
   FROM pg_catalog.pg_proc
   WHERE pronamespace = 'pgsodium'::regnamespace
@@ -3985,7 +4639,13 @@ SELECT unnest(ARRAY[
       proargtypes::regtype[]::name[], 'postgres'::name,
       format('Function pgsodium.%s(%s) owner is %s',
              proname, pg_get_function_identity_arguments(oid), 'postgres')
-    )
+    ),
+    function_lang_is('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'c'::name ),
+    function_returns('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'bytea' ),
+    volatility_is('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'immutable'),
+    isnt_definer('pgsodium'::name, proname, proargtypes::regtype[]::name[]),
+    isnt_strict('pgsodium'::name, proname, proargtypes::regtype[]::name[]),
+    is_normal_function('pgsodium'::name, proname, proargtypes::regtype[]::name[])
 ])
   FROM pg_catalog.pg_proc
   WHERE pronamespace = 'pgsodium'::regnamespace
@@ -4014,7 +4674,13 @@ SELECT unnest(ARRAY[
       proargtypes::regtype[]::name[], 'postgres'::name,
       format('Function pgsodium.%s(%s) owner is %s',
              proname, pg_get_function_identity_arguments(oid), 'postgres')
-    )
+    ),
+    function_lang_is('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'c'::name ),
+    function_returns('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'bytea' ),
+    volatility_is('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'immutable'),
+    isnt_definer('pgsodium'::name, proname, proargtypes::regtype[]::name[]),
+    isnt_strict('pgsodium'::name, proname, proargtypes::regtype[]::name[]),
+    is_normal_function('pgsodium'::name, proname, proargtypes::regtype[]::name[])
 ])
   FROM pg_catalog.pg_proc
   WHERE pronamespace = 'pgsodium'::regnamespace
@@ -4043,7 +4709,13 @@ SELECT unnest(ARRAY[
       proargtypes::regtype[]::name[], 'postgres'::name,
       format('Function pgsodium.%s(%s) owner is %s',
              proname, pg_get_function_identity_arguments(oid), 'postgres')
-    )
+    ),
+    function_lang_is('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'plpgsql'::name ),
+    function_returns('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'text' ),
+    volatility_is('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'volatile'),
+    isnt_definer('pgsodium'::name, proname, proargtypes::regtype[]::name[]),
+    isnt_strict('pgsodium'::name, proname, proargtypes::regtype[]::name[]),
+    is_normal_function('pgsodium'::name, proname, proargtypes::regtype[]::name[])
 ])
   FROM pg_catalog.pg_proc
   WHERE pronamespace = 'pgsodium'::regnamespace
@@ -4072,7 +4744,13 @@ SELECT unnest(ARRAY[
       proargtypes::regtype[]::name[], 'postgres'::name,
       format('Function pgsodium.%s(%s) owner is %s',
              proname, pg_get_function_identity_arguments(oid), 'postgres')
-    )
+    ),
+    function_lang_is('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'c'::name ),
+    function_returns('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'bytea' ),
+    volatility_is('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'volatile'),
+    isnt_definer('pgsodium'::name, proname, proargtypes::regtype[]::name[]),
+    isnt_strict('pgsodium'::name, proname, proargtypes::regtype[]::name[]),
+    is_normal_function('pgsodium'::name, proname, proargtypes::regtype[]::name[])
 ])
   FROM pg_catalog.pg_proc
   WHERE pronamespace = 'pgsodium'::regnamespace
@@ -4101,7 +4779,13 @@ SELECT unnest(ARRAY[
       proargtypes::regtype[]::name[], 'postgres'::name,
       format('Function pgsodium.%s(%s) owner is %s',
              proname, pg_get_function_identity_arguments(oid), 'postgres')
-    )
+    ),
+    function_lang_is('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'sql'::name ),
+    function_returns('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'void' ),
+    volatility_is('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'volatile'),
+    is_definer('pgsodium'::name, proname, proargtypes::regtype[]::name[]),
+    isnt_strict('pgsodium'::name, proname, proargtypes::regtype[]::name[]),
+    is_normal_function('pgsodium'::name, proname, proargtypes::regtype[]::name[])
 ])
   FROM pg_catalog.pg_proc
   WHERE pronamespace = 'pgsodium'::regnamespace
@@ -4130,7 +4814,13 @@ SELECT unnest(ARRAY[
       proargtypes::regtype[]::name[], 'postgres'::name,
       format('Function pgsodium.%s(%s) owner is %s',
              proname, pg_get_function_identity_arguments(oid), 'postgres')
-    )
+    ),
+    function_lang_is('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'sql'::name ),
+    function_returns('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'void' ),
+    volatility_is('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'volatile'),
+    is_definer('pgsodium'::name, proname, proargtypes::regtype[]::name[]),
+    isnt_strict('pgsodium'::name, proname, proargtypes::regtype[]::name[]),
+    is_normal_function('pgsodium'::name, proname, proargtypes::regtype[]::name[])
 ])
   FROM pg_catalog.pg_proc
   WHERE pronamespace = 'pgsodium'::regnamespace
@@ -4159,7 +4849,13 @@ SELECT unnest(ARRAY[
       proargtypes::regtype[]::name[], 'postgres'::name,
       format('Function pgsodium.%s(%s) owner is %s',
              proname, pg_get_function_identity_arguments(oid), 'postgres')
-    )
+    ),
+    function_lang_is('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'plpgsql'::name ),
+    function_returns('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'text' ),
+    volatility_is('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'volatile'),
+    isnt_definer('pgsodium'::name, proname, proargtypes::regtype[]::name[]),
+    isnt_strict('pgsodium'::name, proname, proargtypes::regtype[]::name[]),
+    is_normal_function('pgsodium'::name, proname, proargtypes::regtype[]::name[])
 ])
   FROM pg_catalog.pg_proc
   WHERE pronamespace = 'pgsodium'::regnamespace
@@ -4188,7 +4884,13 @@ SELECT unnest(ARRAY[
       proargtypes::regtype[]::name[], 'postgres'::name,
       format('Function pgsodium.%s(%s) owner is %s',
              proname, pg_get_function_identity_arguments(oid), 'postgres')
-    )
+    ),
+    function_lang_is('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'plpgsql'::name ),
+    function_returns('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'text' ),
+    volatility_is('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'volatile'),
+    isnt_definer('pgsodium'::name, proname, proargtypes::regtype[]::name[]),
+    isnt_strict('pgsodium'::name, proname, proargtypes::regtype[]::name[]),
+    is_normal_function('pgsodium'::name, proname, proargtypes::regtype[]::name[])
 ])
   FROM pg_catalog.pg_proc
   WHERE pronamespace = 'pgsodium'::regnamespace
@@ -4217,7 +4919,13 @@ SELECT unnest(ARRAY[
       proargtypes::regtype[]::name[], 'postgres'::name,
       format('Function pgsodium.%s(%s) owner is %s',
              proname, pg_get_function_identity_arguments(oid), 'postgres')
-    )
+    ),
+    function_lang_is('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'sql'::name ),
+    function_returns('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'pgsodium.valid_key' ),
+    volatility_is('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'volatile'),
+    is_definer('pgsodium'::name, proname, proargtypes::regtype[]::name[]),
+    isnt_strict('pgsodium'::name, proname, proargtypes::regtype[]::name[]),
+    is_normal_function('pgsodium'::name, proname, proargtypes::regtype[]::name[])
 ])
   FROM pg_catalog.pg_proc
   WHERE pronamespace = 'pgsodium'::regnamespace
@@ -4246,7 +4954,13 @@ SELECT unnest(ARRAY[
       proargtypes::regtype[]::name[], 'postgres'::name,
       format('Function pgsodium.%s(%s) owner is %s',
              proname, pg_get_function_identity_arguments(oid), 'postgres')
-    )
+    ),
+    function_lang_is('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'sql'::name ),
+    function_returns('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'pgsodium.valid_key' ),
+    volatility_is('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'volatile'),
+    is_definer('pgsodium'::name, proname, proargtypes::regtype[]::name[]),
+    isnt_strict('pgsodium'::name, proname, proargtypes::regtype[]::name[]),
+    is_normal_function('pgsodium'::name, proname, proargtypes::regtype[]::name[])
 ])
   FROM pg_catalog.pg_proc
   WHERE pronamespace = 'pgsodium'::regnamespace
@@ -4275,7 +4989,13 @@ SELECT unnest(ARRAY[
       proargtypes::regtype[]::name[], 'postgres'::name,
       format('Function pgsodium.%s(%s) owner is %s',
              proname, pg_get_function_identity_arguments(oid), 'postgres')
-    )
+    ),
+    function_lang_is('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'sql'::name ),
+    function_returns('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'setof pgsodium.valid_key' ),
+    volatility_is('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'volatile'),
+    is_definer('pgsodium'::name, proname, proargtypes::regtype[]::name[]),
+    isnt_strict('pgsodium'::name, proname, proargtypes::regtype[]::name[]),
+    is_normal_function('pgsodium'::name, proname, proargtypes::regtype[]::name[])
 ])
   FROM pg_catalog.pg_proc
   WHERE pronamespace = 'pgsodium'::regnamespace
@@ -4304,7 +5024,13 @@ SELECT unnest(ARRAY[
       proargtypes::regtype[]::name[], 'postgres'::name,
       format('Function pgsodium.%s(%s) owner is %s',
              proname, pg_get_function_identity_arguments(oid), 'postgres')
-    )
+    ),
+    function_lang_is('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'sql'::name ),
+    function_returns('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'boolean' ),
+    volatility_is('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'volatile'),
+    isnt_definer('pgsodium'::name, proname, proargtypes::regtype[]::name[]),
+    isnt_strict('pgsodium'::name, proname, proargtypes::regtype[]::name[]),
+    is_normal_function('pgsodium'::name, proname, proargtypes::regtype[]::name[])
 ])
   FROM pg_catalog.pg_proc
   WHERE pronamespace = 'pgsodium'::regnamespace
@@ -4333,7 +5059,13 @@ SELECT unnest(ARRAY[
       proargtypes::regtype[]::name[], 'postgres'::name,
       format('Function pgsodium.%s(%s) owner is %s',
              proname, pg_get_function_identity_arguments(oid), 'postgres')
-    )
+    ),
+    function_lang_is('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'plpgsql'::name ),
+    function_returns('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'trigger' ),
+    volatility_is('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'volatile'),
+    isnt_definer('pgsodium'::name, proname, proargtypes::regtype[]::name[]),
+    isnt_strict('pgsodium'::name, proname, proargtypes::regtype[]::name[]),
+    is_normal_function('pgsodium'::name, proname, proargtypes::regtype[]::name[])
 ])
   FROM pg_catalog.pg_proc
   WHERE pronamespace = 'pgsodium'::regnamespace
@@ -4362,7 +5094,13 @@ SELECT unnest(ARRAY[
       proargtypes::regtype[]::name[], 'postgres'::name,
       format('Function pgsodium.%s(%s) owner is %s',
              proname, pg_get_function_identity_arguments(oid), 'postgres')
-    )
+    ),
+    function_lang_is('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'sql'::name ),
+    function_returns('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'setof record' ),
+    volatility_is('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'volatile'),
+    isnt_definer('pgsodium'::name, proname, proargtypes::regtype[]::name[]),
+    isnt_strict('pgsodium'::name, proname, proargtypes::regtype[]::name[]),
+    is_normal_function('pgsodium'::name, proname, proargtypes::regtype[]::name[])
 ])
   FROM pg_catalog.pg_proc
   WHERE pronamespace = 'pgsodium'::regnamespace
@@ -4391,7 +5129,13 @@ SELECT unnest(ARRAY[
       proargtypes::regtype[]::name[], 'postgres'::name,
       format('Function pgsodium.%s(%s) owner is %s',
              proname, pg_get_function_identity_arguments(oid), 'postgres')
-    )
+    ),
+    function_lang_is('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'plpgsql'::name ),
+    function_returns('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'void' ),
+    volatility_is('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'volatile'),
+    is_definer('pgsodium'::name, proname, proargtypes::regtype[]::name[]),
+    isnt_strict('pgsodium'::name, proname, proargtypes::regtype[]::name[]),
+    is_normal_function('pgsodium'::name, proname, proargtypes::regtype[]::name[])
 ])
   FROM pg_catalog.pg_proc
   WHERE pronamespace = 'pgsodium'::regnamespace
@@ -4420,7 +5164,13 @@ SELECT unnest(ARRAY[
       proargtypes::regtype[]::name[], 'postgres'::name,
       format('Function pgsodium.%s(%s) owner is %s',
              proname, pg_get_function_identity_arguments(oid), 'postgres')
-    )
+    ),
+    function_lang_is('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'c'::name ),
+    function_returns('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'bytea' ),
+    volatility_is('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'volatile'),
+    isnt_definer('pgsodium'::name, proname, proargtypes::regtype[]::name[]),
+    isnt_strict('pgsodium'::name, proname, proargtypes::regtype[]::name[]),
+    is_normal_function('pgsodium'::name, proname, proargtypes::regtype[]::name[])
 ])
   FROM pg_catalog.pg_proc
   WHERE pronamespace = 'pgsodium'::regnamespace
@@ -4449,7 +5199,13 @@ SELECT unnest(ARRAY[
       proargtypes::regtype[]::name[], 'postgres'::name,
       format('Function pgsodium.%s(%s) owner is %s',
              proname, pg_get_function_identity_arguments(oid), 'postgres')
-    )
+    ),
+    function_lang_is('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'sql'::name ),
+    function_returns('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'text' ),
+    volatility_is('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'volatile'),
+    isnt_definer('pgsodium'::name, proname, proargtypes::regtype[]::name[]),
+    isnt_strict('pgsodium'::name, proname, proargtypes::regtype[]::name[]),
+    is_normal_function('pgsodium'::name, proname, proargtypes::regtype[]::name[])
 ])
   FROM pg_catalog.pg_proc
   WHERE pronamespace = 'pgsodium'::regnamespace
@@ -4478,7 +5234,13 @@ SELECT unnest(ARRAY[
       proargtypes::regtype[]::name[], 'postgres'::name,
       format('Function pgsodium.%s(%s) owner is %s',
              proname, pg_get_function_identity_arguments(oid), 'postgres')
-    )
+    ),
+    function_lang_is('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'c'::name ),
+    function_returns('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'bytea' ),
+    volatility_is('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'volatile'),
+    isnt_definer('pgsodium'::name, proname, proargtypes::regtype[]::name[]),
+    isnt_strict('pgsodium'::name, proname, proargtypes::regtype[]::name[]),
+    is_normal_function('pgsodium'::name, proname, proargtypes::regtype[]::name[])
 ])
   FROM pg_catalog.pg_proc
   WHERE pronamespace = 'pgsodium'::regnamespace
@@ -4507,7 +5269,13 @@ SELECT unnest(ARRAY[
       proargtypes::regtype[]::name[], 'postgres'::name,
       format('Function pgsodium.%s(%s) owner is %s',
              proname, pg_get_function_identity_arguments(oid), 'postgres')
-    )
+    ),
+    function_lang_is('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'c'::name ),
+    function_returns('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'bytea' ),
+    volatility_is('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'immutable'),
+    isnt_definer('pgsodium'::name, proname, proargtypes::regtype[]::name[]),
+    isnt_strict('pgsodium'::name, proname, proargtypes::regtype[]::name[]),
+    is_normal_function('pgsodium'::name, proname, proargtypes::regtype[]::name[])
 ])
   FROM pg_catalog.pg_proc
   WHERE pronamespace = 'pgsodium'::regnamespace
@@ -4542,7 +5310,13 @@ SELECT unnest(ARRAY[
       proargtypes::regtype[]::name[], 'postgres'::name,
       format('Function pgsodium.%s(%s) owner is %s',
              proname, pg_get_function_identity_arguments(oid), 'postgres')
-    )
+    ),
+    function_lang_is('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'c'::name ),
+    function_returns('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'bytea' ),
+    volatility_is('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'volatile'),
+    isnt_definer('pgsodium'::name, proname, proargtypes::regtype[]::name[]),
+    isnt_strict('pgsodium'::name, proname, proargtypes::regtype[]::name[]),
+    is_normal_function('pgsodium'::name, proname, proargtypes::regtype[]::name[])
 ])
   FROM pg_catalog.pg_proc
   WHERE pronamespace = 'pgsodium'::regnamespace
@@ -4571,7 +5345,13 @@ SELECT unnest(ARRAY[
       proargtypes::regtype[]::name[], 'postgres'::name,
       format('Function pgsodium.%s(%s) owner is %s',
              proname, pg_get_function_identity_arguments(oid), 'postgres')
-    )
+    ),
+    function_lang_is('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'c'::name ),
+    function_returns('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'integer' ),
+    volatility_is('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'volatile'),
+    isnt_definer('pgsodium'::name, proname, proargtypes::regtype[]::name[]),
+    isnt_strict('pgsodium'::name, proname, proargtypes::regtype[]::name[]),
+    is_normal_function('pgsodium'::name, proname, proargtypes::regtype[]::name[])
 ])
   FROM pg_catalog.pg_proc
   WHERE pronamespace = 'pgsodium'::regnamespace
@@ -4600,7 +5380,13 @@ SELECT unnest(ARRAY[
       proargtypes::regtype[]::name[], 'postgres'::name,
       format('Function pgsodium.%s(%s) owner is %s',
              proname, pg_get_function_identity_arguments(oid), 'postgres')
-    )
+    ),
+    function_lang_is('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'c'::name ),
+    function_returns('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'integer' ),
+    volatility_is('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'volatile'),
+    isnt_definer('pgsodium'::name, proname, proargtypes::regtype[]::name[]),
+    isnt_strict('pgsodium'::name, proname, proargtypes::regtype[]::name[]),
+    is_normal_function('pgsodium'::name, proname, proargtypes::regtype[]::name[])
 ])
   FROM pg_catalog.pg_proc
   WHERE pronamespace = 'pgsodium'::regnamespace
@@ -4629,7 +5415,13 @@ SELECT unnest(ARRAY[
       proargtypes::regtype[]::name[], 'postgres'::name,
       format('Function pgsodium.%s(%s) owner is %s',
              proname, pg_get_function_identity_arguments(oid), 'postgres')
-    )
+    ),
+    function_lang_is('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'c'::name ),
+    function_returns('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'bytea' ),
+    volatility_is('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'immutable'),
+    isnt_definer('pgsodium'::name, proname, proargtypes::regtype[]::name[]),
+    isnt_strict('pgsodium'::name, proname, proargtypes::regtype[]::name[]),
+    is_normal_function('pgsodium'::name, proname, proargtypes::regtype[]::name[])
 ])
   FROM pg_catalog.pg_proc
   WHERE pronamespace = 'pgsodium'::regnamespace
@@ -4658,7 +5450,13 @@ SELECT unnest(ARRAY[
       proargtypes::regtype[]::name[], 'postgres'::name,
       format('Function pgsodium.%s(%s) owner is %s',
              proname, pg_get_function_identity_arguments(oid), 'postgres')
-    )
+    ),
+    function_lang_is('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'c'::name ),
+    function_returns('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'text' ),
+    volatility_is('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'immutable'),
+    isnt_definer('pgsodium'::name, proname, proargtypes::regtype[]::name[]),
+    isnt_strict('pgsodium'::name, proname, proargtypes::regtype[]::name[]),
+    is_normal_function('pgsodium'::name, proname, proargtypes::regtype[]::name[])
 ])
   FROM pg_catalog.pg_proc
   WHERE pronamespace = 'pgsodium'::regnamespace
@@ -4687,7 +5485,13 @@ SELECT unnest(ARRAY[
       proargtypes::regtype[]::name[], 'postgres'::name,
       format('Function pgsodium.%s(%s) owner is %s',
              proname, pg_get_function_identity_arguments(oid), 'postgres')
-    )
+    ),
+    function_lang_is('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'plpgsql'::name ),
+    function_returns('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'event_trigger' ),
+    volatility_is('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'volatile'),
+    isnt_definer('pgsodium'::name, proname, proargtypes::regtype[]::name[]),
+    isnt_strict('pgsodium'::name, proname, proargtypes::regtype[]::name[]),
+    is_normal_function('pgsodium'::name, proname, proargtypes::regtype[]::name[])
 ])
   FROM pg_catalog.pg_proc
   WHERE pronamespace = 'pgsodium'::regnamespace
@@ -4716,7 +5520,13 @@ SELECT unnest(ARRAY[
       proargtypes::regtype[]::name[], 'postgres'::name,
       format('Function pgsodium.%s(%s) owner is %s',
              proname, pg_get_function_identity_arguments(oid), 'postgres')
-    )
+    ),
+    function_lang_is('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'plpgsql'::name ),
+    function_returns('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'void' ),
+    volatility_is('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'volatile'),
+    is_definer('pgsodium'::name, proname, proargtypes::regtype[]::name[]),
+    isnt_strict('pgsodium'::name, proname, proargtypes::regtype[]::name[]),
+    is_normal_function('pgsodium'::name, proname, proargtypes::regtype[]::name[])
 ])
   FROM pg_catalog.pg_proc
   WHERE pronamespace = 'pgsodium'::regnamespace
@@ -4745,7 +5555,13 @@ SELECT unnest(ARRAY[
       proargtypes::regtype[]::name[], 'postgres'::name,
       format('Function pgsodium.%s(%s) owner is %s',
              proname, pg_get_function_identity_arguments(oid), 'postgres')
-    )
+    ),
+    function_lang_is('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'plpgsql'::name ),
+    function_returns('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'void' ),
+    volatility_is('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'volatile'),
+    isnt_definer('pgsodium'::name, proname, proargtypes::regtype[]::name[]),
+    isnt_strict('pgsodium'::name, proname, proargtypes::regtype[]::name[]),
+    is_normal_function('pgsodium'::name, proname, proargtypes::regtype[]::name[])
 ])
   FROM pg_catalog.pg_proc
   WHERE pronamespace = 'pgsodium'::regnamespace
@@ -4774,7 +5590,13 @@ SELECT unnest(ARRAY[
       proargtypes::regtype[]::name[], 'postgres'::name,
       format('Function pgsodium.%s(%s) owner is %s',
              proname, pg_get_function_identity_arguments(oid), 'postgres')
-    )
+    ),
+    function_lang_is('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'sql'::name ),
+    function_returns('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'text' ),
+    volatility_is('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'volatile'),
+    isnt_definer('pgsodium'::name, proname, proargtypes::regtype[]::name[]),
+    isnt_strict('pgsodium'::name, proname, proargtypes::regtype[]::name[]),
+    is_normal_function('pgsodium'::name, proname, proargtypes::regtype[]::name[])
 ])
   FROM pg_catalog.pg_proc
   WHERE pronamespace = 'pgsodium'::regnamespace
