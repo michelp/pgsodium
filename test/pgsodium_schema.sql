@@ -324,8 +324,8 @@ SELECT table_owner_is('pgsodium'::name, 'key'::name, 'postgres'::name);
 
 
 -- privs of relation key
-SELECT table_privs_are('pgsodium'::name, 'key'::name, 'pgsodium_keymaker'         ::name, '{UPDATE,TRUNCATE,SELECT,REFERENCES,DELETE,TRIGGER,INSERT}'::text[]);
-SELECT table_privs_are('pgsodium'::name, 'key'::name, 'postgres'                  ::name, '{TRIGGER,INSERT,SELECT,UPDATE,DELETE,TRUNCATE,REFERENCES}'::text[]);
+SELECT table_privs_are('pgsodium'::name, 'key'::name, 'pgsodium_keymaker'         ::name, '{DELETE,INSERT,REFERENCES,SELECT,TRIGGER,TRUNCATE,UPDATE}'::text[]);
+SELECT table_privs_are('pgsodium'::name, 'key'::name, 'postgres'                  ::name, '{DELETE,INSERT,REFERENCES,SELECT,TRIGGER,TRUNCATE,UPDATE}'::text[]);
 SELECT table_privs_are('pgsodium'::name, 'key'::name, rolname,                    '{}'::text[])
 FROM pg_catalog.pg_roles
 WHERE rolname NOT IN ('pgsodium_keymaker','postgres');
@@ -437,9 +437,9 @@ SELECT view_owner_is('pgsodium'::name, 'decrypted_key'::name, 'postgres'::name);
 
 
 -- privs of relation decrypted_key
-SELECT table_privs_are('pgsodium'::name, 'decrypted_key'::name, 'pgsodium_keyholder'        ::name, '{UPDATE,TRUNCATE,INSERT,DELETE,SELECT,REFERENCES,TRIGGER}'::text[]);
-SELECT table_privs_are('pgsodium'::name, 'decrypted_key'::name, 'pgsodium_keymaker'         ::name, '{INSERT,SELECT,UPDATE,DELETE,TRUNCATE,REFERENCES,TRIGGER}'::text[]);
-SELECT table_privs_are('pgsodium'::name, 'decrypted_key'::name, 'postgres'                  ::name, '{TRUNCATE,INSERT,SELECT,REFERENCES,DELETE,TRIGGER,UPDATE}'::text[]);
+SELECT table_privs_are('pgsodium'::name, 'decrypted_key'::name, 'pgsodium_keyholder'        ::name, '{DELETE,INSERT,REFERENCES,SELECT,TRIGGER,TRUNCATE,UPDATE}'::text[]);
+SELECT table_privs_are('pgsodium'::name, 'decrypted_key'::name, 'pgsodium_keymaker'         ::name, '{DELETE,INSERT,REFERENCES,SELECT,TRIGGER,TRUNCATE,UPDATE}'::text[]);
+SELECT table_privs_are('pgsodium'::name, 'decrypted_key'::name, 'postgres'                  ::name, '{DELETE,INSERT,REFERENCES,SELECT,TRIGGER,TRUNCATE,UPDATE}'::text[]);
 SELECT table_privs_are('pgsodium'::name, 'decrypted_key'::name, rolname,                    '{}'::text[])
 FROM pg_catalog.pg_roles
 WHERE rolname NOT IN ('pgsodium_keyholder','pgsodium_keymaker','postgres');
@@ -497,9 +497,9 @@ SELECT view_owner_is('pgsodium'::name, 'mask_columns'::name, 'postgres'::name);
 
 
 -- privs of relation mask_columns
-SELECT table_privs_are('pgsodium'::name, 'mask_columns'::name, 'pgsodium_keyholder'        ::name, '{UPDATE,TRUNCATE,INSERT,DELETE,SELECT,REFERENCES,TRIGGER}'::text[]);
-SELECT table_privs_are('pgsodium'::name, 'mask_columns'::name, 'pgsodium_keymaker'         ::name, '{INSERT,SELECT,UPDATE,DELETE,TRUNCATE,REFERENCES,TRIGGER}'::text[]);
-SELECT table_privs_are('pgsodium'::name, 'mask_columns'::name, 'postgres'                  ::name, '{TRUNCATE,INSERT,SELECT,REFERENCES,DELETE,TRIGGER,UPDATE}'::text[]);
+SELECT table_privs_are('pgsodium'::name, 'mask_columns'::name, 'pgsodium_keyholder'        ::name, '{DELETE,INSERT,REFERENCES,SELECT,TRIGGER,TRUNCATE,UPDATE}'::text[]);
+SELECT table_privs_are('pgsodium'::name, 'mask_columns'::name, 'pgsodium_keymaker'         ::name, '{DELETE,INSERT,REFERENCES,SELECT,TRIGGER,TRUNCATE,UPDATE}'::text[]);
+SELECT table_privs_are('pgsodium'::name, 'mask_columns'::name, 'postgres'                  ::name, '{DELETE,INSERT,REFERENCES,SELECT,TRIGGER,TRUNCATE,UPDATE}'::text[]);
 SELECT table_privs_are('pgsodium'::name, 'mask_columns'::name, rolname,                    '{}'::text[])
 FROM pg_catalog.pg_roles
 WHERE rolname NOT IN ('pgsodium_keyholder','pgsodium_keymaker','postgres');
@@ -593,9 +593,9 @@ SELECT view_owner_is('pgsodium'::name, 'masking_rule'::name, 'postgres'::name);
 
 
 -- privs of relation masking_rule
-SELECT table_privs_are('pgsodium'::name, 'masking_rule'::name, 'pgsodium_keyholder'        ::name, '{UPDATE,TRUNCATE,INSERT,DELETE,SELECT,REFERENCES,TRIGGER}'::text[]);
-SELECT table_privs_are('pgsodium'::name, 'masking_rule'::name, 'pgsodium_keymaker'         ::name, '{INSERT,SELECT,UPDATE,DELETE,TRUNCATE,REFERENCES,TRIGGER}'::text[]);
-SELECT table_privs_are('pgsodium'::name, 'masking_rule'::name, 'postgres'                  ::name, '{TRUNCATE,INSERT,SELECT,REFERENCES,DELETE,TRIGGER,UPDATE}'::text[]);
+SELECT table_privs_are('pgsodium'::name, 'masking_rule'::name, 'pgsodium_keyholder'        ::name, '{DELETE,INSERT,REFERENCES,SELECT,TRIGGER,TRUNCATE,UPDATE}'::text[]);
+SELECT table_privs_are('pgsodium'::name, 'masking_rule'::name, 'pgsodium_keymaker'         ::name, '{DELETE,INSERT,REFERENCES,SELECT,TRIGGER,TRUNCATE,UPDATE}'::text[]);
+SELECT table_privs_are('pgsodium'::name, 'masking_rule'::name, 'postgres'                  ::name, '{DELETE,INSERT,REFERENCES,SELECT,TRIGGER,TRUNCATE,UPDATE}'::text[]);
 SELECT table_privs_are('pgsodium'::name, 'masking_rule'::name, rolname,                    '{}'::text[])
 FROM pg_catalog.pg_roles
 WHERE rolname NOT IN ('pgsodium_keyholder','pgsodium_keymaker','postgres');
@@ -665,10 +665,10 @@ SELECT view_owner_is('pgsodium'::name, 'valid_key'::name, 'postgres'::name);
 
 
 -- privs of relation valid_key
-SELECT table_privs_are('pgsodium'::name, 'valid_key'::name, 'pgsodium_keyholder'        ::name, '{TRIGGER,TRUNCATE,INSERT,DELETE,SELECT,UPDATE,REFERENCES}'::text[]);
+SELECT table_privs_are('pgsodium'::name, 'valid_key'::name, 'pgsodium_keyholder'        ::name, '{DELETE,INSERT,REFERENCES,SELECT,TRIGGER,TRUNCATE,UPDATE}'::text[]);
 SELECT table_privs_are('pgsodium'::name, 'valid_key'::name, 'pgsodium_keyiduser'        ::name, '{SELECT}'::text[]);
-SELECT table_privs_are('pgsodium'::name, 'valid_key'::name, 'pgsodium_keymaker'         ::name, '{INSERT,SELECT,UPDATE,DELETE,TRUNCATE,REFERENCES,TRIGGER}'::text[]);
-SELECT table_privs_are('pgsodium'::name, 'valid_key'::name, 'postgres'                  ::name, '{TRUNCATE,INSERT,SELECT,REFERENCES,DELETE,TRIGGER,UPDATE}'::text[]);
+SELECT table_privs_are('pgsodium'::name, 'valid_key'::name, 'pgsodium_keymaker'         ::name, '{DELETE,INSERT,REFERENCES,SELECT,TRIGGER,TRUNCATE,UPDATE}'::text[]);
+SELECT table_privs_are('pgsodium'::name, 'valid_key'::name, 'postgres'                  ::name, '{DELETE,INSERT,REFERENCES,SELECT,TRIGGER,TRUNCATE,UPDATE}'::text[]);
 SELECT table_privs_are('pgsodium'::name, 'valid_key'::name, rolname,                    '{}'::text[])
 FROM pg_catalog.pg_roles
 WHERE rolname NOT IN ('pgsodium_keyholder','pgsodium_keyiduser','pgsodium_keymaker','postgres');
@@ -688,8 +688,8 @@ SELECT sequence_owner_is('pgsodium'::name, 'key_key_id_seq'::name, 'postgres'::n
 
 
 -- privs of relation key_key_id_seq
-SELECT sequence_privs_are('pgsodium'::name, 'key_key_id_seq'::name, 'pgsodium_keymaker'         ::name, '{USAGE,SELECT,UPDATE}'::text[]);
-SELECT sequence_privs_are('pgsodium'::name, 'key_key_id_seq'::name, 'postgres'                  ::name, '{USAGE,SELECT,UPDATE}'::text[]);
+SELECT sequence_privs_are('pgsodium'::name, 'key_key_id_seq'::name, 'pgsodium_keymaker'         ::name, '{SELECT,UPDATE,USAGE}'::text[]);
+SELECT sequence_privs_are('pgsodium'::name, 'key_key_id_seq'::name, 'postgres'                  ::name, '{SELECT,UPDATE,USAGE}'::text[]);
 SELECT sequence_privs_are('pgsodium'::name, 'key_key_id_seq'::name, rolname,                    '{}'::text[])
 FROM pg_catalog.pg_roles
 WHERE rolname NOT IN ('pgsodium_keymaker','postgres');

@@ -361,7 +361,7 @@ sub privs_tests {
     my ($schema, $tname, $type) = @_;
     $type = 'table' unless defined $type;
     my $privs = $dbh->selectall_arrayref(qq{
-    SELECT quote_literal(a.rolname), array_agg(s.p)::text,
+    SELECT quote_literal(a.rolname), array_agg(s.p ORDER BY s.p)::text,
         quote_literal(r.nspname), quote_literal(r.relname)
       FROM ( SELECT oid, rolname FROM pg_catalog.pg_authid
              UNION ALL
