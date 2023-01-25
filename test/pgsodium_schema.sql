@@ -4,7 +4,7 @@ CREATE EXTENSION IF NOT EXISTS pgsodium;
 
 SET search_path TO 'public';
 
-SELECT plan(1743);
+SELECT plan(1748);
 
 
 
