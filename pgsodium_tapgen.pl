@@ -11,6 +11,7 @@ my $PGSODIUM_VERSION = '3.1.5';
 
 my $curr;
 my $rs;
+my @unq;
 
 Getopt::Long::Configure (qw(bundling));
 
@@ -40,7 +41,7 @@ my $dbh = DBI->connect($dsn, $opts->{username}, $ENV{PGPASSWORD}, {
 });
 $dbh->do(q{SET client_encoding = 'UTF-8'});
 $dbh->begin_work;
-#$dbh->do(q{BEGIN});
+
 $dbh->do(qq{CREATE EXTENSION pgsodium VERSION "$PGSODIUM_VERSION" });
 
 ################################################################################
@@ -112,8 +113,6 @@ foreach my $r (@$rs) {
     printf "SELECT is_member_of( %s, %s );\n", $r->[0], $r->[1];
 }
 
-# TODO: granted roles to roles
-
 $rs = $dbh->selectall_arrayref(q{
     SELECT quote_literal(nspname),
       quote_literal(pg_catalog.pg_get_userbyid(nspowner))
@@ -131,6 +130,67 @@ print "SELECT schemas_are(ARRAY[\n    ",
 foreach my $r ( @$rs ) {
     printf "SELECT schema_owner_is(%-10s, %s);\n", @$r;
 }
+
+print "\n\n\n---- EVENT TRIGGERS\n\n";
+
+# pgtap doesn't support event triggers yet.
+$rs = $dbh->selectall_arrayref(q{
+    SELECT quote_literal(evtname), quote_literal(evtevent),
+      quote_literal(evtenabled), ARRAY(SELECT quote_literal(unnest(evttags)) ORDER BY 1),
+      quote_literal(pg_catalog.pg_get_userbyid(evtowner)),
+      quote_literal(evtfoid::regproc)
+    FROM pg_catalog.pg_event_trigger
+}) or die;
+
+@unq = do {
+    my %seen;
+    grep { !$seen{$_}++ } map { $_->[0] } @$rs;
+};
+
+# compare event triggers
+printf 'SELECT results_eq('
+      .'$q$ SELECT t.evtname
+           FROM pg_catalog.pg_depend d
+           JOIN pg_catalog.pg_event_trigger t ON t.oid = d.objid
+           WHERE d.refclassid = $$pg_catalog.pg_extension$$::pg_catalog.regclass
+             AND d.refobjid = (SELECT oid FROM pg_extension WHERE extname = $$pgsodium$$)
+             AND d.deptype = $$e$$
+             AND d.classid = $$pg_catalog.pg_event_trigger$$::pg_catalog.regclass
+           ORDER BY 1; $q$, '
+          .'ARRAY[ %s ]::name[], '
+          .'$$Event trigger list is ok$$);'."\n",
+        join(', ', @unq);
+
+for my $r (@$rs) {
+    my ($evtname, $evtevent, $evtenabled, $evttags, $evtowner, $evtf) = @$r;
+    print "\n-- EVENT TRIGGER $evtname\n";
+    printf 'SELECT results_eq('
+          .'$$ SELECT evtevent = %s FROM pg_catalog.pg_event_trigger WHERE evtname = %s $$, '
+          .'ARRAY[ true ], '
+          .'$$Trigger %2$s on event %1$s exists $$);'."\n",
+        $evtevent, $evtname;
+    printf 'SELECT results_eq('
+          .'$$ SELECT evtenabled = %s FROM pg_catalog.pg_event_trigger WHERE evtname = %s $$, '
+          .'ARRAY[ true ], '
+          .'$$Trigger %2$s enabled status ok $$);'."\n",
+        $evtenabled, $evtname;
+    printf 'SELECT results_eq('
+          .'$$ SELECT pg_catalog.unnest(evttags) FROM pg_catalog.pg_event_trigger WHERE evtname = %s ORDER BY 1 $$, '
+          .'ARRAY[ %s ]::text[] collate "C", '
+          .'$$Trigger %1$s tags are ok$$);'."\n",
+        $evtname, join(',', @$evttags);
+    printf 'SELECT results_eq('
+          .'$$ SELECT pg_catalog.pg_get_userbyid(evtowner) = %s FROM pg_catalog.pg_event_trigger WHERE evtname = %s $$, '
+          .'ARRAY[ true ], '
+          .'$$Trigger %2$s owner is %1$s$$);'."\n",
+        $evtowner, $evtname;
+    printf 'SELECT results_eq('
+          .'$$ SELECT evtfoid = %s::regproc FROM pg_catalog.pg_event_trigger WHERE evtname = %s $$, '
+          .'ARRAY[ true ], '
+          .'$$Trigger %2$s function is %1$s$$);'."\n",
+        $evtf, $evtname;
+}
+
 
 print "\n\n\n---- TABLES\n\n";
 
@@ -217,7 +277,7 @@ for my $r (@$rs) {
 
 print "\n\n\n---- FUNCTIONS\n\n";
 
-my $allfuncs = $dbh->selectall_arrayref(q{
+$rs = $dbh->selectall_arrayref(q{
     SELECT p.oid,
         md5(p.prosrc),
         quote_literal(p.lanname),
@@ -266,17 +326,17 @@ my $allfuncs = $dbh->selectall_arrayref(q{
     ORDER BY p.proname, proargs, grantee
 }, undef);
 
-my @funcs = do {
+@unq = do {
     my %seen;
-    grep { !$seen{$_}++ } map { $_->[6] } @$allfuncs;
+    grep { !$seen{$_}++ } map { $_->[6] } @$rs;
 };
 
 print "SELECT functions_are('pgsodium', ARRAY[\n    ",
-    join(",\n    ", @funcs),
+    join(",\n    ", @unq),
     "\n]);\n\n";
 
 $curr = -1;
-for my $row (@$allfuncs) {
+for my $row (@$rs) {
     my ($oid, $md5, $qlang, $qpowner, $qgrantee, $privs, $qproname, $proargs,
         $prorettype, $isdefiner, $isstrict, $prokind, $provol) = @$row;
 

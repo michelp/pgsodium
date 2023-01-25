@@ -4,7 +4,7 @@ CREATE EXTENSION IF NOT EXISTS pgsodium;
 
 SET search_path TO 'public';
 
-SELECT plan(1729); -- FIXME!
+SELECT plan(1735);
 
 
 
@@ -204,6 +204,26 @@ SELECT schemas_are(ARRAY[
 SELECT schema_owner_is('pgsodium', 'postgres');
 SELECT schema_owner_is('pgsodium_masks', 'postgres');
 SELECT schema_owner_is('public'  , 'postgres');
+
+
+
+---- EVENT TRIGGERS
+
+SELECT results_eq($q$ SELECT t.evtname
+           FROM pg_catalog.pg_depend d
+           JOIN pg_catalog.pg_event_trigger t ON t.oid = d.objid
+           WHERE d.refclassid = $$pg_catalog.pg_extension$$::pg_catalog.regclass
+             AND d.refobjid = (SELECT oid FROM pg_extension WHERE extname = $$pgsodium$$)
+             AND d.deptype = $$e$$
+             AND d.classid = $$pg_catalog.pg_event_trigger$$::pg_catalog.regclass
+           ORDER BY 1; $q$, ARRAY[ 'pgsodium_trg_mask_update' ]::name[], $$Event trigger list is ok$$);
+
+-- EVENT TRIGGER 'pgsodium_trg_mask_update'
+SELECT results_eq($$ SELECT evtevent = 'ddl_command_end' FROM pg_catalog.pg_event_trigger WHERE evtname = 'pgsodium_trg_mask_update' $$, ARRAY[ true ], $$Trigger 'pgsodium_trg_mask_update' on event 'ddl_command_end' exists $$);
+SELECT results_eq($$ SELECT evtenabled = 'O' FROM pg_catalog.pg_event_trigger WHERE evtname = 'pgsodium_trg_mask_update' $$, ARRAY[ true ], $$Trigger 'pgsodium_trg_mask_update' enabled status ok $$);
+SELECT results_eq($$ SELECT pg_catalog.unnest(evttags) FROM pg_catalog.pg_event_trigger WHERE evtname = 'pgsodium_trg_mask_update' ORDER BY 1 $$, ARRAY[ 'ALTER TABLE','SECURITY LABEL' ]::text[] collate "C", $$Trigger 'pgsodium_trg_mask_update' tags are ok$$);
+SELECT results_eq($$ SELECT pg_catalog.pg_get_userbyid(evtowner) = 'postgres' FROM pg_catalog.pg_event_trigger WHERE evtname = 'pgsodium_trg_mask_update' $$, ARRAY[ true ], $$Trigger 'pgsodium_trg_mask_update' owner is 'postgres'$$);
+SELECT results_eq($$ SELECT evtfoid = 'pgsodium.trg_mask_update'::regproc FROM pg_catalog.pg_event_trigger WHERE evtname = 'pgsodium_trg_mask_update' $$, ARRAY[ true ], $$Trigger 'pgsodium_trg_mask_update' function is 'pgsodium.trg_mask_update'$$);
 
 
 
