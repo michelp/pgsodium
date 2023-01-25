@@ -4,7 +4,7 @@ CREATE EXTENSION IF NOT EXISTS pgsodium;
 
 SET search_path TO 'public';
 
-SELECT plan(1735);
+SELECT plan(1743);
 
 
 
@@ -330,6 +330,112 @@ SELECT col_is_null(      'pgsodium', 'key', 'user_data'      , 'col_is_null( key
 SELECT col_hasnt_default('pgsodium', 'key', 'user_data'      , 'col_hasnt_default( key.user_data )');
 
 SELECT has_pk('pgsodium', 'key', 'table key has a PK');
+
+-- Constraints on table key
+SELECT results_eq(
+  $q$ SELECT c.conname
+  FROM pg_catalog.pg_constraint c
+  JOIN pg_catalog.pg_class r ON c.conrelid = r.oid
+  JOIN pg_catalog.pg_namespace n ON n.oid = r.relnamespace
+  WHERE n.nspname = 'pgsodium' AND r.relname = 'key'
+  ORDER BY c.contype, c.conname $q$,
+  ARRAY[
+    'key_key_context_check',
+    'pgsodium_raw',
+    'key_parent_key_fkey',
+    'key_pkey',
+    'pgsodium_key_unique_name'
+  ]::name[],
+  $$Event trigger list is ok$$);
+
+-- constraint 'key_key_context_check' on 'key'
+SELECT is(pg_catalog.pg_get_constraintdef(c.oid, true),'CHECK (length(key_context) = 8)', $$Definition of constraint 'key_key_context_check'$$)
+FROM pg_catalog.pg_constraint c
+JOIN pg_catalog.pg_class r ON c.conrelid = r.oid
+JOIN pg_catalog.pg_namespace n ON n.oid = r.relnamespace
+WHERE n.nspname = 'pgsodium' AND r.relname = 'key' AND c.conname = 'key_key_context_check';
+
+-- constraint 'pgsodium_raw' on 'key'
+SELECT is(pg_catalog.pg_get_constraintdef(c.oid, true),'CHECK (
+CASE
+    WHEN raw_key IS NOT NULL THEN key_id IS NULL AND key_context IS NULL AND parent_key IS NOT NULL
+    ELSE key_id IS NOT NULL AND key_context IS NOT NULL AND parent_key IS NULL
+END)', $$Definition of constraint 'pgsodium_raw'$$)
+FROM pg_catalog.pg_constraint c
+JOIN pg_catalog.pg_class r ON c.conrelid = r.oid
+JOIN pg_catalog.pg_namespace n ON n.oid = r.relnamespace
+WHERE n.nspname = 'pgsodium' AND r.relname = 'key' AND c.conname = 'pgsodium_raw';
+
+-- constraint 'key_parent_key_fkey' on 'key'
+SELECT is(pg_catalog.pg_get_constraintdef(c.oid, true),'FOREIGN KEY (parent_key) REFERENCES pgsodium.key(id)', $$Definition of constraint 'key_parent_key_fkey'$$)
+FROM pg_catalog.pg_constraint c
+JOIN pg_catalog.pg_class r ON c.conrelid = r.oid
+JOIN pg_catalog.pg_namespace n ON n.oid = r.relnamespace
+WHERE n.nspname = 'pgsodium' AND r.relname = 'key' AND c.conname = 'key_parent_key_fkey';
+
+-- constraint 'key_pkey' on 'key'
+SELECT is(pg_catalog.pg_get_constraintdef(c.oid, true),'PRIMARY KEY (id)', $$Definition of constraint 'key_pkey'$$)
+FROM pg_catalog.pg_constraint c
+JOIN pg_catalog.pg_class r ON c.conrelid = r.oid
+JOIN pg_catalog.pg_namespace n ON n.oid = r.relnamespace
+WHERE n.nspname = 'pgsodium' AND r.relname = 'key' AND c.conname = 'key_pkey';
+
+-- constraint 'pgsodium_key_unique_name' on 'key'
+SELECT is(pg_catalog.pg_get_constraintdef(c.oid, true),'UNIQUE (name)', $$Definition of constraint 'pgsodium_key_unique_name'$$)
+FROM pg_catalog.pg_constraint c
+JOIN pg_catalog.pg_class r ON c.conrelid = r.oid
+JOIN pg_catalog.pg_namespace n ON n.oid = r.relnamespace
+WHERE n.nspname = 'pgsodium' AND r.relname = 'key' AND c.conname = 'pgsodium_key_unique_name';
+
+-- indexes of table key
+SELECT indexes_are('pgsodium'::name, 'key'::name, ARRAY[
+  'key_key_id_key_context_key_type_idx',
+  'key_pkey',
+  'key_status_idx',
+  'key_status_idx1',
+  'pgsodium_key_unique_name'
+]::name[]);
+
+-- index 'key_key_id_key_context_key_type_idx' on key
+SELECT is(pg_catalog.pg_get_indexdef(i.indexrelid, 0, true),'CREATE UNIQUE INDEX key_key_id_key_context_key_type_idx ON pgsodium.key USING btree (key_id, key_context, key_type)', $$Definition of index 'key_key_id_key_context_key_type_idx'$$)
+FROM pg_catalog.pg_class c
+JOIN pg_catalog.pg_index i ON c.oid = i.indexrelid
+JOIN pg_catalog.pg_class r ON i.indrelid = r.oid
+JOIN pg_catalog.pg_namespace n ON n.oid = r.relnamespace
+WHERE n.nspname = 'pgsodium' AND r.relname = 'key' AND c.relname = 'key_key_id_key_context_key_type_idx';
+
+-- index 'key_pkey' on key
+SELECT is(pg_catalog.pg_get_indexdef(i.indexrelid, 0, true),'CREATE UNIQUE INDEX key_pkey ON pgsodium.key USING btree (id)', $$Definition of index 'key_pkey'$$)
+FROM pg_catalog.pg_class c
+JOIN pg_catalog.pg_index i ON c.oid = i.indexrelid
+JOIN pg_catalog.pg_class r ON i.indrelid = r.oid
+JOIN pg_catalog.pg_namespace n ON n.oid = r.relnamespace
+WHERE n.nspname = 'pgsodium' AND r.relname = 'key' AND c.relname = 'key_pkey';
+SELECT index_is_primary( 'pgsodium'::name, 'key'::name, 'key_pkey'::name);
+
+-- index 'key_status_idx' on key
+SELECT is(pg_catalog.pg_get_indexdef(i.indexrelid, 0, true),'CREATE INDEX key_status_idx ON pgsodium.key USING btree (status) WHERE status = ANY (ARRAY[''valid''::pgsodium.key_status, ''default''::pgsodium.key_status])', $$Definition of index 'key_status_idx'$$)
+FROM pg_catalog.pg_class c
+JOIN pg_catalog.pg_index i ON c.oid = i.indexrelid
+JOIN pg_catalog.pg_class r ON i.indrelid = r.oid
+JOIN pg_catalog.pg_namespace n ON n.oid = r.relnamespace
+WHERE n.nspname = 'pgsodium' AND r.relname = 'key' AND c.relname = 'key_status_idx';
+
+-- index 'key_status_idx1' on key
+SELECT is(pg_catalog.pg_get_indexdef(i.indexrelid, 0, true),'CREATE UNIQUE INDEX key_status_idx1 ON pgsodium.key USING btree (status) WHERE status = ''default''::pgsodium.key_status', $$Definition of index 'key_status_idx1'$$)
+FROM pg_catalog.pg_class c
+JOIN pg_catalog.pg_index i ON c.oid = i.indexrelid
+JOIN pg_catalog.pg_class r ON i.indrelid = r.oid
+JOIN pg_catalog.pg_namespace n ON n.oid = r.relnamespace
+WHERE n.nspname = 'pgsodium' AND r.relname = 'key' AND c.relname = 'key_status_idx1';
+
+-- index 'pgsodium_key_unique_name' on key
+SELECT is(pg_catalog.pg_get_indexdef(i.indexrelid, 0, true),'CREATE UNIQUE INDEX pgsodium_key_unique_name ON pgsodium.key USING btree (name)', $$Definition of index 'pgsodium_key_unique_name'$$)
+FROM pg_catalog.pg_class c
+JOIN pg_catalog.pg_index i ON c.oid = i.indexrelid
+JOIN pg_catalog.pg_class r ON i.indrelid = r.oid
+JOIN pg_catalog.pg_namespace n ON n.oid = r.relnamespace
+WHERE n.nspname = 'pgsodium' AND r.relname = 'key' AND c.relname = 'pgsodium_key_unique_name';
 
 -- triggers of relation key
 SELECT triggers_are('pgsodium', 'key', ARRAY[

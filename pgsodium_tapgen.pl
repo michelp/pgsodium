@@ -216,6 +216,12 @@ for my $r (@$rs) {
         printf "SELECT hasnt_pk('pgsodium', %s, 'table %s has no PK');\n", $qtname, $tname;
     }
 
+    # CONSTRAINTS
+    consts_tests('pgsodium', $tname);
+
+    # INDEXES
+    idxs_tests('pgsodium', $tname);
+
     # TRIGGERS
     trgs_tests('pgsodium', $tname);
 
@@ -432,7 +438,7 @@ exit;
 ################################################################################
 
 sub get_rels {
-    my $sth = $dbh->prepare_cached(q{
+    return $dbh->selectall_arrayref(q{
         SELECT quote_literal(c.relname), quote_literal(pg_catalog.pg_get_userbyid(c.relowner)),
                c.relname, c.oid
           FROM pg_catalog.pg_namespace n
@@ -440,8 +446,7 @@ sub get_rels {
          WHERE c.relkind = ?
            AND n.nspname = ?
          ORDER BY c.relname
-    });
-    return $dbh->selectall_arrayref($sth, undef, @_);
+    }, undef, @_);
 }
 
 sub cols_tests {
@@ -538,6 +543,102 @@ sub privs_tests {
           ."WHERE rolname NOT IN (%s);\n",
           $type, $privs->[0][2], $privs->[0][3],
           join(',',  map { $_->[0] } @$privs);
+}
+
+sub idxs_tests {
+    my ($schema, $tname) = @_;
+
+    my $idxs = $dbh->selectall_arrayref(q{
+        SELECT quote_literal(n.nspname), quote_literal(r.relname),
+          quote_literal(c.relname), i.indisprimary,
+          quote_literal(pg_catalog.pg_get_indexdef(i.indexrelid, 0, true))
+        FROM pg_catalog.pg_class c
+        JOIN pg_catalog.pg_am a ON a.oid = c.relam
+        JOIN pg_catalog.pg_index i ON c.oid = i.indexrelid
+        JOIN pg_catalog.pg_class r ON i.indrelid = r.oid
+        JOIN pg_catalog.pg_namespace n ON n.oid = r.relnamespace
+         WHERE c.relkind = 'i'
+           AND n.nspname = ?
+           AND r.relname = ?
+         ORDER BY c.relname
+    }, undef, $schema, $tname);
+
+    return unless @$idxs;
+
+    print "\n-- indexes of table $tname\n";
+
+    printf "SELECT indexes_are(%s::name, %s::name, ARRAY[\n  %s\n]::name[]);\n",
+        $idxs->[0][0], $idxs->[0][1], join(",\n  ", map {$_->[2]} @$idxs);
+
+    for my $i (@$idxs) {
+        my ($qschema, $qtname, $qiname, $ispk, $qidef) = @$i;
+
+        print "\n-- index $qiname on $tname\n";
+        printf "SELECT is(pg_catalog.pg_get_indexdef(i.indexrelid, 0, true),"
+              .'%s, $$Definition of index %s$$)'."\n"
+              ."FROM pg_catalog.pg_class c\n"
+              ."JOIN pg_catalog.pg_index i ON c.oid = i.indexrelid\n"
+              ."JOIN pg_catalog.pg_class r ON i.indrelid = r.oid\n"
+              ."JOIN pg_catalog.pg_namespace n ON n.oid = r.relnamespace\n"
+              ."WHERE n.nspname = %s AND r.relname = %s AND c.relname = %2\$s;\n",
+            $qidef, $qiname, $qschema, $qtname;
+
+        if ($ispk) {
+            printf "SELECT index_is_primary( %s::name, %s::name, %s::name);\n",
+                $qschema, $qtname, $qiname;
+        }
+    }
+}
+
+sub consts_tests {
+    my ($schema, $tname) = @_;
+
+    my $csts = $dbh->selectall_arrayref(q{
+        SELECT quote_literal(n.nspname), quote_literal(r.relname),
+          quote_literal(c.conname), quote_literal(pg_catalog.pg_get_constraintdef(c.oid, true))
+        FROM pg_catalog.pg_constraint c
+        JOIN pg_catalog.pg_class r ON c.conrelid = r.oid
+        JOIN pg_catalog.pg_namespace n ON n.oid = r.relnamespace
+        WHERE n.nspname = ?
+          AND r.relname = ?
+        ORDER BY c.contype, c.conname;
+    }, undef, $schema, $tname);
+
+    return unless @$csts;
+
+    print "\n-- Constraints on table $tname\n";
+
+    #printf "SELECT indexes_are(%s::name, %s::name, ARRAY[\n  %s\n]::name[]);\n",
+    #    $idxs->[0][0], $idxs->[0][1], join(",\n  ", map {$_->[2]} @$idxs);
+
+    # compare constraint list
+    @unq = do {
+        my %seen;
+        grep { !$seen{$_}++ } map { $_->[2] } @$csts;
+    };
+    printf "SELECT results_eq(\n"
+          .'  $q$ SELECT c.conname'."\n"
+          ."  FROM pg_catalog.pg_constraint c\n"
+          ."  JOIN pg_catalog.pg_class r ON c.conrelid = r.oid\n"
+          ."  JOIN pg_catalog.pg_namespace n ON n.oid = r.relnamespace\n"
+          ."  WHERE n.nspname = %s AND r.relname = %s\n"
+          .'  ORDER BY c.contype, c.conname $q$,'."\n"
+          ."  ARRAY[\n    %s\n  ]::name[],\n"
+          .'  $$Event trigger list is ok$$);'."\n",
+        $csts->[0][0], $csts->[0][1], join(",\n    ", @unq);
+
+    for my $c (@$csts) {
+        my ($qschema, $qtname, $qcname, $qcdef) = @$c;
+
+        print "\n-- constraint $qcname on $qtname\n";
+        printf "SELECT is(pg_catalog.pg_get_constraintdef(c.oid, true),"
+              .'%s, $$Definition of constraint %s$$)'."\n"
+              ."FROM pg_catalog.pg_constraint c\n"
+              ."JOIN pg_catalog.pg_class r ON c.conrelid = r.oid\n"
+              ."JOIN pg_catalog.pg_namespace n ON n.oid = r.relnamespace\n"
+              ."WHERE n.nspname = %s AND r.relname = %s AND c.conname = %2\$s;\n",
+            $qcdef, $qcname, $qschema, $qtname;
+    }
 }
 
 sub trgs_tests {
