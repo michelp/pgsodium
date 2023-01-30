@@ -27,6 +27,7 @@ SELECT EXISTS (SELECT * FROM pg_settings
     WHERE name = 'shared_preload_libraries'
     AND setting ilike '%pgsodium%') serverkeys \gset
 
+\ir pgsodium_schema.sql
 \ir random.sql
 \ir secretbox.sql
 \ir secretstream.sql
