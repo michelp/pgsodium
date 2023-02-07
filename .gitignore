@@ -33,5 +33,10 @@
 *.su
 *~
 
+# Visual Studio Build files
+build/.vs/
+*.vcxproj.user
+build/x64/
+
 pgsodium_encrypted_root.key
 .ipynb_checkpoints/
