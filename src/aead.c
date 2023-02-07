@@ -250,7 +250,7 @@ pgsodium_crypto_aead_det_keygen (PG_FUNCTION_ARGS)
 	PG_RETURN_BYTEA_P (result);
 }
 
-PG_FUNCTION_INFO_V1 (pgsodium_crypto_aead_det_noncegen);
+PGDLLEXPORT PG_FUNCTION_INFO_V1 (pgsodium_crypto_aead_det_noncegen);
 Datum
 pgsodium_crypto_aead_det_noncegen (PG_FUNCTION_ARGS)
 {
