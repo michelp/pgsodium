@@ -1,5 +1,10 @@
 #include "pgsodium.h"
 
+#ifdef WIN32
+#define X_OK 6
+#define access _access
+#endif
+
 PG_MODULE_MAGIC;
 
 bytea      *pgsodium_secret_key;
@@ -136,9 +141,20 @@ _PG_init (void)
 		proc_exit (1);
 	}
 
+#ifdef WIN32
+	secret_len = 65;   // extra byte for null terminator
+	secret_buf = malloc(secret_len);
+	if (fgets (secret_buf, (int)secret_len, fp) == NULL)
+	{
+		ereport(ERROR, errmsg("unable to read secret key"));
+		proc_exit (1);
+	}
+	secret_buf[strcspn(secret_buf, "\r\n")] = '\0';
+#else
 	char_read = getline (&secret_buf, &secret_len, fp);
 	if (secret_buf[char_read - 1] == '\n')
 		secret_buf[char_read - 1] = '\0';
+#endif
 
 	secret_len = strlen (secret_buf);
 
