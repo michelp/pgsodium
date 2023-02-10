@@ -1,7 +1,7 @@
 #include "pgsodium.h"
 
 #ifdef _WIN32
-#define X_OK 6
+#define X_OK 4
 #define access _access
 #endif
 
