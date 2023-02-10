@@ -1,6 +1,6 @@
 #include "pgsodium.h"
 
-#ifdef WIN32
+#ifdef _WIN32
 #define X_OK 6
 #define access _access
 #endif
@@ -141,7 +141,7 @@ _PG_init (void)
 		proc_exit (1);
 	}
 
-#ifdef WIN32
+#ifdef _WIN32
 	secret_len = 65;   // extra byte for null terminator
 	secret_buf = malloc(secret_len);
 	if (fgets (secret_buf, (int)secret_len, fp) == NULL)
