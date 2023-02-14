@@ -3,6 +3,21 @@
 #ifdef _WIN32
 #define X_OK 4
 #define access _access
+size_t getline(char **lineptr, size_t *n, FILE *stream)
+{
+	// We expect 64 bytes, allocate enough to be sure.
+	const int BUFFERSIZE = 1024;
+	char *buffer = malloc (BUFFERSIZE);
+	if (fgets (buffer, BUFFERSIZE - 1 , stream) == NULL)
+	{
+		free (buffer);
+		return -1;
+	}
+	*lineptr = buffer;
+	size_t char_read = strlen (*lineptr);
+	*n = char_read;
+	return char_read;
+}
 #endif
 
 PG_MODULE_MAGIC;
@@ -141,20 +156,14 @@ _PG_init (void)
 		proc_exit (1);
 	}
 
-#ifdef _WIN32
-	secret_len = 65;   // extra byte for null terminator
-	secret_buf = malloc(secret_len);
-	if (fgets (secret_buf, (int)secret_len, fp) == NULL)
+	if ((char_read = getline (&secret_buf, &secret_len, fp)) == -1)
 	{
 		ereport(ERROR, errmsg("unable to read secret key"));
 		proc_exit (1);
 	}
-	secret_buf[strcspn(secret_buf, "\r\n")] = '\0';
-#else
-	char_read = getline (&secret_buf, &secret_len, fp);
+
 	if (secret_buf[char_read - 1] == '\n')
 		secret_buf[char_read - 1] = '\0';
-#endif
 
 	secret_len = strlen (secret_buf);
 
