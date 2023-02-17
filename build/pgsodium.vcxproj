@@ -1,0 +1,107 @@
+<Project DefaultTargets="Build" ToolsVersion="16.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+
+<ItemGroup>
+	<ProjectConfiguration Include="Debug|x64">
+		<Configuration>Debug</Configuration>
+		<Platform>Win64</Platform>
+	</ProjectConfiguration>
+	<ProjectConfiguration Include="Release|x64">
+		<Configuration>Release</Configuration>
+		<Platform>Win64</Platform>
+	</ProjectConfiguration>
+</ItemGroup>
+
+<Import Project="$(VCTargetsPath)\Microsoft.Cpp.default.props"/>
+
+<PropertyGroup Label="Globals">
+	<PreferredToolArchitecture>x64</PreferredToolArchitecture>
+	<ConfigurationType>DynamicLibrary</ConfigurationType>
+	<UseDynamicLibraries>true</UseDynamicLibraries>
+	<RootNamespace>pgsodium</RootNamespace>
+	<WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
+	<PlatformToolset>$(platformToolset)</PlatformToolset>
+	<CharacterSet>Unicode</CharacterSet>
+</PropertyGroup>
+
+<PropertyGroup Condition="'$(Configuration)'=='Release'" Label="Configuration">
+	<WholeProgramOptimization>true</WholeProgramOptimization>
+	<LinkIncremental>false</LinkIncremental>
+  <GenerateManifest>false</GenerateManifest>
+	<WarningLevel>Level3</WarningLevel>
+	<IntrinsicFunctions>true</IntrinsicFunctions>
+</PropertyGroup>
+
+<PropertyGroup Condition="'$(Configuration)'=='Debug'" Label="Configuration">
+	<UseDebugLibraries>true</UseDebugLibraries>
+	<LinkIncremental>true</LinkIncremental>
+  <GenerateManifest>false</GenerateManifest>
+	<WarningLevel>All</WarningLevel>
+</PropertyGroup>
+
+<Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+
+<ItemGroup>
+  <ClInclude Include="..\src\crypto_aead_det_xchacha20.h" />
+  <ClInclude Include="..\src\pgsodium.h" />
+  <ClInclude Include="..\src\signcrypt_tbsbr.h" />
+</ItemGroup>
+
+<ItemGroup>
+  <ClCompile Include="..\src\aead.c" />
+  <ClCompile Include="..\src\auth.c" />
+  <ClCompile Include="..\src\box.c" />
+  <ClCompile Include="..\src\crypto_aead_det_xchacha20.c" />
+  <ClCompile Include="..\src\derive.c" />
+  <ClCompile Include="..\src\hash.c" />
+  <ClCompile Include="..\src\helpers.c" />
+  <ClCompile Include="..\src\hmac.c" />
+  <ClCompile Include="..\src\kdf.c" />
+  <ClCompile Include="..\src\kx.c" />
+  <ClCompile Include="..\src\pgsodium.c" />
+  <ClCompile Include="..\src\pwhash.c" />
+  <ClCompile Include="..\src\random.c" />
+  <ClCompile Include="..\src\secretbox.c" />
+  <ClCompile Include="..\src\secretstream.c" />
+  <ClCompile Include="..\src\sha.c" />
+  <ClCompile Include="..\src\sign.c" />
+  <ClCompile Include="..\src\signcrypt.c" />
+  <ClCompile Include="..\src\signcrypt_tbsbr.c" />
+  <ClCompile Include="..\src\stream.c" />
+</ItemGroup>
+
+<ItemDefinitionGroup>
+	<ClCompile>
+		<ExceptionHandling>false</ExceptionHandling>
+		<SDLCheck>true</SDLCheck>
+		<CompileAs>CompileAsC</CompileAs>
+		<AdditionalIncludeDirectories>
+			$(PostgreSQLLocation)\include\server\port\win32_msvc;
+			$(PostgreSQLLocation)\include\server\port\win32;
+			$(PostgreSQLLocation)\include\server;
+			$(PostgreSQLLocation)\include;
+			$(libsodiumLocation)\include;
+			%(AdditionalIncludeDirectories)
+		</AdditionalIncludeDirectories>
+		<LanguageStandard>stdcpp17</LanguageStandard>
+	</ClCompile>
+
+	<Link>
+		<SubSystem>Console</SubSystem>
+		<GenerateDebugInformation>true</GenerateDebugInformation>
+		<AdditionalLibraryDirectories>
+			$(libsodiumLocation)\x64\Release\$(platformToolset)\dynamic;
+			$(PostgreSQLLocation)\lib;
+			%(AdditionalLibraryDirectories)
+		</AdditionalLibraryDirectories>
+		<AdditionalDependencies>
+			postgres.lib;
+			libsodium.lib;
+			%(AdditionalDependencies)
+		</AdditionalDependencies>
+	</Link>
+
+</ItemDefinitionGroup>
+
+<Import Project="$(VCTargetsPath)\Microsoft.Cpp.Targets" />
+
+</Project>
