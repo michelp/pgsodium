@@ -10,12 +10,13 @@ The following properties ( **`/p`** or **`/property`** ) must be specified:
 - `libsodiumLocation`: root libsodium directory
 - `PostgreSQLLocation`: root postgresql directory, typically `C:\Program Files\PostgreSQL\<version>
 - `Configuration`: [`Release`, `Debug`]
+- `Platform`: [x64]
 - `platformToolset`: [`v142`, `v143`]
 
 ie.
 
 ```
-msbuild pgsodium.vcxproj /p:libsodiumLocation="C:\libsodium" /p:PostgreSQLLocation="C:\Program Files\PostgreSQL\15" /p:Configuration=Release /p:platformToolset=v143
+msbuild pgsodium.vcxproj /p:libsodiumLocation="C:\libsodium" /p:PostgreSQLLocation="C:\Program Files\PostgreSQL\15" /p:Configuration=Release /p:Platform=x64 /p:platformToolset=v143
 ```
 
 - Copy the `libsodium.dll` (from `libsodium\x64\Release\<platformToolset>\dynamic`) and the newly built `pgsodium.dll` into your `\PostgreSQL\<version>\lib` directory
