@@ -4,6 +4,7 @@ on: [push, pull_request]
 
 jobs:
   test_linux:
+    name: Linux build and tests
     runs-on: ubuntu-latest
     steps:
       - name: Checkout source code
@@ -28,6 +29,19 @@ jobs:
           tar -xf libsodium-1.0.18-stable-msvc.zip
           rm libsodium-1.0.18-stable-msvc.zip
           cp .\libsodium\x64\Release\v143\dynamic\libsodium.dll $env:PGROOT\lib
+          Invoke-WebRequest -URI https://github.com/theory/pgtap/archive/refs/tags/v1.2.0.zip -OutFile pgtap.zip
+          tar -xf pgtap.zip
+          rm pgtap.zip
+          cd pgtap-1.2.0
+          cp .\sql\pgtap.sql.in .\sql\pgtap.sql
+          perl.exe '-pi.bak' -e "s/TAPSCHEMA/tap/g" .\sql\pgtap.sql
+          perl.exe '-pi.bak' -e "s/__OS__/win32/g" .\sql\pgtap.sql
+          perl.exe '-pi.bak' -e "s/__VERSION__/0.24/g" .\sql\pgtap.sql
+          perl.exe '-pi.bak' -e "s/^-- ## //g" .\sql\pgtap.sql
+          cp .\sql\pgtap.sql $env:PGROOT\share\extension
+          cp .\pgtap.control $env:PGROOT\share\extension
+          cp .\contrib\pgtap.spec $env:PGROOT\share\contrib
+          ren $env:PGROOT\share\extension\pgtap.sql $env:PGROOT\share\extension\pgtap--1.2.0.sql
         shell: pwsh
 
       - name: Run msbuild
@@ -46,7 +60,7 @@ jobs:
           & $env:PGBIN\pg_ctl restart -D $env:PGDATA
         shell: pwsh
 
-      # - name: Run pgsodium tests
-      #   run: |
-      #     & $env:PGBIN\psql -q -U postgres -f .\test\test.sql
-      #   shell: pwsh
+      - name: Run pgsodium tests
+        run: |
+          & $env:PGBIN\psql -q -U postgres -f .\test\test.sql
+        shell: pwsh
