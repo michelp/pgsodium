@@ -9,7 +9,7 @@ SELECT plan(1748);
 
 
 ---- EXTENSION VERSION
-SELECT results_eq('SELECT pgsodium.version()', $$VALUES ('3.1.5'::text)$$, 'Version of pgsodium is 3.1.5');
+SELECT results_eq('SELECT pgsodium.version()', $$VALUES ('3.1.6'::text)$$, 'Version of pgsodium is 3.1.6');
 
 
 ---- EXTENSION OBJECTS
