@@ -9,7 +9,7 @@ SELECT plan(1748);
 
 
 ---- EXTENSION VERSION
-SELECT results_eq('SELECT pgsodium.version()', $$VALUES ('3.1.6'::text)$$, 'Version of pgsodium is 3.1.6');
+SELECT results_eq('SELECT pgsodium.version()', $$VALUES ('3.1.7'::text)$$, 'Version of pgsodium is 3.1.7');
 
 
 ---- EXTENSION OBJECTS
@@ -645,7 +645,8 @@ SELECT columns_are('pgsodium'::name, 'masking_rule'::name, ARRAY[
   'associated_columns',
   'nonce_column',
   'view_name',
-  'priority'
+  'priority',
+  'security_invoker'
 ]::name[]);
 
 SELECT has_column(       'pgsodium', 'masking_rule', 'attrelid'       , 'has column masking_rule.attrelid');
@@ -1005,7 +1006,7 @@ SELECT function_privs_are('pgsodium'::name, proname, proargtypes::regtype[]::tex
     AND oidvectortypes(proargtypes) = 'oid, boolean';
 
 SELECT unnest(ARRAY[
-    is(md5(prosrc), 'f013d3ecaa69b334da4a9b3012efeb46',
+    is(md5(prosrc), 'fb42e03b118baa4eec1ff6fd3773ef3e',
        format('Function pgsodium.%s(%s) body should match checksum',
               proname, pg_get_function_identity_arguments(oid))
     ),
@@ -5246,7 +5247,7 @@ SELECT function_privs_are('pgsodium'::name, proname, proargtypes::regtype[]::tex
     AND oidvectortypes(proargtypes) = 'oid';
 
 SELECT unnest(ARRAY[
-    is(md5(prosrc), 'cc7b62e0bc3a76a6f2523abf0f3d2a83',
+    is(md5(prosrc), '1b1d814a258347381f8989c6874dc01c',
        format('Function pgsodium.%s(%s) body should match checksum',
               proname, pg_get_function_identity_arguments(oid))
     ),

@@ -112,6 +112,8 @@ SELECT lives_ok(
   $test$,
   'can label roles ACCESS');
 
+SELECT pgsodium.update_masks(); -- labeling roles doesn't fire event trigger
+
 SELECT lives_ok(
   format($test$
          SECURITY LABEL FOR pgsodium ON COLUMN private.bar.secret2
@@ -126,7 +128,6 @@ SELECT lives_ok(
   $test$),
   'can label another quoted column for encryption');
 
-GRANT SELECT ON pgsodium.key TO pgsodium_keyholder;
 GRANT ALL ON SCHEMA private to bobo;
 GRANT SELECT ON ALL TABLES IN SCHEMA private to bobo;
 GRANT USAGE ON ALL SEQUENCES IN SCHEMA private TO bobo;
