@@ -27,6 +27,9 @@ SELECT EXISTS (SELECT * FROM pg_settings
     WHERE name = 'shared_preload_libraries'
     AND setting ilike '%pgsodium%') serverkeys \gset
 
+SELECT pg_version_num() / 10000 major_version \gset
+SELECT :major_version = 15 pg15 \gset
+
 \ir pgsodium_schema.sql
 \ir random.sql
 \ir secretbox.sql

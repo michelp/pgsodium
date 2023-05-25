@@ -1,4 +1,6 @@
 \if :serverkeys
+\if :pg15
+
 BEGIN;
 SELECT plan(2);
 
@@ -51,4 +53,5 @@ SELECT results_eq($$SELECT decrypted_secret = 'yes' from public.decrypted_foo$$,
 SELECT * FROM finish();
 ROLLBACK;
 \c - postgres
+\endif
 \endif
