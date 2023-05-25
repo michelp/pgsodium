@@ -43,6 +43,7 @@ COMMIT;
 
 \c - rls_bobo
 
+SET client_min_messages TO WARNING;
 BEGIN;
 SELECT plan(1);
 
@@ -53,5 +54,6 @@ SELECT results_eq($$SELECT decrypted_secret = 'yes' from public.decrypted_foo$$,
 SELECT * FROM finish();
 ROLLBACK;
 \c - postgres
+SET client_min_messages TO WARNING;
 \endif
 \endif

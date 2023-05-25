@@ -1,12 +1,14 @@
-\set ECHO none
+\unset ECHO
 \set QUIET 1
 
 \pset format unaligned
 \pset tuples_only true
-\pset pager
+\pset pager off
 
 \set ON_ERROR_ROLLBACK 1
 \set ON_ERROR_STOP on
+
+SET client_min_messages TO WARNING;
 
 CREATE EXTENSION IF NOT EXISTS pgtap;
 

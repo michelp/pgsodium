@@ -158,6 +158,7 @@ COMMIT;
 
 \c - bobo
 
+SET client_min_messages TO WARNING;
 BEGIN;
 SELECT plan(17);
 
@@ -283,5 +284,6 @@ SELECT lives_ok(
 SELECT * FROM finish();
 
 \c - postgres
+SET client_min_messages TO WARNING;
 DROP SCHEMA private CASCADE;
 \endif
