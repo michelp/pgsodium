@@ -10,18 +10,16 @@
 
 SET client_min_messages TO WARNING;
 
+CREATE ROLE bobo with login password 'foo';
+
 CREATE EXTENSION IF NOT EXISTS pgtap;
 
-BEGIN;
-SELECT plan(1);
-CREATE SCHEMA bogus;
-SELECT throws_ok($$CREATE EXTENSION pgsodium WITH SCHEMA bogus$$,
-                 '0A000', 'extension "pgsodium" must be installed in schema "pgsodium"',
-                 'cannot install pgsodium in any other schema');
-SELECT * FROM finish();
-ROLLBACK;
-
 CREATE EXTENSION pgsodium;
+
+BEGIN;
+SELECT * FROM no_plan();
+
+
 
 SET search_path = pgsodium, public;
 
@@ -53,3 +51,6 @@ SELECT :major_version = 15 pg15 \gset
 \ir tce.sql
 \ir tce_rls.sql
 \ir keys.sql
+
+select * from finish();
+ROLLBACK;

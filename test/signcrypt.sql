@@ -1,5 +1,3 @@
-BEGIN;
-SELECT plan(4);
 
 SELECT crypto_secretbox_noncegen() secretboxnonce \gset
 
@@ -27,5 +25,3 @@ SELECT is(crypto_signcrypt_verify_public(:'signature', 'bob', 'alice', 'addition
     true, 'signcrypt_verify_public');
 
 
-SELECT * FROM finish();
-ROLLBACK;

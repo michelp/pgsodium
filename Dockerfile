@@ -27,7 +27,7 @@ RUN chown postgres:postgres /home/postgres
 
 RUN curl -s -L https://github.com/theory/pgtap/archive/v1.2.0.tar.gz | tar zxvf - && cd pgtap-1.2.0 && make && make install
 RUN curl -s -L https://download.libsodium.org/libsodium/releases/libsodium-1.0.18.tar.gz | tar zxvf - && cd libsodium-1.0.18 && ./configure && make check && make -j 4 install
-RUN cpan App::cpanminus && cpan TAP::Parser::SourceHandler::pgTAP
+RUN cpan App::cpanminus && cpan TAP::Parser::SourceHandler::pgTAP && cpan App::prove
 
 RUN git clone --depth 1 https://github.com/lacanoid/pgddl.git
 RUN cd pgddl && make && make install && cd ..

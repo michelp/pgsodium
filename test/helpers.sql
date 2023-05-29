@@ -1,5 +1,3 @@
-BEGIN;
-SELECT plan(3);
 
 select sodium_bin2base64('bob is your uncle') basebob \gset
 select throws_ok('select sodium_bin2base64(NULL)',
@@ -10,5 +8,3 @@ select is(sodium_base642bin(:'basebob'), 'bob is your uncle'::bytea, 'base64');
 select throws_ok('select sodium_base642bin(NULL)',
     '22000', 'pgsodium_sodium_base642bin: base64 cannot be NULL', 'sodium_base642bin null input');
 
-SELECT * FROM finish();
-ROLLBACK;

@@ -1,5 +1,3 @@
-BEGIN;
-SELECT plan(18);
 
 SELECT crypto_box_noncegen() boxnonce \gset
 select crypto_box_new_seed() boxseed \gset
@@ -64,5 +62,3 @@ SELECT throws_ok(format($$select crypto_box_seal_open(%L, %L, 'bad_key')$$, :'se
 SELECT throws_ok(format($$select crypto_box_seal_open('foo', %L, %L)$$, :'bob_public', :'bob_secret'),
                  '22000', 'pgsodium_crypto_box_seal_open: invalid message', 'crypto_box_seal_open invalid message');
 
-SELECT * FROM finish();
-ROLLBACK;

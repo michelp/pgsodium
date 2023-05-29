@@ -1,9 +1,6 @@
 \if :serverkeys
 \if :pg15
 
-BEGIN;
-SELECT plan(2);
-
 CREATE TABLE public.foo(
   secret text,
   visible bool DEFAULT false
@@ -38,22 +35,14 @@ SELECT lives_ok(
 
 SELECT pgsodium.update_masks(); -- labeling roles doesn't fire event trigger
 
-SELECT * FROM finish();
-COMMIT;
-
-\c - rls_bobo
+set role rls_bobo;
 
 SET client_min_messages TO WARNING;
-BEGIN;
-SELECT plan(1);
 
 SELECT results_eq($$SELECT decrypted_secret = 'yes' from public.decrypted_foo$$,
     $$VALUES (true)$$,
     'can see updated decrypted view but not excluded row');
 
-SELECT * FROM finish();
-ROLLBACK;
-\c - postgres
-SET client_min_messages TO WARNING;
+reset role;
 \endif
 \endif

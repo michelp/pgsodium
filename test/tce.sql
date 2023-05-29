@@ -1,6 +1,4 @@
 \if :serverkeys
-BEGIN;
-SELECT plan(17);
 
 CREATE SCHEMA private;
 CREATE SCHEMA "private-test";
@@ -104,8 +102,6 @@ SELECT lives_ok(
          $test$, :'secret_key_id'),
   'can label quoted column for encryption');
 
-CREATE ROLE bobo with login password 'foo';
-
 SELECT lives_ok(
   $test$
   SECURITY LABEL FOR pgsodium ON ROLE bobo is 'ACCESS private.foo, private.bar, private-test.other_bar-test'
@@ -153,14 +149,8 @@ select ok(has_table_privilege('bobo', 'private.other_bar', 'UPDATE'),
 select ok(has_table_privilege('bobo', 'private.other_bar', 'DELETE'),
 	'user keeps view delete privs after regeneration');
 
-SELECT * FROM finish();
-COMMIT;
-
-\c - bobo
-
-SET client_min_messages TO WARNING;
-BEGIN;
-SELECT plan(17);
+SET SESSION AUTHORIZATION bobo;
+SET ROLE bobo;
 
 SELECT pgsodium.crypto_aead_det_noncegen() nonce \gset
 SELECT pgsodium.crypto_aead_det_noncegen() nonce2 \gset
@@ -281,9 +271,8 @@ SELECT lives_ok(
     $test$,
     'can update only objects owned by session user');
 
-SELECT * FROM finish();
+RESET ROLE;
+RESET SESSION AUTHORIZATION;
 
-\c - postgres
-SET client_min_messages TO WARNING;
 DROP SCHEMA private CASCADE;
 \endif
