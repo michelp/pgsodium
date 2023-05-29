@@ -1,6 +1,4 @@
 \if :serverkeys
-BEGIN;
-SELECT plan(17);
 
 CREATE SCHEMA private;
 CREATE SCHEMA "private-test";
@@ -104,13 +102,13 @@ SELECT lives_ok(
          $test$, :'secret_key_id'),
   'can label quoted column for encryption');
 
-CREATE ROLE bobo with login password 'foo';
-
 SELECT lives_ok(
   $test$
   SECURITY LABEL FOR pgsodium ON ROLE bobo is 'ACCESS private.foo, private.bar, private-test.other_bar-test'
   $test$,
   'can label roles ACCESS');
+
+SELECT pgsodium.update_masks(); -- labeling roles doesn't fire event trigger
 
 SELECT lives_ok(
   format($test$
@@ -126,7 +124,6 @@ SELECT lives_ok(
   $test$),
   'can label another quoted column for encryption');
 
-GRANT SELECT ON pgsodium.key TO pgsodium_keyholder;
 GRANT ALL ON SCHEMA private to bobo;
 GRANT SELECT ON ALL TABLES IN SCHEMA private to bobo;
 GRANT USAGE ON ALL SEQUENCES IN SCHEMA private TO bobo;
@@ -152,13 +149,8 @@ select ok(has_table_privilege('bobo', 'private.other_bar', 'UPDATE'),
 select ok(has_table_privilege('bobo', 'private.other_bar', 'DELETE'),
 	'user keeps view delete privs after regeneration');
 
-SELECT * FROM finish();
-COMMIT;
-
-\c - bobo
-
-BEGIN;
-SELECT plan(17);
+SET SESSION AUTHORIZATION bobo;
+SET ROLE bobo;
 
 SELECT pgsodium.crypto_aead_det_noncegen() nonce \gset
 SELECT pgsodium.crypto_aead_det_noncegen() nonce2 \gset
@@ -279,8 +271,8 @@ SELECT lives_ok(
     $test$,
     'can update only objects owned by session user');
 
-SELECT * FROM finish();
+RESET ROLE;
+RESET SESSION AUTHORIZATION;
 
-\c - postgres
 DROP SCHEMA private CASCADE;
 \endif

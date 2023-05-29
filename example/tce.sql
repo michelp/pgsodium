@@ -73,6 +73,6 @@ CREATE TABLE "tce-example"."bob-testt" (
 );
 
 SECURITY LABEL FOR pgsodium	ON COLUMN "bob-testt"."secret2-test" IS
-    'ENCRYPT WITH KEY COLUMN secret2_key_id-test ASSOCIATED (associated2-test) NONCE nonce2-test';
+    'ENCRYPT WITH KEY COLUMN secret2_key_id-test ASSOCIATED (associated2-test) NONCE nonce2-test SECURITY INVOKER';
 
 select pgsodium.update_masks(true);
