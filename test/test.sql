@@ -10,27 +10,23 @@
 
 SET client_min_messages TO WARNING;
 
+SELECT EXISTS (SELECT * FROM pg_settings
+    WHERE name = 'shared_preload_libraries'
+    AND setting ilike '%pgsodium%') serverkeys \gset
+
+BEGIN;
 CREATE ROLE bobo with login password 'foo';
 
 CREATE EXTENSION IF NOT EXISTS pgtap;
 
 CREATE EXTENSION pgsodium;
 
-BEGIN;
 SELECT * FROM no_plan();
 
-
+\ir pgsodium_schema.sql
 
 SET search_path = pgsodium, public;
 
-SELECT EXISTS (SELECT * FROM pg_settings
-    WHERE name = 'shared_preload_libraries'
-    AND setting ilike '%pgsodium%') serverkeys \gset
-
-SELECT pg_version_num() / 10000 major_version \gset
-SELECT :major_version = 15 pg15 \gset
-
-\ir pgsodium_schema.sql
 \ir random.sql
 \ir secretbox.sql
 \ir secretstream.sql
@@ -52,5 +48,6 @@ SELECT :major_version = 15 pg15 \gset
 \ir tce_rls.sql
 \ir keys.sql
 
-select * from finish();
+SELECT * FROM finish();
+
 ROLLBACK;
