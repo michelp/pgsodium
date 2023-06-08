@@ -14,13 +14,12 @@ SELECT results_eq('SELECT pgsodium.version()', $$VALUES ('3.1.7'::text)$$, 'Vers
 -- Note: pay close attention to the objects schema when applicable,
 -- it MUST be pgsodium.
 
-SELECT results_eq($$
+SELECT bag_eq($$
   SELECT pg_catalog.pg_describe_object(classid, objid, 0)
   FROM pg_catalog.pg_depend
   WHERE refclassid = 'pg_catalog.pg_extension'::pg_catalog.regclass
     AND refobjid = (SELECT oid FROM pg_extension WHERE extname = 'pgsodium')
-    AND deptype = 'e'
-  ORDER BY 1$$,
+    AND deptype = 'e'$$,
   $$ VALUES
     ('event trigger pgsodium_trg_mask_update'                                                                      ::text),
     ('function pgsodium.create_key(pgsodium.key_type,text,bytea,bytea,uuid,bytea,timestamp with time zone,text)'   ::text),

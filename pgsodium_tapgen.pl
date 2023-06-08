@@ -78,16 +78,15 @@ $rs = $dbh->selectcol_arrayref(q{
     WHERE refclassid = 'pg_catalog.pg_extension'::pg_catalog.regclass
       AND refobjid = (SELECT oid FROM pg_extension WHERE extname = 'pgsodium')
       AND deptype = 'e'
-    ORDER BY 1;
+    ORDER BY pg_catalog.pg_describe_object(classid, objid, 0) COLLATE "C"
 }) or die;
 
-print q{SELECT results_eq($$
+print q{SELECT bag_eq($$
   SELECT pg_catalog.pg_describe_object(classid, objid, 0)
   FROM pg_catalog.pg_depend
   WHERE refclassid = 'pg_catalog.pg_extension'::pg_catalog.regclass
     AND refobjid = (SELECT oid FROM pg_extension WHERE extname = 'pgsodium')
-    AND deptype = 'e'
-  ORDER BY 1$$,
+    AND deptype = 'e'$$,
   $$ VALUES
     }, join(",\n    ", @$rs), q{
   $$,
