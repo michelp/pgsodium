@@ -709,6 +709,11 @@ SELECT col_type_is(      'pgsodium', 'masking_rule', 'priority'       , 'integer
 SELECT col_is_null(      'pgsodium', 'masking_rule', 'priority'       , 'col_is_null( masking_rule.priority )');
 SELECT col_hasnt_default('pgsodium', 'masking_rule', 'priority'       , 'col_hasnt_default( masking_rule.priority )');
 
+SELECT has_column(       'pgsodium', 'masking_rule', 'security_invoker', 'has column masking_rule.security_invoker');
+SELECT col_type_is(      'pgsodium', 'masking_rule', 'security_invoker', 'boolean', 'type of column masking_rule.security_invoker is boolean');
+SELECT col_is_null(      'pgsodium', 'masking_rule', 'security_invoker', 'col_is_null( masking_rule.security_invoker )');
+SELECT col_hasnt_default('pgsodium', 'masking_rule', 'security_invoker', 'col_hasnt_default( masking_rule.security_invoker )');
+
 
 -- owner of view masking_rule
 SELECT view_owner_is('pgsodium'::name, 'masking_rule'::name, 'postgres'::name);
