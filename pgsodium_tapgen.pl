@@ -7,7 +7,7 @@ use DBD::Pg;
 use Getopt::Long;
 use File::Spec;
 
-my $PGSODIUM_VERSION = '3.1.5';
+my $PGSODIUM_VERSION = '3.1.7';
 
 my $curr;
 my $rs;
@@ -46,12 +46,15 @@ $dbh->do(qq{CREATE EXTENSION pgsodium VERSION "$PGSODIUM_VERSION" });
 
 ################################################################################
 
-print "BEGIN;\n",
-      "CREATE EXTENSION IF NOT EXISTS pgtap;\n",
-      "CREATE EXTENSION IF NOT EXISTS pgsodium;\n\n",
-      "SET search_path TO 'public';\n\n";
+print "SET search_path TO 'public';\n";
 
-print "SELECT plan(1); -- FIXME!\n";
+print "\n\n\n---- POSTGRESQL MINIMAL VERSION\n";
+print "SELECT cmp_ok("
+     ."current_setting('server_version_num')::int, "
+     ."'>=', "
+     ."130000, "
+     ."format('PostgreSQL version %s >= 13', current_setting('server_version'))"
+     .");\n";
 
 print "\n\n\n---- EXTENSION VERSION\n";
 
@@ -71,16 +74,15 @@ $rs = $dbh->selectcol_arrayref(q{
     WHERE refclassid = 'pg_catalog.pg_extension'::pg_catalog.regclass
       AND refobjid = (SELECT oid FROM pg_extension WHERE extname = 'pgsodium')
       AND deptype = 'e'
-    ORDER BY 1;
+    ORDER BY pg_catalog.pg_describe_object(classid, objid, 0) COLLATE "C"
 }) or die;
 
-print q{SELECT results_eq($$
+print q{SELECT bag_eq($$
   SELECT pg_catalog.pg_describe_object(classid, objid, 0)
   FROM pg_catalog.pg_depend
   WHERE refclassid = 'pg_catalog.pg_extension'::pg_catalog.regclass
     AND refobjid = (SELECT oid FROM pg_extension WHERE extname = 'pgsodium')
-    AND deptype = 'e'
-  ORDER BY 1$$,
+    AND deptype = 'e'$$,
   $$ VALUES
     }, join(",\n    ", @$rs), q{
   $$,
@@ -113,22 +115,19 @@ foreach my $r (@$rs) {
     printf "SELECT is_member_of( %s, %s );\n", $r->[0], $r->[1];
 }
 
+print "\n\n\n---- SCHEMAS\n\n";
+
 $rs = $dbh->selectall_arrayref(q{
     SELECT quote_literal(nspname),
       quote_literal(pg_catalog.pg_get_userbyid(nspowner))
     FROM pg_catalog.pg_namespace
-    WHERE nspname NOT IN ('pg_catalog', 'pg_toast', 'information_schema')
+    WHERE nspname NOT IN ('public', 'pg_catalog', 'pg_toast', 'information_schema')
     ORDER BY nspname
 }) or die;
 
-print "\n\n\n---- SCHEMAS\n\n";
-
-print "SELECT schemas_are(ARRAY[\n    ",
-      join(",\n    ", map {$_->[0]} @$rs),
-      "\n]);\n";
-
 foreach my $r ( @$rs ) {
-    printf "SELECT schema_owner_is(%-10s, %s);\n", @$r;
+    printf "SELECT has_schema(%s);\n", $r->[0];
+    printf "SELECT schema_owner_is(%s, %s);\n\n", @$r;
 }
 
 print "\n\n\n---- EVENT TRIGGERS\n\n";
@@ -136,7 +135,7 @@ print "\n\n\n---- EVENT TRIGGERS\n\n";
 # pgtap doesn't support event triggers yet.
 $rs = $dbh->selectall_arrayref(q{
     SELECT quote_literal(evtname), quote_literal(evtevent),
-      quote_literal(evtenabled), ARRAY(SELECT quote_literal(unnest(evttags)) ORDER BY 1),
+      quote_literal(evtenabled::text), ARRAY(SELECT quote_literal(unnest(evttags)) ORDER BY 1),
       quote_literal(pg_catalog.pg_get_userbyid(evtowner)),
       quote_literal(evtfoid::regproc)
     FROM pg_catalog.pg_event_trigger
@@ -429,8 +428,6 @@ for my $e ( @$rs ) {
   "]);\n";
 }
 
-print "\n\nROLLBACK;\n";
-
 $dbh->rollback;
 
 exit;
@@ -528,6 +525,7 @@ sub privs_tests {
                 WHEN r.relkind = 'S' THEN has_sequence_privilege(a.oid, r.oid, s.p)
            END
        AND s.k = r.relkind
+       AND a.rolname NOT IN ('pg_read_all_data', 'pg_write_all_data')
      GROUP BY a.rolname, r.nspname, r.relname
      ORDER BY a.rolname}, undef, $schema, $tname);
 
@@ -542,7 +540,7 @@ sub privs_tests {
           ."FROM pg_catalog.pg_roles\n"
           ."WHERE rolname NOT IN (%s);\n",
           $type, $privs->[0][2], $privs->[0][3],
-          join(',',  map { $_->[0] } @$privs);
+          join(',', ("'pg_read_all_data'", "'pg_write_all_data'", map { $_->[0] } @$privs ));
 }
 
 sub idxs_tests {
