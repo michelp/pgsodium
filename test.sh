@@ -19,8 +19,8 @@ do
 
 		echo running test container
 		docker run --rm -e POSTGRES_HOST_AUTH_METHOD=trust -d \
-               -v `pwd`/test:/home/postgres/pgsodium/test \
-               -v `pwd`/example:/home/postgres/pgsodium/example \
+               -v `pwd`/test:/home/postgres/pgsodium/test:Z \
+               -v `pwd`/example:/home/postgres/pgsodium/example:Z \
                --name "$DB_HOST" $TAG postgres $config
 
 		echo waiting for database to accept connections
