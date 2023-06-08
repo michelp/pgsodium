@@ -531,6 +531,7 @@ sub privs_tests {
                 WHEN r.relkind = 'S' THEN has_sequence_privilege(a.oid, r.oid, s.p)
            END
        AND s.k = r.relkind
+       AND a.rolname NOT IN ('pg_read_all_data', 'pg_write_all_data')
      GROUP BY a.rolname, r.nspname, r.relname
      ORDER BY a.rolname}, undef, $schema, $tname);
 
@@ -545,7 +546,7 @@ sub privs_tests {
           ."FROM pg_catalog.pg_roles\n"
           ."WHERE rolname NOT IN (%s);\n",
           $type, $privs->[0][2], $privs->[0][3],
-          join(',',  map { $_->[0] } @$privs);
+          join(',', ("'pg_read_all_data'", "'pg_write_all_data'", map { $_->[0] } @$privs ));
 }
 
 sub idxs_tests {
