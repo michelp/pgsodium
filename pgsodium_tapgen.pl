@@ -7,7 +7,7 @@ use DBD::Pg;
 use Getopt::Long;
 use File::Spec;
 
-my $PGSODIUM_VERSION = '3.1.5';
+my $PGSODIUM_VERSION = '3.1.7';
 
 my $curr;
 my $rs;
