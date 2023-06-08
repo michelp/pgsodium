@@ -139,7 +139,7 @@ print "\n\n\n---- EVENT TRIGGERS\n\n";
 # pgtap doesn't support event triggers yet.
 $rs = $dbh->selectall_arrayref(q{
     SELECT quote_literal(evtname), quote_literal(evtevent),
-      quote_literal(evtenabled), ARRAY(SELECT quote_literal(unnest(evttags)) ORDER BY 1),
+      quote_literal(evtenabled::text), ARRAY(SELECT quote_literal(unnest(evttags)) ORDER BY 1),
       quote_literal(pg_catalog.pg_get_userbyid(evtowner)),
       quote_literal(evtfoid::regproc)
     FROM pg_catalog.pg_event_trigger
