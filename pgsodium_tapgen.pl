@@ -46,12 +46,8 @@ $dbh->do(qq{CREATE EXTENSION pgsodium VERSION "$PGSODIUM_VERSION" });
 
 ################################################################################
 
-print "BEGIN;\n",
-      "CREATE EXTENSION IF NOT EXISTS pgtap;\n",
-      "CREATE EXTENSION IF NOT EXISTS pgsodium;\n\n",
-      "SET search_path TO 'public';\n\n";
+print "SET search_path TO 'public';\n";
 
-print "SELECT plan(1); -- FIXME!\n";
 print "\n\n\n---- POSTGRESQL MINIMAL VERSION\n";
 print "SELECT cmp_ok("
      ."current_setting('server_version_num')::int, "
@@ -431,8 +427,6 @@ for my $e ( @$rs ) {
       join(",", @{ $e->[1] }),
   "]);\n";
 }
-
-print "\n\nROLLBACK;\n";
 
 $dbh->rollback;
 

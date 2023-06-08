@@ -1,10 +1,11 @@
+SET search_path TO 'public';
+
+
+
 ---- POSTGRESQL MINIMAL VERSION
 SELECT cmp_ok(current_setting('server_version_num')::int, '>=', 130000, format('PostgreSQL version %s >= 13', current_setting('server_version')));
 
-CREATE EXTENSION IF NOT EXISTS pgtap;
-CREATE EXTENSION IF NOT EXISTS pgsodium;
 
-SET search_path TO 'public';
 
 ---- EXTENSION VERSION
 SELECT results_eq('SELECT pgsodium.version()', $$VALUES ('3.1.7'::text)$$, 'Version of pgsodium is 3.1.7');
@@ -453,7 +454,7 @@ WHERE rolname NOT IN ('pg_read_all_data','pg_write_all_data','pgsodium_keymaker'
 
 
 
----- Views
+---- VIEWS
 
 SELECT views_are('pgsodium', ARRAY[
     'decrypted_key',
@@ -5780,5 +5781,3 @@ SELECT enums_are('pgsodium', ARRAY[
 
 SELECT enum_has_labels('pgsodium','key_status', ARRAY['default','valid','invalid','expired']);
 SELECT enum_has_labels('pgsodium','key_type', ARRAY['aead-ietf','aead-det','hmacsha512','hmacsha256','auth','shorthash','generichash','kdf','secretbox','secretstream','stream_xchacha20']);
-
-SET search_path = pgsodium, public;
