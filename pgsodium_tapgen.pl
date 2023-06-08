@@ -52,6 +52,13 @@ print "BEGIN;\n",
       "SET search_path TO 'public';\n\n";
 
 print "SELECT plan(1); -- FIXME!\n";
+print "\n\n\n---- POSTGRESQL MINIMAL VERSION\n";
+print "SELECT cmp_ok("
+     ."current_setting('server_version_num')::int, "
+     ."'>=', "
+     ."130000, "
+     ."format('PostgreSQL version %s >= 13', current_setting('server_version'))"
+     .");\n";
 
 print "\n\n\n---- EXTENSION VERSION\n";
 

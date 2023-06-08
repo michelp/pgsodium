@@ -1,3 +1,5 @@
+---- POSTGRESQL MINIMAL VERSION
+SELECT cmp_ok(current_setting('server_version_num')::int, '>=', 130000, format('PostgreSQL version %s >= 13', current_setting('server_version')));
 
 CREATE EXTENSION IF NOT EXISTS pgtap;
 CREATE EXTENSION IF NOT EXISTS pgsodium;
