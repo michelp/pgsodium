@@ -192,14 +192,12 @@ SELECT is_member_of( 'pgsodium_keyiduser', 'pgsodium_keymaker' );
 
 ---- SCHEMAS
 
--- SELECT schemas_are(ARRAY[
---     'pgsodium',
---     'pgsodium_masks',
---     'public'
--- ]);
+SELECT has_schema('pgsodium');
 SELECT schema_owner_is('pgsodium', 'postgres');
+
+SELECT has_schema('pgsodium_masks');
 SELECT schema_owner_is('pgsodium_masks', 'postgres');
--- SELECT schema_owner_is('public'  , 'postgres');
+
 
 
 
