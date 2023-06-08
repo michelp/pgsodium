@@ -14,12 +14,12 @@ SELECT EXISTS (SELECT * FROM pg_settings
     WHERE name = 'shared_preload_libraries'
     AND setting ilike '%pgsodium%') serverkeys \gset
 
-BEGIN;
-CREATE ROLE bobo with login password 'foo';
-
 CREATE EXTENSION IF NOT EXISTS pgtap;
 
-CREATE EXTENSION pgsodium;
+CREATE EXTENSION IF NOT EXISTS pgsodium;
+
+BEGIN;
+CREATE ROLE bobo with login password 'foo';
 
 SELECT * FROM no_plan();
 
