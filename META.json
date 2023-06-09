@@ -2,7 +2,7 @@
     "name": "pgsodium",
     "abstract": "Postgres extension for libsodium functions",
     "description": "pgsodium is a PostgreSQL extension that exposes modern libsodium based cryptographic functions to SQL.",
-    "version": "3.1.7",
+    "version": "3.2.0",
     "maintainer": [
         "Michel Pelletier <pelletier.michel@gmail.com>"
     ],
@@ -13,7 +13,7 @@
             "abstract": "Postgres extension for libsodium functions",
             "file": "src/pgsodium.h",
             "docfile": "README.md",
-            "version": "3.1.7"
+            "version": "3.2.0"
         }
     },
     "prereqs": {

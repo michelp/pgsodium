@@ -8,7 +8,7 @@ SELECT cmp_ok(current_setting('server_version_num')::int, '>=', 130000, format('
 
 
 ---- EXTENSION VERSION
-SELECT results_eq('SELECT pgsodium.version()', $$VALUES ('3.1.7'::text)$$, 'Version of pgsodium is 3.1.7');
+SELECT results_eq('SELECT pgsodium.version()', $$VALUES ('3.2.0'::text)$$, 'Version of pgsodium is 3.2.0');
 
 
 ---- EXTENSION OBJECTS
