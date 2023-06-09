@@ -115,6 +115,45 @@ foreach my $r (@$rs) {
     printf "SELECT is_member_of( %s, %s );\n", $r->[0], $r->[1];
 }
 
+$rs = $dbh->selectcol_arrayref(q{
+SELECT format('(%L::text, %L::text, %L::text, %L::text)',
+  pg_catalog.pg_get_userbyid(d.defaclrole), n.nspname,
+  CASE d.defaclobjtype
+  WHEN 'r' THEN 'table'
+  WHEN 'S' THEN 'sequence'
+  WHEN 'f' THEN 'function'
+  WHEN 'T' THEN 'type'
+  WHEN 'n' THEN 'schema'
+  END,
+  pg_catalog.array_to_string(d.defaclacl, E'\n'))
+FROM pg_catalog.pg_default_acl d
+LEFT JOIN pg_catalog.pg_namespace n ON n.oid = d.defaclnamespace
+ORDER BY 1
+}) or die;
+
+if (scalar @$rs) {
+    print "\n\n\n---- DEFAULT PRIVS\n\n";
+    print q{SELECT result_eq($$
+  SELECT pg_catalog.pg_get_userbyid(d.defaclrole)::text, n.nspname::text,
+    CASE d.defaclobjtype
+    WHEN 'r' THEN 'table'
+    WHEN 'S' THEN 'sequence'
+    WHEN 'f' THEN 'function'
+    WHEN 'T' THEN 'type'
+    WHEN 'n' THEN 'schema'
+    END,
+    pg_catalog.array_to_string(d.defaclacl, E'\n')::text
+  FROM pg_catalog.pg_default_acl d
+  LEFT JOIN pg_catalog.pg_namespace n ON n.oid = d.defaclnamespace
+  ORDER BY 1, 2, 3$$,
+  $$ VALUES
+    },
+    join(",\n    ", @$rs), q{
+  $$,
+  'Check default privileges');
+};
+}
+
 print "\n\n\n---- SCHEMAS\n\n";
 
 $rs = $dbh->selectall_arrayref(q{

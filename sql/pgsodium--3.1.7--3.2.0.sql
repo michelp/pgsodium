@@ -43,3 +43,6 @@ GRANT SELECT, INSERT, UPDATE, DELETE ON pgsodium.decrypted_key TO pgsodium_keyma
 
 REVOKE ALL ON pgsodium.decrypted_key FROM pgsodium_keyholder;
 GRANT SELECT, INSERT, UPDATE, DELETE ON pgsodium.decrypted_key TO pgsodium_keyholder;
+
+ALTER DEFAULT PRIVILEGES IN SCHEMA pgsodium REVOKE ALL ON TABLES FROM pgsodium_keyholder;
+ALTER DEFAULT PRIVILEGES IN SCHEMA pgsodium REVOKE ALL ON SEQUENCES FROM pgsodium_keyholder;
