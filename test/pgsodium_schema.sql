@@ -24,7 +24,6 @@ SELECT bag_eq($$
   $$ VALUES
     ('event trigger pgsodium_trg_mask_update'                                                                      ::text),
     ('function pgsodium.create_key(pgsodium.key_type,text,bytea,bytea,uuid,bytea,timestamp with time zone,text)'   ::text),
-    ('function pgsodium.create_mask_view(oid,boolean)'                                                             ::text),
     ('function pgsodium.create_mask_view(oid,integer,boolean)'                                                     ::text),
     ('function pgsodium.crypto_aead_det_decrypt(bytea,bytea,bigint,bytea,bytea)'                                   ::text),
     ('function pgsodium.crypto_aead_det_decrypt(bytea,bytea,bytea,bytea)'                                          ::text),
@@ -970,41 +969,6 @@ SELECT function_privs_are('pgsodium'::name, proname, proargtypes::regtype[]::tex
   WHERE pronamespace = 'pgsodium'::regnamespace
     AND proname = 'create_key'
     AND oidvectortypes(proargtypes) = 'pgsodium.key_type, text, bytea, bytea, uuid, bytea, timestamp with time zone, text';
-
-SELECT unnest(ARRAY[
-    is(md5(prosrc), 'a34e96732392101c6e438288325151c0',
-       format('Function pgsodium.%s(%s) body should match checksum',
-              proname, pg_get_function_identity_arguments(oid))
-    ),
-    function_owner_is(
-      'pgsodium'::name, proname,
-      proargtypes::regtype[]::name[], 'postgres'::name,
-      format('Function pgsodium.%s(%s) owner is %s',
-             proname, pg_get_function_identity_arguments(oid), 'postgres')
-    ),
-    function_lang_is('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'plpgsql'::name ),
-    function_returns('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'void' ),
-    volatility_is('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'volatile'),
-    isnt_definer('pgsodium'::name, proname, proargtypes::regtype[]::name[]),
-    isnt_strict('pgsodium'::name, proname, proargtypes::regtype[]::name[]),
-    is_normal_function('pgsodium'::name, proname, proargtypes::regtype[]::name[])
-])
-  FROM pg_catalog.pg_proc
-  WHERE pronamespace = 'pgsodium'::regnamespace
-    AND proname = 'create_mask_view'
-    AND oidvectortypes(proargtypes) = 'oid, boolean';
-
-SELECT function_privs_are('pgsodium'::name, proname, proargtypes::regtype[]::text[], 'postgres', '{EXECUTE}'::text[])
-  FROM pg_catalog.pg_proc
-  WHERE pronamespace = 'pgsodium'::regnamespace
-    AND proname = 'create_mask_view'
-    AND oidvectortypes(proargtypes) = 'oid, boolean';
-
-SELECT function_privs_are('pgsodium'::name, proname, proargtypes::regtype[]::text[], 'public', '{EXECUTE}'::text[])
-  FROM pg_catalog.pg_proc
-  WHERE pronamespace = 'pgsodium'::regnamespace
-    AND proname = 'create_mask_view'
-    AND oidvectortypes(proargtypes) = 'oid, boolean';
 
 SELECT unnest(ARRAY[
     is(md5(prosrc), 'fb42e03b118baa4eec1ff6fd3773ef3e',
