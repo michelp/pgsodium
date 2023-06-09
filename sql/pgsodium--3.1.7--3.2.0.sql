@@ -29,3 +29,17 @@ ALTER INDEX pgsodium.pgsodium_key_unique_name RENAME TO key_name_key;
  *         "user_data" to the view.
  */
 SELECT * FROM pgsodium.update_mask('pgsodium.key'::regclass::oid);
+
+/*
+ * Fix privileges
+ */
+
+REVOKE ALL ON pgsodium.key FROM pgsodium_keyiduser;
+
+REVOKE ALL ON pgsodium.key FROM pgsodium_keymaker;
+GRANT SELECT, INSERT, UPDATE, DELETE ON pgsodium.key TO pgsodium_keymaker;
+REVOKE ALL ON pgsodium.decrypted_key FROM pgsodium_keymaker;
+GRANT SELECT, INSERT, UPDATE, DELETE ON pgsodium.decrypted_key TO pgsodium_keymaker;
+
+REVOKE ALL ON pgsodium.decrypted_key FROM pgsodium_keyholder;
+GRANT SELECT, INSERT, UPDATE, DELETE ON pgsodium.decrypted_key TO pgsodium_keyholder;
