@@ -16,7 +16,31 @@ SELECT EXISTS (SELECT * FROM pg_settings
 
 CREATE EXTENSION IF NOT EXISTS pgtap;
 
-CREATE EXTENSION IF NOT EXISTS pgsodium;
+SELECT diag('Existing pgsodium version: '|| extversion)
+FROM pg_catalog.pg_extension
+WHERE extname = 'pgsodium';
+
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_catalog.pg_extension WHERE extname = 'pgsodium') THEN
+        EXECUTE 'CREATE EXTENSION pgsodium';
+    ELSE
+        EXECUTE 'ALTER EXTENSION pgsodium UPDATE';
+    END IF;
+END
+$$;
+
+SELECT diag('Installed or updated version of pgsodium: '|| extversion)
+FROM pg_catalog.pg_extension
+WHERE extname = 'pgsodium';
+
+SELECT diag('Running tests on ' || pg_catalog.version());
+
+SELECT diag(format('Parameter %s = %s', name, setting))
+FROM pg_settings
+WHERE name IN ('shared_preload_libraries', 'pgsodium.getkey_script');
+
+SELECT diag('Running tests in database ' || current_database());
 
 BEGIN;
 CREATE ROLE bobo with login password 'foo';

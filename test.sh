@@ -26,8 +26,15 @@ do
 		echo waiting for database to accept connections
 		sleep 3;
 		echo running tests
-        
-		$EXEC pg_prove -U "$SU" /home/postgres/pgsodium/test/test.sql
+
+		# test using inscremental script
+		$EXEC createdb inc
+		$EXEC psql -d inc -c 'CREATE EXTENSION pgsodium VERSION "3.1.0"'
+		$EXEC pg_prove -d inc -U "$SU" /home/postgres/pgsodium/test/test.sql
+
+		# test using full script
+		$EXEC createdb full
+		$EXEC pg_prove -d full -U "$SU" /home/postgres/pgsodium/test/test.sql
 
 		echo destroying test container and image
 		docker rm --force "$DB_HOST"
