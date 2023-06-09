@@ -158,7 +158,6 @@ SELECT bag_eq($$
     ('function pgsodium.update_mask(oid,boolean)'                                                                  ::text),
     ('function pgsodium.update_masks(boolean)'                                                                     ::text),
     ('function pgsodium.version()'                                                                                 ::text),
-    ('schema pgsodium_masks'                                                                                       ::text),
     ('sequence pgsodium.key_key_id_seq'                                                                            ::text),
     ('table pgsodium.key'                                                                                          ::text),
     ('type pgsodium._key_id_context'                                                                               ::text),
@@ -194,9 +193,6 @@ SELECT is_member_of( 'pgsodium_keyiduser', 'pgsodium_keymaker' );
 
 SELECT has_schema('pgsodium');
 SELECT schema_owner_is('pgsodium', 'postgres');
-
-SELECT has_schema('pgsodium_masks');
-SELECT schema_owner_is('pgsodium_masks', 'postgres');
 
 
 
