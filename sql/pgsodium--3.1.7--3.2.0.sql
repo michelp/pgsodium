@@ -23,3 +23,9 @@ DROP SCHEMA IF EXISTS pgsodium_masks;
  */
 ALTER TABLE pgsodium.key RENAME CONSTRAINT "pgsodium_raw" TO "key_check";
 ALTER INDEX pgsodium.pgsodium_key_unique_name RENAME TO key_name_key;
+
+/*
+ * change: force regenerating the decrypted_key view to add the missing column
+ *         "user_data" to the view.
+ */
+SELECT * FROM pgsodium.update_mask('pgsodium.key'::regclass::oid);

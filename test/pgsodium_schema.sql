@@ -474,7 +474,8 @@ SELECT columns_are('pgsodium'::name, 'decrypted_key'::name, ARRAY[
   'decrypted_raw_key',
   'raw_key_nonce',
   'parent_key',
-  'comment'
+  'comment',
+  'user_data'
 ]::name[]);
 
 SELECT has_column(       'pgsodium', 'decrypted_key', 'id'             , 'has column decrypted_key.id');
@@ -546,6 +547,11 @@ SELECT has_column(       'pgsodium', 'decrypted_key', 'comment'        , 'has co
 SELECT col_type_is(      'pgsodium', 'decrypted_key', 'comment'        , 'text', 'type of column decrypted_key.comment is text');
 SELECT col_is_null(      'pgsodium', 'decrypted_key', 'comment'        , 'col_is_null( decrypted_key.comment )');
 SELECT col_hasnt_default('pgsodium', 'decrypted_key', 'comment'        , 'col_hasnt_default( decrypted_key.comment )');
+
+SELECT has_column(       'pgsodium', 'decrypted_key', 'user_data'      , 'has column decrypted_key.user_data');
+SELECT col_type_is(      'pgsodium', 'decrypted_key', 'user_data'      , 'text', 'type of column decrypted_key.user_data is text');
+SELECT col_is_null(      'pgsodium', 'decrypted_key', 'user_data'      , 'col_is_null( decrypted_key.user_data )');
+SELECT col_hasnt_default('pgsodium', 'decrypted_key', 'user_data'      , 'col_hasnt_default( decrypted_key.user_data )');
 
 
 -- owner of view decrypted_key
