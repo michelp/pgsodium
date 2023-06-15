@@ -1,5 +1,3 @@
-BEGIN;
-SELECT plan(7);
 
 SELECT crypto_kdf_keygen() kdfkey \gset
 SELECT length(crypto_kdf_derive_from_key(64, 1, '__auth__', :'kdfkey'::bytea)) kdfsubkeylen \gset
@@ -27,17 +25,10 @@ SELECT throws_ok($$SELECT crypto_kdf_derive_from_key(32, 1, '__aut__', NULL::byt
     '22000', 'pgsodium_crypto_kdf_derive_from_key: primary key cannot be NULL',
     'kdf null key size.');
 
-SELECT * FROM finish();
-ROLLBACK;
-
 \if :serverkeys
 
-BEGIN;
-SELECT plan(1);
 select id as kdf_key_id from create_key('kdf') \gset
 SELECT lives_ok(format($$select crypto_kdf_derive_from_key(32, 42, 'pgsodium', %L::uuid)$$, :'kdf_key_id'),
           'crypto_kdf_derive_from_key by uuid');
 
-SELECT * FROM finish();
-ROLLBACK;
 \endif

@@ -1,5 +1,3 @@
-BEGIN;
-SELECT plan(4);
 
 select is(crypto_hash_sha256('bob is your uncle'),
     '\x5eff82dc2ca0cfbc0d0eaa95b13b7fbec11540e217b0fe2a6f3c7d12f657630d', 'sha256');
@@ -13,5 +11,3 @@ select throws_ok($$ select crypto_hash_sha256(NULL)$$,
 select throws_ok($$ select crypto_hash_sha512(NULL)$$,
     '22000', 'pgsodium_crypto_hash_sha512: message cannot be NULL', 'sha512 NULL data');
 
-SELECT * FROM finish();
-ROLLBACK;

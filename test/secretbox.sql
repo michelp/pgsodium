@@ -1,6 +1,3 @@
-BEGIN;
-SELECT plan(16);
-
 SELECT crypto_secretbox_keygen() boxkey \gset
 SELECT crypto_secretbox_noncegen() secretboxnonce \gset
 
@@ -54,13 +51,8 @@ SELECT throws_ok($$select crypto_secretbox_open('bad', 'bad', NULL::bigint)$$,
 SELECT throws_ok($$select crypto_secretbox_open('bad', 'bad', 1, NULL)$$,
                  '22000', 'pgsodium_crypto_secretbox_open_by_id: key context cannot be NULL', 'crypto_secretbox null key context');
 
-SELECT * FROM finish();
-ROLLBACK;
-
 \if :serverkeys
 
-BEGIN;
-SELECT plan(4);
 SET ROLE pgsodium_keyiduser;
 
 SELECT crypto_secretbox('bob is your uncle', :'secretboxnonce', 1) secretbox \gset
@@ -81,6 +73,4 @@ SELECT is(crypto_secretbox_open(:'secretbox', :'secretboxnonce', :'secretbox_key
           'bob is your uncle', 'secretbox_open by id');
 
 RESET ROLE;
-SELECT * FROM finish();
-ROLLBACK;
 \endif

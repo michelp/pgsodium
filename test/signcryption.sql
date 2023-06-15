@@ -1,5 +1,3 @@
-BEGIN;
-SELECT plan(1);
 
 select public, secret from pgsodium.crypto_signcrypt_new_keypair() \gset bob_
 select public, secret from pgsodium.crypto_signcrypt_new_keypair() \gset alice_
@@ -21,7 +19,3 @@ select results_eq(
 
 select ok(pgsodium.crypto_signcrypt_token_verify(:'token_token', :'bob_public'),
 	'signcryption verify');
-
-SELECT * FROM finish();
-ROLLBACK;
-	

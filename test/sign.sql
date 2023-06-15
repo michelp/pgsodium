@@ -1,6 +1,3 @@
-BEGIN;
-
-SELECT plan(18);
 
 SELECT lives_ok($$select crypto_sign_seed_new_keypair(crypto_sign_new_seed())$$,
                 'crypto_sign_seed_new_keypair');
@@ -132,5 +129,3 @@ UNION ALL
 SELECT ok(not verify, 'Multi-part signature detects tampering')
   FROM noverify;
 
-SELECT * FROM finish();
-ROLLBACK;

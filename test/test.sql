@@ -1,31 +1,31 @@
-\set ECHO none
+\unset ECHO
 \set QUIET 1
 
 \pset format unaligned
 \pset tuples_only true
-\pset pager
+\pset pager off
 
 \set ON_ERROR_ROLLBACK 1
 \set ON_ERROR_STOP on
 
-CREATE EXTENSION IF NOT EXISTS pgtap;
-
-BEGIN;
-SELECT plan(1);
-CREATE SCHEMA bogus;
-SELECT throws_ok($$CREATE EXTENSION pgsodium WITH SCHEMA bogus$$,
-                 '0A000', 'extension "pgsodium" must be installed in schema "pgsodium"',
-                 'cannot install pgsodium in any other schema');
-SELECT * FROM finish();
-ROLLBACK;
-
-CREATE EXTENSION pgsodium;
-
-SET search_path = pgsodium, public;
+SET client_min_messages TO WARNING;
 
 SELECT EXISTS (SELECT * FROM pg_settings
     WHERE name = 'shared_preload_libraries'
     AND setting ilike '%pgsodium%') serverkeys \gset
+
+CREATE EXTENSION IF NOT EXISTS pgtap;
+
+CREATE EXTENSION IF NOT EXISTS pgsodium;
+
+BEGIN;
+CREATE ROLE bobo with login password 'foo';
+
+SELECT * FROM no_plan();
+
+\ir pgsodium_schema.sql
+
+SET search_path = pgsodium, public;
 
 \ir random.sql
 \ir secretbox.sql
@@ -45,5 +45,10 @@ SELECT EXISTS (SELECT * FROM pg_settings
 \ir signcrypt.sql
 \ir helpers.sql
 \ir tce.sql
+\ir tce_rls.sql
 \ir keys.sql
 \ir signcryption.sql
+
+SELECT * FROM finish();
+
+ROLLBACK;

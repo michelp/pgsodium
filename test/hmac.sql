@@ -1,5 +1,3 @@
-BEGIN;
-SELECT plan(14);
 
 select crypto_auth_hmacsha512_keygen() hmac512key \gset
 select crypto_auth_hmacsha512('food', :'hmac512key'::bytea) hmac512 \gset
@@ -37,13 +35,7 @@ select throws_ok($$select crypto_auth_hmacsha256_verify('bad', NULL::bytea, 'bad
 select throws_ok($$select crypto_auth_hmacsha256_verify('bad', 'bad', NULL::bytea)$$, '22000',
     'pgsodium_crypto_auth_hmacsha256_verify: key cannot be NULL', 'hmac256_verify null key');
 
-SELECT * FROM finish();
-ROLLBACK;
-
 \if :serverkeys
-
-BEGIN;
-SELECT plan(22);
 
 select crypto_auth_hmacsha512('food', 42) hmac512 \gset
 
@@ -103,6 +95,4 @@ select crypto_auth_hmacsha256('food', :'extkey256_id'::uuid) hmac256 \gset
 select is(crypto_auth_hmacsha256_verify(:'hmac256', 'food', :'extkey256_id'::uuid), true, 'external hmac256 verified');
 select is(crypto_auth_hmacsha256_verify(:'hmac256', 'fo0d', :'extkey256_id'::uuid), false, 'external hmac256 not verified');
 
-SELECT * FROM finish();
-ROLLBACK;
 \endif

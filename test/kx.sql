@@ -1,5 +1,3 @@
-BEGIN;
-SELECT plan(8);
 
 SELECT public, secret FROM crypto_kx_new_keypair() \gset bob_
 SELECT public, secret FROM crypto_kx_new_keypair() \gset alice_
@@ -45,5 +43,3 @@ SELECT crypto_secretbox('hello bob', :'secretboxnonce', :'session_alice_tx'::byt
 SELECT is(crypto_secretbox_open(:'alice_to_bob', :'secretboxnonce', :'session_bob_rx'::bytea),
           'hello bob', 'secretbox_open session key');
 
-SELECT * FROM finish();
-ROLLBACK;

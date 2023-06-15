@@ -1,5 +1,3 @@
-BEGIN;
-SELECT plan(8);
 
 SELECT lives_ok($$SELECT randombytes_random()$$, 'randombytes_random');
 SELECT lives_ok($$SELECT randombytes_uniform(10)$$, 'randombytes_uniform');
@@ -22,5 +20,3 @@ SELECT throws_ok($$SELECT randombytes_buf_deterministic(NULL, 'bad')$$,
 SELECT throws_ok($$SELECT randombytes_buf_deterministic(10, NULL)$$,
     '22000', 'pgsodium_randombytes_buf_deterministic: seed cannot be NULL',  'randombytes_buf_deterministic NULL seed');
 
-SELECT * FROM finish();
-ROLLBACK;

@@ -1,5 +1,3 @@
-BEGIN;
-SELECT plan(9);
 
 SELECT crypto_auth_keygen() authkey \gset
 
@@ -32,13 +30,8 @@ SELECT throws_ok($$select crypto_auth_verify('sig', NULL, 'bad_key'::bytea)$$,
 SELECT throws_ok($$select crypto_auth_verify('sig', 'bob is your uncle', NULL::bytea)$$,
                  '22000', 'pgsodium_crypto_auth_verify: key cannot be NULL', 'crypto_auth_verify null key');
 
-SELECT * FROM finish();
-ROLLBACK;
 
 \if :serverkeys
-
-BEGIN;
-SELECT plan(5);
 
 SELECT crypto_auth('bob is your uncle', 1) auth_mac_by_id \gset
 
@@ -60,6 +53,4 @@ SELECT crypto_auth('bobo is your monkey', :'auth_key_id'::uuid) auth_mac_by_uuid
 SELECT ok(crypto_auth_verify(:'auth_mac_by_uuid', 'bobo is your monkey', :'auth_key_id'::uuid),
           'crypto_auth_verify by uuid');
 
-SELECT * FROM finish();
-ROLLBACK;
 \endif

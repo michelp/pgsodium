@@ -1,6 +1,4 @@
 \if :serverkeys
-BEGIN;
-SELECT plan(15);
 
 select * from pgsodium.create_key() \gset anon_det_key_
 
@@ -75,7 +73,8 @@ select results_eq($$select name = 'stripe2' from pgsodium.get_key_by_name('strip
     'get_key_by_name()');
 
 select set_eq($$select name from pgsodium.get_named_keys()$$,
-    ARRAY['foo', 'OPTIONAL_NAME', 'Optional Name 2', 'stripe', 'stripe2'],
+    ARRAY['foo', 'OPTIONAL_NAME', 'Optional Name 2', 'stripe',
+    'stripe2', 'ANOTHER_NAME', 'Bobo key', 'ietf Test Key', 'det Test Key'],
     'get_named_keys() no filter');
 
 select set_eq($$select name from pgsodium.get_named_keys('strip%')$$,
@@ -113,6 +112,4 @@ select set_eq($$select id IS NULL from pgsodium.get_key_by_name('expired')$$,
     'values (true)',
     'pgsodium.get_key_by_name should not return an expired key');
 
-SELECT * FROM finish();
-ROLLBACK;
 \endif

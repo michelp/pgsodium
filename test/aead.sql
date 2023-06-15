@@ -1,5 +1,3 @@
-BEGIN;
-SELECT plan(14);
 
 SELECT crypto_aead_ietf_keygen() aeadkey \gset
 SELECT crypto_aead_ietf_noncegen() aeadnonce \gset
@@ -60,12 +58,7 @@ SELECT crypto_aead_det_encrypt(
 SELECT is(crypto_aead_det_decrypt(:'detaead2', NULL, :'detkey'::bytea),
           'bob is your uncle', 'crypto_aead_det_decrypt with NULL associated');
 
-SELECT * FROM finish();
-ROLLBACK;
-
 \if :serverkeys
-BEGIN;
-SELECT plan(10);
 SET ROLE pgsodium_keyiduser;
 
 SELECT crypto_aead_ietf_encrypt(
@@ -121,6 +114,4 @@ SELECT throws_ok(format($$select crypto_aead_ietf_decrypt('bob is your uncle', '
                  'P0002', 'query returned no rows', 'crypto_aead_ietf_decrypt invalid uuid');
 
 RESET ROLE;
-SELECT * FROM finish();
-ROLLBACK;
 \endif

@@ -1,5 +1,3 @@
-BEGIN;
-SELECT plan(4);
 
 SELECT crypto_generichash_keygen() generickey \gset
 
@@ -17,12 +15,7 @@ SELECT lives_ok(format($$select crypto_shorthash('bob is your uncle', %L::bytea)
 SELECT throws_ok($$select crypto_shorthash('bob is your uncle', 's'::bytea)$$,
        '22000', 'pgsodium_crypto_shorthash: invalid key', 'crypto_shorthash invalid key');
 
-SELECT * FROM finish();
-ROLLBACK;
-
 \if :serverkeys
-BEGIN;
-SELECT plan(4);
 
 SELECT lives_ok(format($$select crypto_shorthash('bob is your uncle', 42)$$), 'crypto_shorthash_by_id');
 SELECT lives_ok(format($$select crypto_shorthash('bob is your uncle', 42, '12345678')$$), 'crypto_shorthash by id context');
@@ -32,8 +25,5 @@ SELECT lives_ok(format($$select crypto_shorthash('bob is your uncle', %L::uuid)$
 
 select id as generichash_key_id from create_key('generichash') \gset
 SELECT lives_ok(format($$select crypto_generichash('bob is your uncle', %L::uuid)$$, :'generichash_key_id'), 'crypto_generichash by uuid');
-
-SELECT * FROM finish();
-ROLLBACK;
 
 \endif
