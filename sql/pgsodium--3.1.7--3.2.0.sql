@@ -231,6 +231,7 @@ BEGIN
     CREATE VIEW %1$s %5$s AS SELECT %2$s
     FROM %3$s;
     ALTER VIEW %1$s OWNER TO %4$s;
+    REVOKE ALL ON %1$s FROM public;
     $c$,
     rule.view_name,
     pgsodium.decrypted_columns(relid),
