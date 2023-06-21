@@ -77,12 +77,17 @@ CREATE FUNCTION pgsodium.trg_mask_update()
   AS $$
 DECLARE
   r record;
+  debug bool := CASE WHEN count(1) > 0
+                THEN pg_catalog.current_setting('pgsodium.debug', false)::bool
+                ELSE false::bool
+                END
+                FROM pg_catalog.pg_settings WHERE name ~ 'pgsodium.debug';
 BEGIN
   IF (select bool_or(in_extension) FROM pg_event_trigger_ddl_commands()) THEN
     RAISE NOTICE 'skipping pgsodium mask regeneration in extension';
 	RETURN;
   END IF;
-  PERFORM pgsodium.update_masks();
+  PERFORM pgsodium.update_masks(debug);
 END
 $$
   LANGUAGE plpgsql
