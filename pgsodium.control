@@ -1,5 +1,5 @@
 # pgsodium extension
 comment = 'Postgres extension for libsodium functions'
-default_version = '3.1.7'
+default_version = '3.2.0'
 relocatable = false
 schema = pgsodium

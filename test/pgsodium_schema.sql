@@ -8,7 +8,7 @@ SELECT cmp_ok(current_setting('server_version_num')::int, '>=', 130000, format('
 
 
 ---- EXTENSION VERSION
-SELECT results_eq('SELECT pgsodium.version()', $$VALUES ('3.1.7'::text)$$, 'Version of pgsodium is 3.1.7');
+SELECT results_eq('SELECT pgsodium.version()', $$VALUES ('3.2.0'::text)$$, 'Version of pgsodium is 3.2.0');
 
 
 ---- EXTENSION OBJECTS
@@ -24,7 +24,6 @@ SELECT bag_eq($$
   $$ VALUES
     ('event trigger pgsodium_trg_mask_update'                                                                      ::text),
     ('function pgsodium.create_key(pgsodium.key_type,text,bytea,bytea,uuid,bytea,timestamp with time zone,text)'   ::text),
-    ('function pgsodium.create_mask_view(oid,boolean)'                                                             ::text),
     ('function pgsodium.create_mask_view(oid,integer,boolean)'                                                     ::text),
     ('function pgsodium.crypto_aead_det_decrypt(bytea,bytea,bigint,bytea,bytea)'                                   ::text),
     ('function pgsodium.crypto_aead_det_decrypt(bytea,bytea,bytea,bytea)'                                          ::text),
@@ -145,7 +144,6 @@ SELECT bag_eq($$
     ('function pgsodium.get_named_keys(text)'                                                                      ::text),
     ('function pgsodium.has_mask(regrole,text)'                                                                    ::text),
     ('function pgsodium.key_encrypt_secret_raw_key()'                                                              ::text),
-    ('function pgsodium.mask_columns(oid)'                                                                         ::text),
     ('function pgsodium.mask_role(regrole,text,text)'                                                              ::text),
     ('function pgsodium.pgsodium_derive(bigint,integer,bytea)'                                                     ::text),
     ('function pgsodium.quote_assoc(text,boolean)'                                                                 ::text),
@@ -160,7 +158,6 @@ SELECT bag_eq($$
     ('function pgsodium.update_mask(oid,boolean)'                                                                  ::text),
     ('function pgsodium.update_masks(boolean)'                                                                     ::text),
     ('function pgsodium.version()'                                                                                 ::text),
-    ('schema pgsodium_masks'                                                                                       ::text),
     ('sequence pgsodium.key_key_id_seq'                                                                            ::text),
     ('table pgsodium.key'                                                                                          ::text),
     ('type pgsodium._key_id_context'                                                                               ::text),
@@ -196,9 +193,6 @@ SELECT is_member_of( 'pgsodium_keyiduser', 'pgsodium_keymaker' );
 
 SELECT has_schema('pgsodium');
 SELECT schema_owner_is('pgsodium', 'postgres');
-
-SELECT has_schema('pgsodium_masks');
-SELECT schema_owner_is('pgsodium_masks', 'postgres');
 
 
 
@@ -336,13 +330,24 @@ SELECT results_eq(
   WHERE n.nspname = 'pgsodium' AND r.relname = 'key'
   ORDER BY c.contype, c.conname $q$,
   ARRAY[
+    'key_check',
     'key_key_context_check',
-    'pgsodium_raw',
     'key_parent_key_fkey',
     'key_pkey',
-    'pgsodium_key_unique_name'
+    'key_name_key'
   ]::name[],
   $$Event trigger list is ok$$);
+
+-- constraint 'key_check' on 'key'
+SELECT is(pg_catalog.pg_get_constraintdef(c.oid, true),'CHECK (
+CASE
+    WHEN raw_key IS NOT NULL THEN key_id IS NULL AND key_context IS NULL AND parent_key IS NOT NULL
+    ELSE key_id IS NOT NULL AND key_context IS NOT NULL AND parent_key IS NULL
+END)', $$Definition of constraint 'key_check'$$)
+FROM pg_catalog.pg_constraint c
+JOIN pg_catalog.pg_class r ON c.conrelid = r.oid
+JOIN pg_catalog.pg_namespace n ON n.oid = r.relnamespace
+WHERE n.nspname = 'pgsodium' AND r.relname = 'key' AND c.conname = 'key_check';
 
 -- constraint 'key_key_context_check' on 'key'
 SELECT is(pg_catalog.pg_get_constraintdef(c.oid, true),'CHECK (length(key_context) = 8)', $$Definition of constraint 'key_key_context_check'$$)
@@ -350,17 +355,6 @@ FROM pg_catalog.pg_constraint c
 JOIN pg_catalog.pg_class r ON c.conrelid = r.oid
 JOIN pg_catalog.pg_namespace n ON n.oid = r.relnamespace
 WHERE n.nspname = 'pgsodium' AND r.relname = 'key' AND c.conname = 'key_key_context_check';
-
--- constraint 'pgsodium_raw' on 'key'
-SELECT is(pg_catalog.pg_get_constraintdef(c.oid, true),'CHECK (
-CASE
-    WHEN raw_key IS NOT NULL THEN key_id IS NULL AND key_context IS NULL AND parent_key IS NOT NULL
-    ELSE key_id IS NOT NULL AND key_context IS NOT NULL AND parent_key IS NULL
-END)', $$Definition of constraint 'pgsodium_raw'$$)
-FROM pg_catalog.pg_constraint c
-JOIN pg_catalog.pg_class r ON c.conrelid = r.oid
-JOIN pg_catalog.pg_namespace n ON n.oid = r.relnamespace
-WHERE n.nspname = 'pgsodium' AND r.relname = 'key' AND c.conname = 'pgsodium_raw';
 
 -- constraint 'key_parent_key_fkey' on 'key'
 SELECT is(pg_catalog.pg_get_constraintdef(c.oid, true),'FOREIGN KEY (parent_key) REFERENCES pgsodium.key(id)', $$Definition of constraint 'key_parent_key_fkey'$$)
@@ -376,20 +370,20 @@ JOIN pg_catalog.pg_class r ON c.conrelid = r.oid
 JOIN pg_catalog.pg_namespace n ON n.oid = r.relnamespace
 WHERE n.nspname = 'pgsodium' AND r.relname = 'key' AND c.conname = 'key_pkey';
 
--- constraint 'pgsodium_key_unique_name' on 'key'
-SELECT is(pg_catalog.pg_get_constraintdef(c.oid, true),'UNIQUE (name)', $$Definition of constraint 'pgsodium_key_unique_name'$$)
+-- constraint 'key_name_key' on 'key'
+SELECT is(pg_catalog.pg_get_constraintdef(c.oid, true),'UNIQUE (name)', $$Definition of constraint 'key_name_key'$$)
 FROM pg_catalog.pg_constraint c
 JOIN pg_catalog.pg_class r ON c.conrelid = r.oid
 JOIN pg_catalog.pg_namespace n ON n.oid = r.relnamespace
-WHERE n.nspname = 'pgsodium' AND r.relname = 'key' AND c.conname = 'pgsodium_key_unique_name';
+WHERE n.nspname = 'pgsodium' AND r.relname = 'key' AND c.conname = 'key_name_key';
 
 -- indexes of table key
 SELECT indexes_are('pgsodium'::name, 'key'::name, ARRAY[
   'key_key_id_key_context_key_type_idx',
+  'key_name_key',
   'key_pkey',
   'key_status_idx',
-  'key_status_idx1',
-  'pgsodium_key_unique_name'
+  'key_status_idx1'
 ]::name[]);
 
 -- index 'key_key_id_key_context_key_type_idx' on key
@@ -399,6 +393,14 @@ JOIN pg_catalog.pg_index i ON c.oid = i.indexrelid
 JOIN pg_catalog.pg_class r ON i.indrelid = r.oid
 JOIN pg_catalog.pg_namespace n ON n.oid = r.relnamespace
 WHERE n.nspname = 'pgsodium' AND r.relname = 'key' AND c.relname = 'key_key_id_key_context_key_type_idx';
+
+-- index 'key_name_key' on key
+SELECT is(pg_catalog.pg_get_indexdef(i.indexrelid, 0, true),'CREATE UNIQUE INDEX key_name_key ON pgsodium.key USING btree (name)', $$Definition of index 'key_name_key'$$)
+FROM pg_catalog.pg_class c
+JOIN pg_catalog.pg_index i ON c.oid = i.indexrelid
+JOIN pg_catalog.pg_class r ON i.indrelid = r.oid
+JOIN pg_catalog.pg_namespace n ON n.oid = r.relnamespace
+WHERE n.nspname = 'pgsodium' AND r.relname = 'key' AND c.relname = 'key_name_key';
 
 -- index 'key_pkey' on key
 SELECT is(pg_catalog.pg_get_indexdef(i.indexrelid, 0, true),'CREATE UNIQUE INDEX key_pkey ON pgsodium.key USING btree (id)', $$Definition of index 'key_pkey'$$)
@@ -425,14 +427,6 @@ JOIN pg_catalog.pg_class r ON i.indrelid = r.oid
 JOIN pg_catalog.pg_namespace n ON n.oid = r.relnamespace
 WHERE n.nspname = 'pgsodium' AND r.relname = 'key' AND c.relname = 'key_status_idx1';
 
--- index 'pgsodium_key_unique_name' on key
-SELECT is(pg_catalog.pg_get_indexdef(i.indexrelid, 0, true),'CREATE UNIQUE INDEX pgsodium_key_unique_name ON pgsodium.key USING btree (name)', $$Definition of index 'pgsodium_key_unique_name'$$)
-FROM pg_catalog.pg_class c
-JOIN pg_catalog.pg_index i ON c.oid = i.indexrelid
-JOIN pg_catalog.pg_class r ON i.indrelid = r.oid
-JOIN pg_catalog.pg_namespace n ON n.oid = r.relnamespace
-WHERE n.nspname = 'pgsodium' AND r.relname = 'key' AND c.relname = 'pgsodium_key_unique_name';
-
 -- triggers of relation key
 SELECT triggers_are('pgsodium', 'key', ARRAY[
     'key_encrypt_secret_trigger_raw_key'
@@ -446,7 +440,7 @@ SELECT table_owner_is('pgsodium'::name, 'key'::name, 'postgres'::name);
 
 
 -- privs of relation key
-SELECT table_privs_are('pgsodium'::name, 'key'::name, 'pgsodium_keymaker'         ::name, '{DELETE,INSERT,REFERENCES,SELECT,TRIGGER,TRUNCATE,UPDATE}'::text[]);
+SELECT table_privs_are('pgsodium'::name, 'key'::name, 'pgsodium_keymaker'         ::name, '{DELETE,INSERT,SELECT,UPDATE}'::text[]);
 SELECT table_privs_are('pgsodium'::name, 'key'::name, 'postgres'                  ::name, '{DELETE,INSERT,REFERENCES,SELECT,TRIGGER,TRUNCATE,UPDATE}'::text[]);
 SELECT table_privs_are('pgsodium'::name, 'key'::name, rolname,                    '{}'::text[])
 FROM pg_catalog.pg_roles
@@ -480,7 +474,8 @@ SELECT columns_are('pgsodium'::name, 'decrypted_key'::name, ARRAY[
   'decrypted_raw_key',
   'raw_key_nonce',
   'parent_key',
-  'comment'
+  'comment',
+  'user_data'
 ]::name[]);
 
 SELECT has_column(       'pgsodium', 'decrypted_key', 'id'             , 'has column decrypted_key.id');
@@ -553,14 +548,19 @@ SELECT col_type_is(      'pgsodium', 'decrypted_key', 'comment'        , 'text',
 SELECT col_is_null(      'pgsodium', 'decrypted_key', 'comment'        , 'col_is_null( decrypted_key.comment )');
 SELECT col_hasnt_default('pgsodium', 'decrypted_key', 'comment'        , 'col_hasnt_default( decrypted_key.comment )');
 
+SELECT has_column(       'pgsodium', 'decrypted_key', 'user_data'      , 'has column decrypted_key.user_data');
+SELECT col_type_is(      'pgsodium', 'decrypted_key', 'user_data'      , 'text', 'type of column decrypted_key.user_data is text');
+SELECT col_is_null(      'pgsodium', 'decrypted_key', 'user_data'      , 'col_is_null( decrypted_key.user_data )');
+SELECT col_hasnt_default('pgsodium', 'decrypted_key', 'user_data'      , 'col_hasnt_default( decrypted_key.user_data )');
+
 
 -- owner of view decrypted_key
 SELECT view_owner_is('pgsodium'::name, 'decrypted_key'::name, 'postgres'::name);
 
 
 -- privs of relation decrypted_key
-SELECT table_privs_are('pgsodium'::name, 'decrypted_key'::name, 'pgsodium_keyholder'        ::name, '{DELETE,INSERT,REFERENCES,SELECT,TRIGGER,TRUNCATE,UPDATE}'::text[]);
-SELECT table_privs_are('pgsodium'::name, 'decrypted_key'::name, 'pgsodium_keymaker'         ::name, '{DELETE,INSERT,REFERENCES,SELECT,TRIGGER,TRUNCATE,UPDATE}'::text[]);
+SELECT table_privs_are('pgsodium'::name, 'decrypted_key'::name, 'pgsodium_keyholder'        ::name, '{DELETE,INSERT,SELECT,UPDATE}'::text[]);
+SELECT table_privs_are('pgsodium'::name, 'decrypted_key'::name, 'pgsodium_keymaker'         ::name, '{DELETE,INSERT,SELECT,UPDATE}'::text[]);
 SELECT table_privs_are('pgsodium'::name, 'decrypted_key'::name, 'postgres'                  ::name, '{DELETE,INSERT,REFERENCES,SELECT,TRIGGER,TRUNCATE,UPDATE}'::text[]);
 SELECT table_privs_are('pgsodium'::name, 'decrypted_key'::name, rolname,                    '{}'::text[])
 FROM pg_catalog.pg_roles
@@ -913,7 +913,6 @@ SELECT functions_are('pgsodium', ARRAY[
     'get_named_keys',
     'has_mask',
     'key_encrypt_secret_raw_key',
-    'mask_columns',
     'mask_role',
     'pgsodium_derive',
     'quote_assoc',
@@ -970,41 +969,6 @@ SELECT function_privs_are('pgsodium'::name, proname, proargtypes::regtype[]::tex
   WHERE pronamespace = 'pgsodium'::regnamespace
     AND proname = 'create_key'
     AND oidvectortypes(proargtypes) = 'pgsodium.key_type, text, bytea, bytea, uuid, bytea, timestamp with time zone, text';
-
-SELECT unnest(ARRAY[
-    is(md5(prosrc), 'a34e96732392101c6e438288325151c0',
-       format('Function pgsodium.%s(%s) body should match checksum',
-              proname, pg_get_function_identity_arguments(oid))
-    ),
-    function_owner_is(
-      'pgsodium'::name, proname,
-      proargtypes::regtype[]::name[], 'postgres'::name,
-      format('Function pgsodium.%s(%s) owner is %s',
-             proname, pg_get_function_identity_arguments(oid), 'postgres')
-    ),
-    function_lang_is('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'plpgsql'::name ),
-    function_returns('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'void' ),
-    volatility_is('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'volatile'),
-    isnt_definer('pgsodium'::name, proname, proargtypes::regtype[]::name[]),
-    isnt_strict('pgsodium'::name, proname, proargtypes::regtype[]::name[]),
-    is_normal_function('pgsodium'::name, proname, proargtypes::regtype[]::name[])
-])
-  FROM pg_catalog.pg_proc
-  WHERE pronamespace = 'pgsodium'::regnamespace
-    AND proname = 'create_mask_view'
-    AND oidvectortypes(proargtypes) = 'oid, boolean';
-
-SELECT function_privs_are('pgsodium'::name, proname, proargtypes::regtype[]::text[], 'postgres', '{EXECUTE}'::text[])
-  FROM pg_catalog.pg_proc
-  WHERE pronamespace = 'pgsodium'::regnamespace
-    AND proname = 'create_mask_view'
-    AND oidvectortypes(proargtypes) = 'oid, boolean';
-
-SELECT function_privs_are('pgsodium'::name, proname, proargtypes::regtype[]::text[], 'public', '{EXECUTE}'::text[])
-  FROM pg_catalog.pg_proc
-  WHERE pronamespace = 'pgsodium'::regnamespace
-    AND proname = 'create_mask_view'
-    AND oidvectortypes(proargtypes) = 'oid, boolean';
 
 SELECT unnest(ARRAY[
     is(md5(prosrc), 'fb42e03b118baa4eec1ff6fd3773ef3e',
@@ -5211,41 +5175,6 @@ SELECT function_privs_are('pgsodium'::name, proname, proargtypes::regtype[]::tex
   WHERE pronamespace = 'pgsodium'::regnamespace
     AND proname = 'key_encrypt_secret_raw_key'
     AND oidvectortypes(proargtypes) = '';
-
-SELECT unnest(ARRAY[
-    is(md5(prosrc), 'dad5c5f648d4aec8e8142213de721039',
-       format('Function pgsodium.%s(%s) body should match checksum',
-              proname, pg_get_function_identity_arguments(oid))
-    ),
-    function_owner_is(
-      'pgsodium'::name, proname,
-      proargtypes::regtype[]::name[], 'postgres'::name,
-      format('Function pgsodium.%s(%s) owner is %s',
-             proname, pg_get_function_identity_arguments(oid), 'postgres')
-    ),
-    function_lang_is('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'sql'::name ),
-    function_returns('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'setof record' ),
-    volatility_is('pgsodium'::name, proname, proargtypes::regtype[]::name[], 'volatile'),
-    isnt_definer('pgsodium'::name, proname, proargtypes::regtype[]::name[]),
-    isnt_strict('pgsodium'::name, proname, proargtypes::regtype[]::name[]),
-    is_normal_function('pgsodium'::name, proname, proargtypes::regtype[]::name[])
-])
-  FROM pg_catalog.pg_proc
-  WHERE pronamespace = 'pgsodium'::regnamespace
-    AND proname = 'mask_columns'
-    AND oidvectortypes(proargtypes) = 'oid';
-
-SELECT function_privs_are('pgsodium'::name, proname, proargtypes::regtype[]::text[], 'postgres', '{EXECUTE}'::text[])
-  FROM pg_catalog.pg_proc
-  WHERE pronamespace = 'pgsodium'::regnamespace
-    AND proname = 'mask_columns'
-    AND oidvectortypes(proargtypes) = 'oid';
-
-SELECT function_privs_are('pgsodium'::name, proname, proargtypes::regtype[]::text[], 'public', '{EXECUTE}'::text[])
-  FROM pg_catalog.pg_proc
-  WHERE pronamespace = 'pgsodium'::regnamespace
-    AND proname = 'mask_columns'
-    AND oidvectortypes(proargtypes) = 'oid';
 
 SELECT unnest(ARRAY[
     is(md5(prosrc), '1b1d814a258347381f8989c6874dc01c',
