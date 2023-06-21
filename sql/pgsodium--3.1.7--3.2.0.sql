@@ -90,6 +90,105 @@ SET search_path='';
 DROP FUNCTION pgsodium.create_mask_view(oid,integer,boolean);
 
 /*
+ * change: droped from 3.2.0
+ */
+DROP FUNCTION pgsodium.encrypted_columns(oid);
+DROP FUNCTION pgsodium.encrypted_column(oid, record);
+
+/*
+ * change: add nspname column to pgsodium.masking_rule. We need to DROP the
+ *         view and mask_columns as it depends on it.
+ */
+DROP VIEW pgsodium.mask_columns;
+DROP VIEW pgsodium.masking_rule;
+
+CREATE OR REPLACE VIEW pgsodium.masking_rule AS
+  WITH const AS (
+    SELECT
+      'encrypt +with +key +id +([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})'
+        AS pattern_key_id,
+      'encrypt +with +key +column +([\w\"\-$]+)'
+        AS pattern_key_id_column,
+      '(?<=associated) +\(([\w\"\-$, ]+)\)'
+        AS pattern_associated_columns,
+      '(?<=nonce) +([\w\"\-$]+)'
+        AS pattern_nonce_column,
+      '(?<=decrypt with view) +([\w\"\-$]+\.[\w\"\-$]+)'
+        AS pattern_view_name,
+      '(?<=security invoker)'
+        AS pattern_security_invoker
+  ),
+  rules_from_seclabels AS (
+    SELECT
+      sl.objoid AS attrelid,
+      sl.objsubid  AS attnum,
+      c.relnamespace::regnamespace,
+      c.relname,
+      n.nspname,
+      a.attname,
+      pg_catalog.format_type(a.atttypid, a.atttypmod),
+      sl.label AS col_description,
+      (regexp_match(sl.label, k.pattern_key_id_column, 'i'))[1] AS key_id_column,
+      (regexp_match(sl.label, k.pattern_key_id, 'i'))[1] AS key_id,
+      (regexp_match(sl.label, k.pattern_associated_columns, 'i'))[1] AS associated_columns,
+      (regexp_match(sl.label, k.pattern_nonce_column, 'i'))[1] AS nonce_column,
+      coalesce((regexp_match(sl2.label, k.pattern_view_name, 'i'))[1],
+               c.relnamespace::regnamespace || '.' || quote_ident('decrypted_' || c.relname)) AS view_name,
+      100 AS priority,
+      (regexp_match(sl.label, k.pattern_security_invoker, 'i'))[1] IS NOT NULL AS security_invoker
+      FROM const k,
+           pg_catalog.pg_seclabel sl
+           JOIN pg_catalog.pg_class c ON sl.classoid = c.tableoid AND sl.objoid = c.oid
+           JOIN pg_catalog.pg_namespace n ON c.relnamespace = n.oid AND sl.objoid = c.oid
+           JOIN pg_catalog.pg_attribute a ON a.attrelid = c.oid AND sl.objsubid = a.attnum
+           LEFT JOIN pg_catalog.pg_seclabel sl2 ON sl2.objoid = c.oid AND sl2.objsubid = 0
+     WHERE a.attnum > 0
+       AND c.relnamespace::regnamespace != 'pg_catalog'::regnamespace
+       AND NOT a.attisdropped
+       AND sl.label ilike 'ENCRYPT%'
+       AND sl.provider = 'pgsodium'
+  )
+  SELECT
+    DISTINCT ON (attrelid, attnum) *
+    FROM rules_from_seclabels
+   ORDER BY attrelid, attnum, priority DESC;
+
+CREATE VIEW pgsodium.mask_columns AS SELECT
+  a.attname,
+  a.attrelid,
+  m.key_id,
+  m.key_id_column,
+  m.associated_columns,
+  m.nonce_column,
+  m.format_type
+FROM pg_attribute a
+LEFT JOIN pgsodium.masking_rule m ON m.attrelid = a.attrelid
+                                 AND m.attname = a.attname
+WHERE  a.attnum > 0 -- exclude ctid, cmin, cmax
+  AND  NOT a.attisdropped
+ORDER BY a.attnum;
+
+
+/*
+ * new: common trigger to encrypt any column using a key column
+ */
+CREATE FUNCTION pgsodium.trg_encrypt_using_key_col()
+RETURNS trigger
+AS '$libdir/pgsodium'
+LANGUAGE C
+SECURITY DEFINER;
+
+
+/*
+ * new: common trigger to encrypt any column using a key id
+ */
+CREATE FUNCTION pgsodium.trg_encrypt_using_key_id()
+RETURNS trigger
+AS '$libdir/pgsodium'
+LANGUAGE C
+SECURITY DEFINER;
+
+/*
  * new: new version of create_mask_view(oid,boolean). Only creates or replace
  *      decrypting view. Doesn't generate trigger anymore, exits when no
  *      encrypted cols found.
@@ -200,6 +299,10 @@ AS $$
 DECLARE
   body text;
   m pgsodium.masking_rule;
+  tgname text;
+  tgf text;
+  tgargs text;
+  attname text;
 BEGIN
   -- get encryption rules for given field
   SELECT * INTO STRICT m
@@ -207,40 +310,58 @@ BEGIN
   WHERE mr.attrelid = relid
     AND mr.attnum = create_mask_column.attnum;
 
-  IF m.key_id IS NULL AND m.key_id_column IS NULL
+  tgname = m.relname || '_encrypt_secret_trigger_' || m.attname;
+  tgargs = pg_catalog.quote_literal(m.attname); -- FIXME: test?
+
+  IF m.key_id_column IS NOT NULL
   THEN
-    RETURN;
+    tgf = 'trg_encrypt_using_key_col';
+    tgargs = pg_catalog.format('%s, %L', tgargs, m.key_id_column);
+  ELSIF m.key_id IS NOT NULL
+  THEN
+    tgf = 'trg_encrypt_using_key_id';
+    tgargs = pg_catalog.format('%s, %L', tgargs, m.key_id);
+  ELSE
+      -- FIXME trigger set col to NULL
+  END IF;
+
+  IF m.nonce_column IS NOT NULL
+  THEN tgargs = pg_catalog.format('%s, %L', tgargs, m.nonce_column);
+  END IF;
+
+  IF m.associated_columns IS NOT NULL
+  THEN
+    IF m.nonce_column IS NULL
+    THEN
+      /*
+       * empty nonce is required because associated cols starts at
+       * the 4th argument.
+       */
+      tgargs = pg_catalog.format('%s, %L', tgargs, '');
+    END IF;
+
+    FOR attname IN
+        SELECT pg_catalog.regexp_split_to_table(m.associated_columns,
+                                                '\s*,\s*')
+    LOOP
+        tgargs = pg_catalog.format('%s, %L', tgargs, attname);
+    END LOOP;
   END IF;
 
   body = format(
     $c$
-    DROP FUNCTION IF EXISTS %1$s."%2$s_encrypt_secret_%3$s"() CASCADE;
+      DROP TRIGGER IF EXISTS %1$I ON %3$I.%4$I;
 
-    CREATE OR REPLACE FUNCTION %1$s."%2$s_encrypt_secret_%3$s"()
-      RETURNS TRIGGER
-      LANGUAGE plpgsql
-      AS $t$
-		BEGIN
-		%4$s;
-		RETURN new;
-		END;
-		$t$;
-
-    ALTER FUNCTION  %1$s."%2$s_encrypt_secret_%3$s"() OWNER TO %5$s;
-
-    DROP TRIGGER IF EXISTS "%2$s_encrypt_secret_trigger_%3$s" ON %6$s;
-
-    CREATE TRIGGER "%2$s_encrypt_secret_trigger_%3$s"
-      BEFORE INSERT OR UPDATE OF "%3$s" ON %6$s
-      FOR EACH ROW
-      EXECUTE FUNCTION %1$s."%2$s_encrypt_secret_%3$s" ();
-      $c$,
-    m.relnamespace,
-    m.relname,
-    m.attname,
-    pgsodium.encrypted_column(relid, m),
-    session_user,
-    relid::regclass::text
+      CREATE TRIGGER %1$I BEFORE INSERT OR UPDATE OF %2$I
+        ON %3$I.%4$I FOR EACH ROW EXECUTE FUNCTION
+        pgsodium.%5$I(%6$s);
+    $c$,
+    tgname,    -- 1
+    m.attname, -- 2
+    m.nspname, -- 3
+    m.relname, -- 4
+    tgf,       -- 5
+    tgargs     -- 6
   );
   IF debug THEN
     RAISE NOTICE '%', body;
@@ -262,6 +383,43 @@ SET search_path='';
  */
 ALTER TABLE pgsodium.key RENAME CONSTRAINT "pgsodium_raw" TO "key_check";
 ALTER INDEX pgsodium.pgsodium_key_unique_name RENAME TO key_name_key;
+
+/*
+ * change: replace old triggers
+ */
+DO $$
+DECLARE rs record;
+BEGIN
+  FOR rs IN
+    SELECT r.oid AS reloid, r.relname, rn.nspname AS relnsp,
+           t.tgname,
+           tn.nspname AS pronsp, tp.proname,
+           a.attnum, a.attname
+    FROM pg_catalog.pg_depend d
+    JOIN pg_catalog.pg_trigger t ON d.objid = t.oid
+    JOIN pg_catalog.pg_class r ON t.tgrelid = r.oid
+    JOIN pg_catalog.pg_namespace rn ON r.relnamespace = rn.oid
+    JOIN pg_catalog.pg_proc tp ON t.tgfoid = tp.oid
+    JOIN pg_catalog.pg_namespace tn ON tp.pronamespace = tn.oid
+    JOIN pg_catalog.pg_attribute a ON d.refobjsubid = a.attnum   AND d.refobjid = a.attrelid
+    JOIN pg_catalog.pg_seclabel l  ON d.refobjsubid = l.objsubid AND d.refobjid = l.objoid
+    WHERE classid = 'pg_trigger'::regclass
+      AND l.provider = 'pgsodium'
+      AND l.label ILIKE 'ENCRYPT %'
+      AND t.tgname ~ '_encrypt_secret_trigger_'
+      AND tp.proname ~ '_encrypt_secret_'
+      AND tp.prorettype = 'trigger'::regtype
+    LOOP
+      -- DROP them all
+      RAISE NOTICE 'DROP TRIGGER/FUNCTION %.%.%/%.%',
+        rs.relnsp, rs.relname, rs.tgname, rs.pronsp, rs.proname;
+      EXECUTE format('DROP TRIGGER %I ON %I.%I', rs.tgname, rs.relnsp, rs.relname);
+      EXECUTE format('DROP FUNCTION %I.%I', rs.pronsp, rs.proname);
+      -- create them
+      PERFORM pgsodium.create_mask_column(rs.reloid, rs.attnum, true);
+    END LOOP;
+  END
+$$;
 
 /*
  * change: force regenerating the decrypted_key view to add the missing column

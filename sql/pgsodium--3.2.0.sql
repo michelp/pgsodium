@@ -285,6 +285,7 @@ CREATE VIEW pgsodium.masking_rule AS
       sl.objsubid  AS attnum,
       c.relnamespace::regnamespace,
       c.relname,
+      n.nspname,
       a.attname,
       pg_catalog.format_type(a.atttypid, a.atttypmod),
       sl.label AS col_description,
@@ -299,6 +300,7 @@ CREATE VIEW pgsodium.masking_rule AS
       FROM const k,
            pg_catalog.pg_seclabel sl
            JOIN pg_catalog.pg_class c ON sl.classoid = c.tableoid AND sl.objoid = c.oid
+           JOIN pg_catalog.pg_namespace n ON c.relnamespace = n.oid AND sl.objoid = c.oid
            JOIN pg_catalog.pg_attribute a ON a.attrelid = c.oid AND sl.objsubid = a.attnum
            LEFT JOIN pg_catalog.pg_seclabel sl2 ON sl2.objoid = c.oid AND sl2.objsubid = 0
      WHERE a.attnum > 0
@@ -495,6 +497,10 @@ AS $$
 DECLARE
   body text;
   m pgsodium.masking_rule;
+  tgname text;
+  tgf text;
+  tgargs text;
+  attname text;
 BEGIN
   -- get encryption rules for given field
   SELECT * INTO STRICT m
@@ -502,40 +508,58 @@ BEGIN
   WHERE mr.attrelid = relid
     AND mr.attnum = create_mask_column.attnum;
 
-  IF m.key_id IS NULL AND m.key_id_column IS NULL
+  tgname = m.relname || '_encrypt_secret_trigger_' || m.attname;
+  tgargs = pg_catalog.quote_literal(m.attname); -- FIXME: test?
+
+  IF m.key_id_column IS NOT NULL
   THEN
-    RETURN;
+    tgf = 'trg_encrypt_using_key_col';
+    tgargs = pg_catalog.format('%s, %L', tgargs, m.key_id_column);
+  ELSIF m.key_id IS NOT NULL
+  THEN
+    tgf = 'trg_encrypt_using_key_id';
+    tgargs = pg_catalog.format('%s, %L', tgargs, m.key_id);
+  ELSE
+      -- FIXME trigger set col to NULL
+  END IF;
+
+  IF m.nonce_column IS NOT NULL
+  THEN tgargs = pg_catalog.format('%s, %L', tgargs, m.nonce_column);
+  END IF;
+
+  IF m.associated_columns IS NOT NULL
+  THEN
+    IF m.nonce_column IS NULL
+    THEN
+      /*
+       * empty nonce is required because associated cols starts at
+       * the 4th argument.
+       */
+      tgargs = pg_catalog.format('%s, %L', tgargs, '');
+    END IF;
+
+    FOR attname IN
+        SELECT pg_catalog.regexp_split_to_table(m.associated_columns,
+                                                '\s*,\s*')
+    LOOP
+        tgargs = pg_catalog.format('%s, %L', tgargs, attname);
+    END LOOP;
   END IF;
 
   body = format(
     $c$
-    DROP FUNCTION IF EXISTS %1$s."%2$s_encrypt_secret_%3$s"() CASCADE;
+      DROP TRIGGER IF EXISTS %1$I ON %3$I.%4$I;
 
-    CREATE OR REPLACE FUNCTION %1$s."%2$s_encrypt_secret_%3$s"()
-      RETURNS TRIGGER
-      LANGUAGE plpgsql
-      AS $t$
-		BEGIN
-		%4$s;
-		RETURN new;
-		END;
-		$t$;
-
-    ALTER FUNCTION  %1$s."%2$s_encrypt_secret_%3$s"() OWNER TO %5$s;
-
-    DROP TRIGGER IF EXISTS "%2$s_encrypt_secret_trigger_%3$s" ON %6$s;
-
-    CREATE TRIGGER "%2$s_encrypt_secret_trigger_%3$s"
-      BEFORE INSERT OR UPDATE OF "%3$s" ON %6$s
-      FOR EACH ROW
-      EXECUTE FUNCTION %1$s."%2$s_encrypt_secret_%3$s" ();
-      $c$,
-    m.relnamespace,
-    m.relname,
-    m.attname,
-    pgsodium.encrypted_column(relid, m),
-    session_user,
-    relid::regclass::text
+      CREATE TRIGGER %1$I BEFORE INSERT OR UPDATE OF %2$I
+        ON %3$I.%4$I FOR EACH ROW EXECUTE FUNCTION
+        pgsodium.%5$I(%6$s);
+    $c$,
+    tgname,    -- 1
+    m.attname, -- 2
+    m.nspname, -- 3
+    m.relname, -- 4
+    tgf,       -- 5
+    tgargs     -- 6
   );
   IF debug THEN
     RAISE NOTICE '%', body;
@@ -554,6 +578,26 @@ SET search_path='';
 -- FIXME no OWNER
 -- FIXME no REVOKE ?
 -- FIXME no GRANT
+
+CREATE FUNCTION pgsodium.trg_encrypt_using_key_col()
+  RETURNS trigger
+  AS '$libdir/pgsodium'
+  LANGUAGE C
+  SECURITY DEFINER;
+
+-- FIXME: owner?
+-- FIXME: revoke?
+-- FIXME: grant?
+
+CREATE FUNCTION pgsodium.trg_encrypt_using_key_id()
+  RETURNS trigger
+  AS '$libdir/pgsodium'
+  LANGUAGE C
+  SECURITY DEFINER;
+
+-- FIXME: owner?
+-- FIXME: revoke?
+-- FIXME: grant?
 
 /*
  * (bytea, bytea, bytea, bytea)
@@ -2332,133 +2376,6 @@ CREATE FUNCTION pgsodium.enable_security_label_trigger() RETURNS void AS
   $$
   LANGUAGE sql
   SECURITY DEFINER
-  SET search_path='';
-
--- FIXME: owner?
--- FIXME: revoke?
--- FIXME: grant?
-
-/*
- * encrypted_column(oid, record)
- */
-CREATE FUNCTION pgsodium.encrypted_column(relid OID, m record)
-  RETURNS TEXT AS $$
-DECLARE
-    expression TEXT;
-    comma TEXT;
-BEGIN
-  expression := '';
-  comma := E'        ';
-  expression := expression || comma;
-  IF m.format_type = 'text' THEN
-	  expression := expression || format(
-		$f$%s = CASE WHEN %s IS NULL THEN NULL ELSE
-			CASE WHEN %s IS NULL THEN NULL ELSE pg_catalog.encode(
-			  pgsodium.crypto_aead_det_encrypt(
-				pg_catalog.convert_to(%s, 'utf8'),
-				pg_catalog.convert_to((%s)::text, 'utf8'),
-				%s::uuid,
-				%s
-			  ),
-				'base64') END END$f$,
-			'new.' || quote_ident(m.attname),
-			'new.' || quote_ident(m.attname),
-			COALESCE('new.' || quote_ident(m.key_id_column), quote_literal(m.key_id)),
-			'new.' || quote_ident(m.attname),
-			COALESCE(pgsodium.quote_assoc(m.associated_columns, true), quote_literal('')),
-			COALESCE('new.' || quote_ident(m.key_id_column), quote_literal(m.key_id)),
-			COALESCE('new.' || quote_ident(m.nonce_column), 'NULL')
-	  );
-  ELSIF m.format_type = 'bytea' THEN
-	  expression := expression || format(
-		$f$%s = CASE WHEN %s IS NULL THEN NULL ELSE
-			CASE WHEN %s IS NULL THEN NULL ELSE
-					pgsodium.crypto_aead_det_encrypt(%s::bytea, pg_catalog.convert_to((%s)::text, 'utf8'),
-			%s::uuid,
-			%s
-		  ) END END$f$,
-			'new.' || quote_ident(m.attname),
-			'new.' || quote_ident(m.attname),
-			COALESCE('new.' || quote_ident(m.key_id_column), quote_literal(m.key_id)),
-			'new.' || quote_ident(m.attname),
-			COALESCE(pgsodium.quote_assoc(m.associated_columns, true), quote_literal('')),
-			COALESCE('new.' || quote_ident(m.key_id_column), quote_literal(m.key_id)),
-			COALESCE('new.' || quote_ident(m.nonce_column), 'NULL')
-	  );
-  END IF;
-  comma := E';\n        ';
-  RETURN expression;
-END
-$$
-  LANGUAGE plpgsql
-  VOLATILE
-  SET search_path='';
-
--- FIXME: owner?
--- FIXME: revoke?
--- FIXME: grant?
-
-/*
- * encrypted_columns(oid)
- */
-CREATE FUNCTION pgsodium.encrypted_columns(relid OID)
-  RETURNS TEXT AS $$
-DECLARE
-    m RECORD;
-    expression TEXT;
-    comma TEXT;
-BEGIN
-  expression := '';
-  comma := E'        ';
-  FOR m IN SELECT * FROM pgsodium.mask_columns where attrelid = relid LOOP
-    IF m.key_id IS NULL AND m.key_id_column is NULL THEN
-      CONTINUE;
-    ELSE
-      expression := expression || comma;
-      IF m.format_type = 'text' THEN
-          expression := expression || format(
-            $f$%s = CASE WHEN %s IS NULL THEN NULL ELSE
-                CASE WHEN %s IS NULL THEN NULL ELSE pg_catalog.encode(
-                  pgsodium.crypto_aead_det_encrypt(
-                    pg_catalog.convert_to(%s, 'utf8'),
-                    pg_catalog.convert_to((%s)::text, 'utf8'),
-                    %s::uuid,
-                    %s
-                  ),
-                    'base64') END END$f$,
-                'new.' || quote_ident(m.attname),
-                'new.' || quote_ident(m.attname),
-                COALESCE('new.' || quote_ident(m.key_id_column), quote_literal(m.key_id)),
-                'new.' || quote_ident(m.attname),
-                COALESCE(pgsodium.quote_assoc(m.associated_columns, true), quote_literal('')),
-                COALESCE('new.' || quote_ident(m.key_id_column), quote_literal(m.key_id)),
-                COALESCE('new.' || quote_ident(m.nonce_column), 'NULL')
-          );
-      ELSIF m.format_type = 'bytea' THEN
-          expression := expression || format(
-            $f$%s = CASE WHEN %s IS NULL THEN NULL ELSE
-                CASE WHEN %s IS NULL THEN NULL ELSE
-                        pgsodium.crypto_aead_det_encrypt(%s::bytea, pg_catalog.convert_to((%s)::text, 'utf8'),
-                %s::uuid,
-                %s
-              ) END END$f$,
-                'new.' || quote_ident(m.attname),
-                'new.' || quote_ident(m.attname),
-                COALESCE('new.' || quote_ident(m.key_id_column), quote_literal(m.key_id)),
-                'new.' || quote_ident(m.attname),
-                COALESCE(pgsodium.quote_assoc(m.associated_columns, true), quote_literal('')),
-                COALESCE('new.' || quote_ident(m.key_id_column), quote_literal(m.key_id)),
-                COALESCE('new.' || quote_ident(m.nonce_column), 'NULL')
-          );
-      END IF;
-    END IF;
-    comma := E';\n        ';
-  END LOOP;
-  RETURN expression;
-END
-$$
-  LANGUAGE plpgsql
-  VOLATILE
   SET search_path='';
 
 -- FIXME: owner?
