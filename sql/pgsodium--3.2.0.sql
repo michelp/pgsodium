@@ -87,7 +87,45 @@ BEGIN
     RAISE NOTICE 'skipping pgsodium mask regeneration in extension';
 	RETURN;
   END IF;
-  PERFORM pgsodium.update_masks(debug);
+
+  /*
+   * Loop on each event to either rebuilt the view or setup column
+   * encryption.
+   */
+  FOR r IN
+    SELECT e.*
+    FROM pg_event_trigger_ddl_commands() e
+    WHERE EXISTS (
+      SELECT FROM pg_catalog.pg_class c
+      JOIN pg_catalog.pg_seclabel s ON s.classoid = c.tableoid
+                                   AND s.objoid = c.oid
+      WHERE c.tableoid = e.classid
+        AND e.objid = c.oid
+        AND s.provider = 'pgsodium'
+    )
+  LOOP
+    IF debug
+    THEN
+      RAISE NOTICE 'trg_mask_update: classid: %, objid: %, objsubid: %, tag: %, obj_type: %, schema: %, identity: %, in_ext: %',
+        r.classid, r.objid, r.objsubid, r.command_tag, r.object_type,
+        r.schema_name, r.object_identity, r.in_extension;
+    END IF;
+
+    IF r.object_type = 'table column' AND r.objsubid <> 0
+    THEN
+      /*
+       * Create/update encryption trigger for given attribute. This triggers
+       * the creation/update of the related decrypting view as well.
+       */
+      PERFORM pgsodium.create_mask_column(r.objid, r.objsubid, debug);
+    ELSIF r.object_type = 'table' AND r.objsubid = 0
+    THEN
+      /*
+       * Create/update the view on given table
+       */
+       PERFORM pgsodium.create_mask_view(r.objid, debug);
+    END IF;
+  END LOOP;
 END
 $$
   LANGUAGE plpgsql
@@ -359,12 +397,11 @@ GRANT EXECUTE ON FUNCTION pgsodium.create_key(pgsodium.key_type, text, bytea, by
 
 
 /*
- * create_mask_view(oid, integer, boolean)
+ * create_mask_view(oid, boolean)
  *
- * - drop and create view "decrypted_<relname>" for given relation
- * - drop and create associated triggers to encrypt data on INSERT OR UPDATE for given relation
+ * Create or replace decrypting view for given relation
  */
-CREATE FUNCTION pgsodium.create_mask_view(relid oid, subid integer, debug boolean = false)
+CREATE FUNCTION pgsodium.create_mask_view(relid oid, debug bool)
   RETURNS void AS $$
 DECLARE
   m record;
@@ -375,7 +412,16 @@ DECLARE
   privs aclitem[];
   priv record;
 BEGIN
-  SELECT DISTINCT * INTO STRICT rule FROM pgsodium.masking_rule WHERE attrelid = relid AND attnum = subid;
+  SELECT * INTO rule
+  FROM pgsodium.masking_rule AS mr
+  WHERE mr.attrelid = create_mask_view.relid
+  LIMIT 1;
+
+  IF rule.view_name IS NULL
+  THEN
+    RAISE NOTICE 'skip decrypting view: relation % has no encrypted columns', relid::regclass;
+    RETURN;
+  END IF;
 
   source_name := relid::regclass::text;
 
@@ -419,47 +465,6 @@ BEGIN
 	EXECUTE body;
   END LOOP;
 
-  FOR m IN SELECT * FROM pgsodium.mask_columns where attrelid = relid LOOP
-	IF m.key_id IS NULL AND m.key_id_column is NULL THEN
-	  CONTINUE;
-	ELSE
-	  body = format(
-		$c$
-		DROP FUNCTION IF EXISTS %1$s."%2$s_encrypt_secret_%3$s"() CASCADE;
-
-		CREATE OR REPLACE FUNCTION %1$s."%2$s_encrypt_secret_%3$s"()
-		  RETURNS TRIGGER
-		  LANGUAGE plpgsql
-		  AS $t$
-		BEGIN
-		%4$s;
-		RETURN new;
-		END;
-		$t$;
-
-		ALTER FUNCTION  %1$s."%2$s_encrypt_secret_%3$s"() OWNER TO %5$s;
-
-		DROP TRIGGER IF EXISTS "%2$s_encrypt_secret_trigger_%3$s" ON %6$s;
-
-		CREATE TRIGGER "%2$s_encrypt_secret_trigger_%3$s"
-		  BEFORE INSERT OR UPDATE OF "%3$s" ON %6$s
-		  FOR EACH ROW
-		  EXECUTE FUNCTION %1$s."%2$s_encrypt_secret_%3$s" ();
-		  $c$,
-		rule.relnamespace,
-		rule.relname,
-		m.attname,
-		pgsodium.encrypted_column(relid, m),
-		view_owner,
-		source_name
-	  );
-	  if debug THEN
-		RAISE NOTICE '%', body;
-	  END IF;
-	  EXECUTE body;
-	END IF;
-  END LOOP;
-
   raise notice 'about to masking role % %', source_name, rule.view_name;
   PERFORM pgsodium.mask_role(oid::regrole, source_name, rule.view_name)
   FROM pg_roles WHERE pgsodium.has_mask(oid::regrole, source_name);
@@ -470,6 +475,81 @@ END
   LANGUAGE plpgsql
   VOLATILE
   SET search_path='pg_catalog';
+
+-- FIXME no OWNER
+-- FIXME no REVOKE ?
+-- FIXME no GRANT
+
+/*
+ * create_mask_column(oid, integer)
+ *
+ * Build if needed:
+ * - encrypting triggers on tables with encrypted cols
+ * - decrypting view
+ *
+ * FIXME: add `WHERE col IS NOT NULL` to trigger definition?
+ */
+CREATE FUNCTION pgsodium.create_mask_column(relid oid, attnum integer, debug bool)
+RETURNS void
+AS $$
+DECLARE
+  body text;
+  m pgsodium.masking_rule;
+BEGIN
+  -- get encryption rules for given field
+  SELECT * INTO STRICT m
+  FROM pgsodium.masking_rule AS mr
+  WHERE mr.attrelid = relid
+    AND mr.attnum = create_mask_column.attnum;
+
+  IF m.key_id IS NULL AND m.key_id_column IS NULL
+  THEN
+    RETURN;
+  END IF;
+
+  body = format(
+    $c$
+    DROP FUNCTION IF EXISTS %1$s."%2$s_encrypt_secret_%3$s"() CASCADE;
+
+    CREATE OR REPLACE FUNCTION %1$s."%2$s_encrypt_secret_%3$s"()
+      RETURNS TRIGGER
+      LANGUAGE plpgsql
+      AS $t$
+		BEGIN
+		%4$s;
+		RETURN new;
+		END;
+		$t$;
+
+    ALTER FUNCTION  %1$s."%2$s_encrypt_secret_%3$s"() OWNER TO %5$s;
+
+    DROP TRIGGER IF EXISTS "%2$s_encrypt_secret_trigger_%3$s" ON %6$s;
+
+    CREATE TRIGGER "%2$s_encrypt_secret_trigger_%3$s"
+      BEFORE INSERT OR UPDATE OF "%3$s" ON %6$s
+      FOR EACH ROW
+      EXECUTE FUNCTION %1$s."%2$s_encrypt_secret_%3$s" ();
+      $c$,
+    m.relnamespace,
+    m.relname,
+    m.attname,
+    pgsodium.encrypted_column(relid, m),
+    session_user,
+    relid::regclass::text
+  );
+  IF debug THEN
+    RAISE NOTICE '%', body;
+  END IF;
+  EXECUTE body;
+
+  -- update related view
+  PERFORM pgsodium.create_mask_view(relid, debug);
+
+  RETURN;
+END
+$$
+LANGUAGE plpgsql
+SET search_path='';
 
 -- FIXME no OWNER
 -- FIXME no REVOKE ?
@@ -2607,7 +2687,7 @@ RETURNS void AS
   $$
 BEGIN
   PERFORM pgsodium.disable_security_label_trigger();
-  PERFORM pgsodium.create_mask_view(objoid, objsubid, debug)
+  PERFORM pgsodium.create_mask_view(objoid, debug)
     FROM pg_catalog.pg_seclabel sl
     WHERE sl.objoid = target
       AND sl.label ILIKE 'ENCRYPT%'
@@ -2670,7 +2750,10 @@ CREATE FUNCTION pgsodium.version()
 SECURITY LABEL FOR pgsodium ON COLUMN pgsodium.key.raw_key
     IS 'ENCRYPT WITH KEY COLUMN parent_key ASSOCIATED (id, associated_data) NONCE raw_key_nonce';
 
-SELECT * FROM pgsodium.update_mask('pgsodium.key'::regclass::oid);
+SELECT pgsodium.create_mask_column(a.attrelid, a.attnum, true)
+FROM pg_catalog.pg_attribute a
+WHERE a.attrelid = 'pgsodium.key'::regclass
+  AND a.attname = 'raw_key';
 
 -- FIXME: should we really keep it as keyholder has been deprecated in the same
 -- release decrypted_key appeared??
