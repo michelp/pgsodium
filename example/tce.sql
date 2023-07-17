@@ -10,7 +10,8 @@ CREATE SCHEMA "tce-example";
 SET search_path = "tce-example", pg_catalog;
 
 CREATE TABLE test (
-  secret text
+  secret text,
+  name text unique
 );
 
 CREATE TABLE test2 (
