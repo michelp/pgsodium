@@ -27,6 +27,8 @@ SELECT * FROM no_plan();
 
 SET search_path = pgsodium, public;
 
+select (current_setting('server_version_num')::int / 10000) = 15 pg15 \gset
+
 \ir random.sql
 \ir secretbox.sql
 \ir secretstream.sql
