@@ -148,7 +148,7 @@ SELECT bag_eq($$
     ('function pgsodium.mask_columns(oid)'                                                                         ::text),
     ('function pgsodium.mask_role(regrole,text,text)'                                                              ::text),
     ('function pgsodium.pgsodium_derive(bigint,integer,bytea)'                                                     ::text),
-    ('function pgsodium.quote_assoc(name,text,boolean)'                                                            ::text),
+    ('function pgsodium.quote_assoc(text,boolean)'                                                                 ::text),
     ('function pgsodium.randombytes_buf(integer)'                                                                  ::text),
     ('function pgsodium.randombytes_buf_deterministic(integer,bytea)'                                              ::text),
     ('function pgsodium.randombytes_new_seed()'                                                                    ::text),
@@ -571,7 +571,6 @@ WHERE rolname NOT IN ('pg_read_all_data','pg_write_all_data','pgsodium_keyholder
 SELECT columns_are('pgsodium'::name, 'mask_columns'::name, ARRAY[
   'attname',
   'attrelid',
-  'relname',
   'key_id',
   'key_id_column',
   'associated_columns',
