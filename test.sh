@@ -19,15 +19,15 @@ do
 
 		echo running test container
 		docker run --rm -e POSTGRES_HOST_AUTH_METHOD=trust -d \
-               -v `pwd`/test:/home/postgres/pgsodium/test \
-               -v `pwd`/example:/home/postgres/pgsodium/example \
+               -v `pwd`/test:/home/postgres/pgsodium/test:Z \
+               -v `pwd`/example:/home/postgres/pgsodium/example:Z \
                --name "$DB_HOST" $TAG postgres $config
 
 		echo waiting for database to accept connections
 		sleep 3;
 		echo running tests
         
-		$EXEC psql -q -U "$SU" -f /home/postgres/pgsodium/test/test.sql
+		$EXEC pg_prove -U "$SU" /home/postgres/pgsodium/test/test.sql
 
 		echo destroying test container and image
 		docker rm --force "$DB_HOST"

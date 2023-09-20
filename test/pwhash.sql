@@ -1,5 +1,3 @@
-BEGIN;
-SELECT plan(8);
 
 SELECT lives_ok($$SELECT crypto_pwhash_saltgen()$$, 'crypto_pwhash_saltgen');
 
@@ -26,5 +24,3 @@ select throws_ok($$select crypto_pwhash_str_verify(NULL, 'bad')$$,
 select throws_ok($$select crypto_pwhash_str_verify('bad', NULL)$$,
     '22000', 'pgsodium_crypto_pwhash_str_verify: password cannot be NULL', 'crypto_pwhash_str_verify NULL password');
 
-SELECT * FROM finish();
-ROLLBACK;

@@ -1,6 +1,3 @@
-BEGIN;
-SELECT plan(6);
-
 select crypto_stream_xchacha20_noncegen() secretnonce \gset
 select crypto_stream_xchacha20_keygen() secretkey \gset
 
@@ -26,13 +23,7 @@ SELECT throws_ok(format($$select crypto_stream_xchacha20_xor_ic(%L, %L, 42, 'bad
 SELECT is(crypto_stream_xchacha20_xor_ic(:'secret', :'secretnonce', 42, :'secretkey'::bytea),
           'bob is your uncle', 'crypto_stream xor decryption');
 
-SELECT * FROM finish();
-ROLLBACK;
-
 \if :serverkeys
-
-BEGIN;
-SELECT plan(4);
 
 select crypto_stream_xchacha20_noncegen() secretnonce \gset
 
@@ -52,6 +43,4 @@ SELECT throws_ok(format($$select crypto_stream_xchacha20_xor_ic(%L, 'bad nonce',
 SELECT is(crypto_stream_xchacha20_xor_ic(:'secret', :'secretnonce', 42, 42),
           'bob is your uncle', 'crypto_stream xor decryption');
 
-SELECT * FROM finish();
-ROLLBACK;
 \endif
