@@ -175,7 +175,8 @@ SELECT bag_eq($$
     ('view pgsodium.decrypted_key'                                                                                 ::text),
     ('view pgsodium.mask_columns'                                                                                  ::text),
     ('view pgsodium.masking_rule'                                                                                  ::text),
-    ('view pgsodium.valid_key'                                                                                     ::text)
+    ('view pgsodium.valid_key'                                                                                     ::text),
+    ('view pgsodium.seclabel'                                                                                      ::text)
   $$,
   'Check extension object list');
 
@@ -460,7 +461,8 @@ SELECT views_are('pgsodium', ARRAY[
     'decrypted_key',
     'mask_columns',
     'masking_rule',
-    'valid_key'
+    'valid_key',
+    'seclabel'
 ]);
 
 ---- VIEW decrypted_key

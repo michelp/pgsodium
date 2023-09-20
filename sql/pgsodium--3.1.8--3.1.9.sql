@@ -125,3 +125,14 @@ $$
   LANGUAGE plpgsql
   SET search_path=''
 ;
+
+CREATE VIEW pgsodium.seclabel AS
+    SELECT nspname, relname, attname, label
+    FROM pg_seclabel sl,
+         pg_class c,
+         pg_attribute a,
+         pg_namespace n
+    WHERE sl.objoid = c.oid
+    AND c.oid = a.attrelid
+    AND a.attnum = sl.objsubid
+    AND n.oid = c.relnamespace;
