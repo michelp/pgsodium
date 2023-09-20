@@ -95,7 +95,7 @@ pgsodium_crypto_signcrypt_sign_before (PG_FUNCTION_ARGS)
 	return result;
 }
 
-PG_FUNCTION_INFO_V1 (pgsodium_crypto_signcrypt_sign_after);
+PGDLLEXPORT PG_FUNCTION_INFO_V1 (pgsodium_crypto_signcrypt_sign_after);
 Datum
 pgsodium_crypto_signcrypt_sign_after (PG_FUNCTION_ARGS)
 {
@@ -124,7 +124,7 @@ pgsodium_crypto_signcrypt_sign_after (PG_FUNCTION_ARGS)
 	PG_RETURN_BYTEA_P (signature);
 }
 
-PG_FUNCTION_INFO_V1 (pgsodium_crypto_signcrypt_verify_before);
+PGDLLEXPORT PG_FUNCTION_INFO_V1 (pgsodium_crypto_signcrypt_verify_before);
 Datum
 pgsodium_crypto_signcrypt_verify_before (PG_FUNCTION_ARGS)
 {
@@ -189,7 +189,7 @@ pgsodium_crypto_signcrypt_verify_before (PG_FUNCTION_ARGS)
 	return result;
 }
 
-PG_FUNCTION_INFO_V1 (pgsodium_crypto_signcrypt_verify_after);
+PGDLLEXPORT PG_FUNCTION_INFO_V1 (pgsodium_crypto_signcrypt_verify_after);
 Datum
 pgsodium_crypto_signcrypt_verify_after (PG_FUNCTION_ARGS)
 {
@@ -221,7 +221,7 @@ pgsodium_crypto_signcrypt_verify_after (PG_FUNCTION_ARGS)
 	PG_RETURN_BOOL (success == 0);
 }
 
-PG_FUNCTION_INFO_V1 (pgsodium_crypto_signcrypt_verify_public);
+PGDLLEXPORT PG_FUNCTION_INFO_V1 (pgsodium_crypto_signcrypt_verify_public);
 Datum
 pgsodium_crypto_signcrypt_verify_public (PG_FUNCTION_ARGS)
 {

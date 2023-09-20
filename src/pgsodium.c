@@ -1,5 +1,25 @@
 #include "pgsodium.h"
 
+#ifdef _WIN32
+#define X_OK 4
+#define access _access
+size_t getline(char **lineptr, size_t *n, FILE *stream)
+{
+	// We expect 64 bytes, allocate enough to be sure.
+	const int BUFFERSIZE = 1024;
+	char *buffer = malloc (BUFFERSIZE);
+	if (fgets (buffer, BUFFERSIZE - 1 , stream) == NULL)
+	{
+		free (buffer);
+		return -1;
+	}
+	*lineptr = buffer;
+	size_t char_read = strlen (*lineptr);
+	*n = char_read;
+	return char_read;
+}
+#endif
+
 PG_MODULE_MAGIC;
 
 bytea      *pgsodium_secret_key;
@@ -136,7 +156,12 @@ _PG_init (void)
 		proc_exit (1);
 	}
 
-	char_read = getline (&secret_buf, &secret_len, fp);
+	if ((char_read = getline (&secret_buf, &secret_len, fp)) == -1)
+	{
+		ereport(ERROR, errmsg("unable to read secret key"));
+		proc_exit (1);
+	}
+
 	if (secret_buf[char_read - 1] == '\n')
 		secret_buf[char_read - 1] = '\0';
 

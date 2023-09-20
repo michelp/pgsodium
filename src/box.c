@@ -30,7 +30,7 @@ pgsodium_crypto_box_keypair (PG_FUNCTION_ARGS)
 	return result;
 }
 
-PG_FUNCTION_INFO_V1 (pgsodium_crypto_box_new_seed);
+PGDLLEXPORT PG_FUNCTION_INFO_V1 (pgsodium_crypto_box_new_seed);
 Datum
 pgsodium_crypto_box_new_seed (PG_FUNCTION_ARGS)
 {
