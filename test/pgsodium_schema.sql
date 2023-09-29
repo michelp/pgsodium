@@ -5604,7 +5604,7 @@ SELECT function_privs_are('pgsodium'::name, proname, proargtypes::regtype[]::tex
     AND oidvectortypes(proargtypes) = 'bytea';
 
 SELECT unnest(ARRAY[
-    is(md5(prosrc), 'b8b02682e0138dc894512f55587db8d4',
+    is(md5(prosrc), '7e6641f8c9f661514f123598b1ca2448',
        format('Function pgsodium.%s(%s) body should match checksum',
               proname, pg_get_function_identity_arguments(oid))
     ),

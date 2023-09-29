@@ -139,15 +139,44 @@ select ok(has_table_privilege('bobo', 'private.bar', 'SELECT'),
 
 select ok(has_table_privilege('bobo', 'private.other_bar', 'SELECT'),
 	'user keeps view select privs after regeneration');
-	
+
 select ok(has_table_privilege('bobo', 'private.other_bar', 'INSERT'),
 	'user keeps view insert privs after regeneration');
-	
+
 select ok(has_table_privilege('bobo', 'private.other_bar', 'UPDATE'),
 	'user keeps view update privs after regeneration');
-	
+
 select ok(has_table_privilege('bobo', 'private.other_bar', 'DELETE'),
 	'user keeps view delete privs after regeneration');
+
+SET pgsodium.enable_event_trigger = 'off';
+
+CREATE TABLE private.fooz(
+  secret text
+);
+
+SELECT lives_ok(
+  format($test$
+         SECURITY LABEL FOR pgsodium ON COLUMN private.fooz.secret
+         IS 'ENCRYPT WITH KEY ID %s'
+         $test$, :'secret_key_id'),
+  'can label column for encryption with event trigger disabled');
+
+SELECT hasnt_view('private', 'decrypted_fooz', 'Dynamic view was not created due to disabled event trigger.');
+
+SELECT hasnt_trigger('private', 'fooz', 'fooz_encrypt_secret_trigger_secret',
+    'Dynamic trigger was not created due to disabled event trigger.');
+
+SELECT lives_ok(
+    $test$SELECT pgsodium.update_mask('private.fooz'::regclass);$test$,
+    'can manually create trigger and view with event trigger disabled.');
+
+SELECT has_view('private', 'decrypted_fooz', 'Dynamic view was created manually.');
+
+SELECT has_trigger('private', 'fooz', 'fooz_encrypt_secret_trigger_secret',
+    'Dynamic trigger was created manually.');
+
+RESET pgsodium.enable_event_trigger;
 
 SET SESSION AUTHORIZATION bobo;
 SET ROLE bobo;
