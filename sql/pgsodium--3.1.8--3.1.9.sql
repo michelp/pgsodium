@@ -163,6 +163,54 @@ $$
   SET search_path=''
 ;
 
+CREATE OR REPLACE FUNCTION pgsodium.encrypted_column(relid OID, m record)
+RETURNS TEXT AS
+$$
+DECLARE
+    expression TEXT;
+BEGIN
+  expression := '';
+  IF m.format_type = 'text' THEN
+	  expression := expression || format($f$
+            IF %1$s = '' THEN RAISE EXCEPTION 'Cannot encrypt empty string.'; END IF;
+            %1$s = CASE WHEN %1$s IS NULL THEN NULL ELSE
+			CASE WHEN %2$s IS NULL THEN NULL ELSE pg_catalog.encode(
+			  pgsodium.crypto_aead_det_encrypt(
+				pg_catalog.convert_to(%1$s, 'utf8'),
+				pg_catalog.convert_to((%3$s)::text, 'utf8'),
+				%2$s::uuid,
+				%4$s
+			  ),
+				'base64') END END$f$,
+			'new.' || quote_ident(m.attname),
+			COALESCE('new.' || quote_ident(m.key_id_column), quote_literal(m.key_id)),
+			COALESCE(pgsodium.quote_assoc(m.associated_columns, true), quote_literal('')),
+			COALESCE('new.' || quote_ident(m.nonce_column), 'NULL')
+	  );
+  ELSIF m.format_type = 'bytea' THEN
+	  expression := expression || format($f$
+            IF %1$s = ''::bytea THEN RAISE EXCEPTION 'Cannot encrypt empty bytes.'; END IF;
+            %1$s = CASE WHEN %1$s IS NULL THEN NULL ELSE
+			CASE WHEN %2$s IS NULL THEN NULL ELSE
+					pgsodium.crypto_aead_det_encrypt(%1$s::bytea, pg_catalog.convert_to((%3$s)::text, 'utf8'),
+			%2$s::uuid,
+			%4$s
+		  ) END END$f$,
+			'new.' || quote_ident(m.attname),
+			COALESCE('new.' || quote_ident(m.key_id_column), quote_literal(m.key_id)),
+			COALESCE(pgsodium.quote_assoc(m.associated_columns, true), quote_literal('')),
+			COALESCE('new.' || quote_ident(m.nonce_column), 'NULL')
+	  );
+  END IF;
+  RETURN expression;
+END
+$$
+  LANGUAGE plpgsql
+  VOLATILE
+  SET search_path=''
+  ;
+
+
 CREATE VIEW pgsodium.seclabel AS
     SELECT nspname, relname, attname, label
     FROM pg_seclabel sl,

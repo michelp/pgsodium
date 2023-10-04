@@ -20,7 +20,9 @@ SELECT throws_ok(
   'quoted schema cannot be labled');
 
 CREATE TABLE private.foo(
+  id integer,
   secret text,
+  secretbytes bytea,
   associated text default ''
 );
 
@@ -86,7 +88,14 @@ SELECT lives_ok(
          SECURITY LABEL FOR pgsodium ON COLUMN private.foo.secret
          IS 'ENCRYPT WITH KEY ID %s'
          $test$, :'secret_key_id'),
-  'can label column for encryption');
+  'can label string column for encryption');
+
+SELECT lives_ok(
+  format($test$
+         SECURITY LABEL FOR pgsodium ON COLUMN private.foo.secretbytes
+         IS 'ENCRYPT WITH KEY ID %s'
+         $test$, :'secret_key_id'),
+  'can label bytea column for encryption');
 
 SELECT lives_ok(
   format($test$
@@ -187,20 +196,56 @@ SELECT pgsodium.crypto_aead_det_noncegen() nonce2 \gset
 SELECT lives_ok(
   format(
     $test$
-    INSERT INTO private.decrypted_foo (secret) VALUES ('s3kr3t');
+    INSERT INTO private.decrypted_foo (id, secret) VALUES (1, 's3kr3t');
     $test$),
-    'can insert into decrypted view');
+    'can insert string into decrypted view');
 
 SELECT lives_ok(
   format(
     $test$
-    UPDATE private.decrypted_foo SET secret  = 'sp00n';
+    INSERT INTO private.decrypted_foo (id, secretbytes) VALUES (2, 's3kr3t'::bytea);
     $test$),
-    'can update into decrypted view');
+    'can insert bytes into decrypted view');
 
-SELECT results_eq($$SELECT decrypted_secret = 'sp00n' from private.decrypted_foo$$,
+SELECT throws_ok(
+  format(
+    $test$
+    INSERT INTO private.decrypted_foo (id, secret) VALUES (3, '');
+    $test$),
+    'P0001',
+    'Cannot encrypt empty string.',
+    'cannot insert empty string into decrypted view');
+
+SELECT throws_ok(
+  format(
+    $test$
+    INSERT INTO private.decrypted_foo (id, secretbytes) VALUES (4, ''::bytea);
+    $test$),
+    'P0001',
+    'Cannot encrypt empty bytes.',
+    'cannot insert empty bytes into decrypted view');
+
+SELECT lives_ok(
+  format(
+    $test$
+    UPDATE private.decrypted_foo SET secret  = 'sp00n' WHERE id = 1;
+    $test$),
+    'can update string into decrypted view');
+
+SELECT results_eq($$SELECT decrypted_secret = 'sp00n' from private.decrypted_foo WHERE id = 1$$,
     $$VALUES (true)$$,
-    'can see updated decrypted view');
+    'can see updated string in decrypted view');
+
+SELECT lives_ok(
+  format(
+    $test$
+    UPDATE private.decrypted_foo SET secretbytes  = 'sp00nb' WHERE id = 2;
+    $test$),
+    'can update bytes into decrypted view');
+
+SELECT results_eq($$SELECT decrypted_secretbytes = 'sp00nb' from private.decrypted_foo WHERE id = 2$$,
+    $$VALUES (true)$$,
+    'can see updated bytes in decrypted view');
 
 SELECT lives_ok(
     $test$
