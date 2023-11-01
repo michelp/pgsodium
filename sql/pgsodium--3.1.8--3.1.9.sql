@@ -95,7 +95,7 @@ BEGIN
 	END IF;
   END LOOP;
 
-  raise notice 'about to masking role % %', source_name, rule.view_name;
+  RAISE NOTICE 'Masking role % %', source_name, rule.view_name;
   PERFORM pgsodium.mask_role(oid::regrole, source_name, rule.view_name)
   FROM pg_roles WHERE pgsodium.has_mask(oid::regrole, source_name);
 
