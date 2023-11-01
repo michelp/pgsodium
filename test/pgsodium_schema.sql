@@ -1009,7 +1009,7 @@ SELECT function_privs_are('pgsodium'::name, proname, proargtypes::regtype[]::tex
     AND oidvectortypes(proargtypes) = 'oid, boolean';
 
 SELECT unnest(ARRAY[
-    is(md5(prosrc), '2b415aec3b2a3421dd4b9c876abe620e',
+    is(md5(prosrc), 'b034b801e006293fa2d4de77db4b1829',
        format('Function pgsodium.%s(%s) body should match checksum',
               proname, pg_get_function_identity_arguments(oid))
     ),
@@ -4970,7 +4970,7 @@ SELECT function_privs_are('pgsodium'::name, proname, proargtypes::regtype[]::tex
     AND oidvectortypes(proargtypes) = '';
 
 SELECT unnest(ARRAY[
-    is(md5(prosrc), 'b58694d2602515d557e8637d43b6df1a',
+    is(md5(prosrc), 'faacedb8c19aba1c5f9c7556d18c2286',
        format('Function pgsodium.%s(%s) body should match checksum',
               proname, pg_get_function_identity_arguments(oid))
     ),
@@ -5606,7 +5606,7 @@ SELECT function_privs_are('pgsodium'::name, proname, proargtypes::regtype[]::tex
     AND oidvectortypes(proargtypes) = 'bytea';
 
 SELECT unnest(ARRAY[
-    is(md5(prosrc), 'b8b02682e0138dc894512f55587db8d4',
+    is(md5(prosrc), '7e6641f8c9f661514f123598b1ca2448',
        format('Function pgsodium.%s(%s) body should match checksum',
               proname, pg_get_function_identity_arguments(oid))
     ),
