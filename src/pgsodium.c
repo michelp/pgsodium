@@ -24,6 +24,7 @@ PG_MODULE_MAGIC;
 
 bytea      *pgsodium_secret_key;
 static char *getkey_script = NULL;
+static bool enable_event_trigger = true;
 
 /*
  * Checking the syntax of the masking rules
@@ -120,10 +121,20 @@ _PG_init (void)
 	/* Security label provider hook */
 	register_label_provider ("pgsodium", pgsodium_object_relabel);
 
-	// we're done if not preloaded, otherwise try to get internal shared key
+	// we're done if not preloaded
 	if (!process_shared_preload_libraries_in_progress)
 		return;
 
+    // Variable to enable/disable event trigger
+	DefineCustomBoolVariable("pgsodium.enable_event_trigger",
+							 "Variable to enable/disable event trigger that regenerates triggers and views.",
+							 NULL,
+							 &enable_event_trigger,
+							 true,
+							 PGC_USERSET, 0,
+							 NULL, NULL, NULL);
+
+    // try to get internal shared key
 	path = (char *) palloc0 (MAXPGPATH);
 	get_share_path (my_exec_path, sharepath);
 	snprintf (path, MAXPGPATH, "%s/extension/%s", sharepath, PG_GETKEY_EXEC);

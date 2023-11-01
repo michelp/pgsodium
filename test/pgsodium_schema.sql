@@ -175,7 +175,8 @@ SELECT bag_eq($$
     ('view pgsodium.decrypted_key'                                                                                 ::text),
     ('view pgsodium.mask_columns'                                                                                  ::text),
     ('view pgsodium.masking_rule'                                                                                  ::text),
-    ('view pgsodium.valid_key'                                                                                     ::text)
+    ('view pgsodium.valid_key'                                                                                     ::text),
+    ('view pgsodium.seclabel'                                                                                      ::text)
   $$,
   'Check extension object list');
 
@@ -460,7 +461,8 @@ SELECT views_are('pgsodium', ARRAY[
     'decrypted_key',
     'mask_columns',
     'masking_rule',
-    'valid_key'
+    'valid_key',
+    'seclabel'
 ]);
 
 ---- VIEW decrypted_key
@@ -4968,7 +4970,7 @@ SELECT function_privs_are('pgsodium'::name, proname, proargtypes::regtype[]::tex
     AND oidvectortypes(proargtypes) = '';
 
 SELECT unnest(ARRAY[
-    is(md5(prosrc), 'b58694d2602515d557e8637d43b6df1a',
+    is(md5(prosrc), 'faacedb8c19aba1c5f9c7556d18c2286',
        format('Function pgsodium.%s(%s) body should match checksum',
               proname, pg_get_function_identity_arguments(oid))
     ),
@@ -5604,7 +5606,7 @@ SELECT function_privs_are('pgsodium'::name, proname, proargtypes::regtype[]::tex
     AND oidvectortypes(proargtypes) = 'bytea';
 
 SELECT unnest(ARRAY[
-    is(md5(prosrc), 'b8b02682e0138dc894512f55587db8d4',
+    is(md5(prosrc), '7e6641f8c9f661514f123598b1ca2448',
        format('Function pgsodium.%s(%s) body should match checksum',
               proname, pg_get_function_identity_arguments(oid))
     ),
