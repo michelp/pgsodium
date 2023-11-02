@@ -478,6 +478,76 @@ You can specify multiple columns as shown above with both the id and
 associated data column.  Columns used for associated data must be
 *deterministicly* castable to `text`.
 
+## Postgres 15 and "Security Invoker" Views
+
+Postgres 15 added a new propery to views called `security_invoker`
+which changes the behavior of views that access an underlying table
+with row security labels.  Before pg15, all views ran as the owner of
+the view itself, making interaction with RLS clumsy, starting with
+pg15, views that are marked as `security_invoker` will "run" with the
+privileges of the invoking user, not the owner of the view, this makes
+working with RLS policies simpler.
+
+Any TCE security label can be appended with the string `SECURITY
+INVOKER' which will cause the automatically generated view to be
+marked `security_invoker=true`.  Note that you are still responsible
+for understanding the grants/revokes to your view and table, which can
+vary depending on the specific needs of your application's security
+model.
+
+## Inspecting Security Labels
+
+The system catalog `pg_seclabel` can be hard to decipher, requiring
+joins to figure out which labels apply to which columns.  The
+`pgsodium.seclabel` view simplifies this task by resolving the table
+and column names for you:
+
+```
+postgres=> select * from pgsodium.seclabel ;
+-[ RECORD 1 ]---------------------------------------------------------------------------------------------------------
+nspname | tce-example
+relname | test2
+attname | secret2
+label   | ENCRYPT WITH KEY COLUMN secret2_key_id ASSOCIATED (id, associated2) NONCE nonce2
+-[ RECORD 2 ]---------------------------------------------------------------------------------------------------------
+nspname | tce-example
+relname | test2
+attname | secret
+label   | ENCRYPT WITH KEY ID f8db208c-8201-466a-98cd-b0d91f5326ca ASSOCIATED (associated) NONCE nonce
+-[ RECORD 3 ]---------------------------------------------------------------------------------------------------------
+nspname | tce-example
+relname | test
+attname | secret
+label   | ENCRYPT WITH KEY ID 2a5500f3-9378-4134-89db-5fd870a5ce7a
+-[ RECORD 4 ]---------------------------------------------------------------------------------------------------------
+nspname | pgsodium
+relname | key
+attname | raw_key
+label   | ENCRYPT WITH KEY COLUMN parent_key ASSOCIATED (id, associated_data) NONCE raw_key_nonce
+-[ RECORD 5 ]---------------------------------------------------------------------------------------------------------
+nspname | tce-example
+relname | bob-testt
+attname | secret2-test
+label   | ENCRYPT WITH KEY COLUMN secret2_key_id-test ASSOCIATED (associated2-test) NONCE nonce2-test SECURITY INVOKER
+```
+
+## Disabling View and Trigger generation
+
+If you wish to disable the `EVENT TRIGGER` that fires and generates
+the trigger and view, you can turn if off with a configuration
+setting:
+
+```sql
+SET pgsodium.enable_event_trigger = 'off';
+```
+
+This parameter can be set in the `postgresql.conf` file, or passed to
+the server on startup with `-C`.  Disabling trigger generation can be
+useful for doing migrations when you don't want trigger generation to
+get in the way of copying DDL from one system to another.  See the
+postgres docs for [Setting
+Parameters](https://www.postgresql.org/docs/current/config-setting.html).
+
 # Simple public key encryption with `crypto_box()`
 
 Here's an example usage from the test.sql that uses command-line
