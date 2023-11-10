@@ -266,12 +266,12 @@ To create a new key, call the `pgsodium.create_key()` function:
 id          | 74d97ba2-f9e3-4a64-a032-8427cd6bd686
 status      | valid
 created     | 2022-08-04 05:06:53.878502
-expires     | 
+expires     |
 key_type    | aead-det
 key_id      | 4
 key_context | \x7067736f6469756d
 comment     | This is an optional comment
-user_data   | 
+user_data   |
 
 ```
 
@@ -361,12 +361,12 @@ functionality.  Creating a key to use is the first step:
 id                | dfc44293-fa78-4a1a-9ef9-7e600e63e101
 status            | valid
 created           | 2022-08-03 18:50:53.355099
-expires           | 
+expires           |
 key_type          | aead-det
 key_id            | 5
 key_context       | \x7067736f6469756d
-comment           | 
-associated_data   | 
+comment           |
+associated_data   |
 ```
 
 This key is now stored in the `pgsodium.key` table, and can be
@@ -477,6 +477,49 @@ SECURITY LABEL FOR pgsodium
 You can specify multiple columns as shown above with both the id and
 associated data column.  Columns used for associated data must be
 *deterministicly* castable to `text`.
+
+## TCE and `ON CONFLICT UPDATE` Clauses "UPSERT" Pattern
+
+UPSERT is not a command in PostgreSQL, it is one pattern among many
+possible when using the `INSERT ... ON CONFLICT DO ...` clause in
+Postgres to either insert a value, or do some other action, which is
+commonly to update the alreadt extant row that the command was
+attempting to INSERT.  This pattern usually looks like:
+
+```sql
+INSERT INTO my_table (my_columns...) VALUES (new_values...)
+  ON CONFLICT (some_unique_key_like_id) DO UPDATE
+  SET my_data = EXCLUDED.my_data;
+```
+
+The statement tries to insert a row, and if there is a unique
+constraint violation, it will instead update the row with the value of
+the row that was about to be inserted.
+
+Unfortunately, the value of the row that was about to be inserted is
+already encrypted, so this pattern does not work, instead to do an
+"UPSERT" you must combine the unencrypted data from the view with the
+encryted data in the table, so that the unencrypted value is
+"reencrypted" correctly and not "double encrypted".
+
+The function below shows how this query can be formatted as a stored
+procedure, if you are using PostgREST, this is the "RPC" function to
+use to do the intended upsert behavior:
+
+```sql
+CREATE OR REPLACE FUNCTION upsert_test(p_id bigint, p_name text DEFAULT NULL, p_secret text DEFAULT NULL)
+    RETURNS test LANGUAGE sql AS
+    $$
+    INSERT INTO test (id, name, secret) VALUES (p_id, p_name, p_secret)
+    ON CONFLICT (id) DO UPDATE
+        SET name   = coalesce(p_name, (SELECT name FROM test WHERE id = p_id)),
+            secret = coalesce(p_secret, (SELECT decrypted_secret FROM decrypted_test WHERE id = p_id))
+    RETURNING *
+    $$;
+```
+
+If you do not need the stored procedure you can modify the inner query
+to suite your specific needs as a literal SQL query.
 
 ## Postgres 15 and "Security Invoker" Views
 
@@ -1190,4 +1233,3 @@ The Toorani-Beheshti signcryption scheme achieves this using a single
 key pair per device, with forward security and public verifiability.
 
 [C API Documentation](https://github.com/jedisct1/libsodium-signcryption)
-
