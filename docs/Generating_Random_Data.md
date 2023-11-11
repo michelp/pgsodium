@@ -70,7 +70,7 @@ Returns a random 32-bit signed integer.
 
 
 
-### `randombytes_uniform(upper_bound interger)`
+### `randombytes_uniform(upper_bound integer)`
 
 Returns a uniformally distributed random number between zero and the upper bound argument.
 
