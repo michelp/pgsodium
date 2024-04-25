@@ -629,7 +629,7 @@ the `pgsodium_keyiduser` role, a useful approach is to keep keys in an
 external storage and disabling logging while injecting the keys into
 local variables with [`SET
 LOCAL`](https://www.postgresql.org/docs/current/sql-set.html). If the
-images or database are hacked or stolen, the keys will not be
+images of database are hacked or stolen, the keys will not be
 available to the attacker.
 
 To disable logging of the key injections, `SET LOCAL` is also used to
