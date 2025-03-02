@@ -9,6 +9,9 @@ RUN apt-get update && \
 
 # add postgres user and make data dir
 RUN groupadd -r postgres && useradd --no-log-init -r -m -s /bin/bash -g postgres -G sudo postgres
+RUN echo "postgres ALL=(root) NOPASSWD:ALL" > /etc/sudoers.d/user && \
+    chmod 0440 /etc/sudoers.d/user
+    
 ENV PGDATA /home/postgres/data
 RUN /bin/rm -Rf "$PGDATA" && mkdir "$PGDATA"
 WORKDIR "/home/postgres"
@@ -26,7 +29,7 @@ RUN git clone --branch REL_${version}_STABLE https://github.com/postgres/postgre
 RUN chown postgres:postgres /home/postgres
 
 RUN curl -s -L https://github.com/theory/pgtap/archive/v1.2.0.tar.gz | tar zxvf - && cd pgtap-1.2.0 && make && make install
-RUN curl -s -L https://download.libsodium.org/libsodium/releases/libsodium-1.0.18.tar.gz | tar zxvf - && cd libsodium-1.0.18 && ./configure && make check && make -j 4 install
+RUN curl -s -L https://github.com/jedisct1/libsodium/releases/download/1.0.20-RELEASE/libsodium-1.0.20.tar.gz | tar zxvf - && cd libsodium-1.0.20 && ./configure && make check && make -j 4 install
 RUN cpan App::cpanminus && cpan TAP::Parser::SourceHandler::pgTAP && cpan App::prove
 
 RUN git clone --depth 1 https://github.com/lacanoid/pgddl.git
@@ -43,7 +46,6 @@ RUN sed -i 's/exit//g' `pg_config --sharedir`/extension/pgsodium_getkey
 RUN chmod +x `pg_config --sharedir`/extension/pgsodium_getkey
 RUN cp `pg_config --sharedir`/extension/pgsodium_getkey /getkey
 
-# chown just pggraphblas
 RUN chown -R postgres:postgres /home/postgres/pgsodium
 RUN chown -R postgres:postgres /home/postgres/data
 
