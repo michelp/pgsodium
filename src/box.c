@@ -53,7 +53,7 @@ SELECT public, secret FROM crypto_box_seed_new_keypair(:'seed') \gset alice_
 SELECT pgsodium.crypto_box('hello bob', :'nonce', :'bob_public', :'alice_secret') atob \gset
 SELECT :'atob';
 
-select pgsodium.crypto_box_open(:'atob', :'nonce', :'alice_public', :'bob_secret');
+select convert_from(pgsodium.crypto_box_open(:'atob', :'nonce', :'alice_public', :'bob_secret'), 'utf8');
 
 -- Sealed boxes are designed to anonymously send messages to a recipient
 -- given its public key.
@@ -70,7 +70,7 @@ select pgsodium.crypto_box_open(:'atob', :'nonce', :'alice_public', :'bob_secret
 -- message cannot be correlated with the identity of its sender.
 
 SELECT pgsodium.crypto_box_seal('bob is your uncle', :'bob_public') sealed \gset
-SELECT pgsodium.crypto_box_seal_open(:'sealed', :'bob_public', :'bob_secret');
+SELECT convert_from(pgsodium.crypto_box_seal_open(:'sealed', :'bob_public', :'bob_secret'), 'utf8');
 
 */
 

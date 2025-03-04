@@ -5,7 +5,8 @@ ARG DEBIAN_FRONTEND=noninteractive
 # install base dependences
 RUN apt-get update && \
     apt-get install -y make cmake git curl build-essential m4 sudo gdbserver \
-    gdb libreadline-dev bison flex zlib1g-dev tmux zile zip vim gawk wget libicu-dev pkg-config
+    gdb libreadline-dev bison flex zlib1g-dev tmux zile zip vim gawk wget libicu-dev pkg-config \
+    python3 python3-pip python3-venv
 
 # add postgres user and make data dir
 RUN groupadd -r postgres && useradd --no-log-init -r -m -s /bin/bash -g postgres -G sudo postgres
