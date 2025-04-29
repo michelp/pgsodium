@@ -1,12 +1,13 @@
 import os
 import sys
 
+PREFIX = "/* doctest"
 
 def process_file(path):
     with open(path, "r") as f:
         content = f.read()
     s = content.lstrip()
-    if not s.startswith("/* doctest"):
+    if not s.startswith(PREFIX):
         return
     end = s.find("*/")
     if end == -1:
@@ -16,9 +17,9 @@ def process_file(path):
     if not lines:
         return
     first = lines[0]
-    if not first.startswith("/* doctest"):
+    if not first.startswith(PREFIX):
         return
-    target = first[len("/* doctest"):].strip()
+    target = first[len(PREFIX):].strip()
     if target.startswith("/"):
         target = target[1:]
     if not target:
@@ -29,7 +30,6 @@ def process_file(path):
     os.makedirs(os.path.dirname(out_file), exist_ok=True)
     with open(out_file, "w") as out:
         out.write(stripped_comment + "\n\n")
-
 
 def main():
     base = sys.argv[1] if len(sys.argv) > 1 else "."

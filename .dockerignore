@@ -6,4 +6,6 @@ psql.sh
 .cache
 test/
 example/
+site/
+docs/    
 .virt

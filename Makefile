@@ -5,9 +5,9 @@ PG_CONFIG ?= pg_config
 DATA = $(wildcard extension/*--*.sql)
 PGXS := $(shell $(PG_CONFIG) --pgxs)
 MODULE_big = pgsodium
-OBJS = $(patsubst %.c,%.o,$(wildcard src/*.c))
+OBJS = $(patsubst %.c,%.o,$(shell find pgsodium/ -name '*.c'))
 SHLIB_LINK = -lsodium
-PG_CPPFLAGS = -O0
+PG_CPPFLAGS = -O0 -I$(srcdir)/pgsodium/include
 
 TESTS        = $(wildcard sql/*.sql)
 REGRESS      = $(patsubst sql/%.sql,%,$(TESTS))
