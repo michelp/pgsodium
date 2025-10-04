@@ -16,14 +16,14 @@ ENV PGDATA /home/postgres/data
 RUN /bin/rm -Rf "$PGDATA" && mkdir "$PGDATA"
 WORKDIR "/home/postgres"
 
-# get postgres source and compile with debug and no optimization
-RUN git clone --branch REL_${version}_STABLE https://github.com/postgres/postgres.git --depth=1 && \
-    cd postgres && ./configure \
+# download and compile postgres release
+RUN curl -s -L https://ftp.postgresql.org/pub/source/v${version}/postgresql-${version}.tar.gz | tar zxvf - && \
+    cd postgresql-${version} && ./configure \
     --prefix=/usr/ \
-    --enable-debug \
-    --enable-depend --enable-cassert --enable-profiling \
-    CFLAGS="-ggdb -Og -g3 -fno-omit-frame-pointer" \
-#    CFLAGS="-O3" \
+#    --enable-debug \
+#    --enable-depend --enable-cassert --enable-profiling \
+#    CFLAGS="-ggdb -Og -g3 -fno-omit-frame-pointer" \
+    CFLAGS="-O3" \
     && make -j 4 && make install
 
 RUN chown postgres:postgres /home/postgres
