@@ -15,7 +15,7 @@ PG_FUNCTION_INFO_V1 (pgsodium_crypto_aead_ietf_noncegen);
 Datum
 pgsodium_crypto_aead_ietf_noncegen (PG_FUNCTION_ARGS)
 {
-	int         result_size =
+	size_t      result_size =
 		VARHDRSZ + crypto_aead_chacha20poly1305_IETF_NPUBBYTES;
 	bytea      *result = _pgsodium_zalloc_bytea (result_size);
 	randombytes_buf (VARDATA (result),
@@ -165,8 +165,8 @@ pgsodium_crypto_aead_ietf_encrypt_by_id (PG_FUNCTION_ARGS)
 		pgsodium_derive_helper (key_id,
 								crypto_aead_chacha20poly1305_IETF_KEYBYTES, context);
 	result_size =
-		VARSIZE_ANY (message) + crypto_aead_chacha20poly1305_IETF_ABYTES;
-	result = _pgsodium_zalloc_bytea (result_size);
+		VARSIZE_ANY_EXHDR (message) + crypto_aead_chacha20poly1305_IETF_ABYTES;
+	result = _pgsodium_zalloc_bytea (result_size + VARHDRSZ);
 	crypto_aead_chacha20poly1305_ietf_encrypt (PGSODIUM_UCHARDATA (result),
 											   &result_size,
 											   PGSODIUM_UCHARDATA (message),
@@ -174,8 +174,6 @@ pgsodium_crypto_aead_ietf_encrypt_by_id (PG_FUNCTION_ARGS)
 											   associated != NULL ? PGSODIUM_UCHARDATA_ANY (associated) : NULL,
 											   associated != NULL ? VARSIZE_ANY_EXHDR (associated) : 0,
 											   NULL, PGSODIUM_UCHARDATA (nonce), PGSODIUM_UCHARDATA (key));
-	SET_VARSIZE (result,
-				 VARHDRSZ + result_size + crypto_aead_chacha20poly1305_IETF_ABYTES);
 	PG_RETURN_BYTEA_P (result);
 }
 
@@ -254,7 +252,7 @@ PGDLLEXPORT PG_FUNCTION_INFO_V1 (pgsodium_crypto_aead_det_noncegen);
 Datum
 pgsodium_crypto_aead_det_noncegen (PG_FUNCTION_ARGS)
 {
-	int         result_size = VARHDRSZ + crypto_aead_det_xchacha20_NONCEBYTES;
+	size_t      result_size = VARHDRSZ + crypto_aead_det_xchacha20_NONCEBYTES;
 	bytea      *result = _pgsodium_zalloc_bytea (result_size);
 	randombytes_buf (VARDATA (result), crypto_aead_det_xchacha20_NONCEBYTES);
 	PG_RETURN_BYTEA_P (result);

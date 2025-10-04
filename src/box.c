@@ -303,7 +303,7 @@ pgsodium_crypto_box_seal_open (PG_FUNCTION_ARGS)
 	ERRORIF (VARSIZE_ANY_EXHDR (ciphertext) <= crypto_box_SEALBYTES,
 		"%s: invalid message");
 
-	result_size = VARSIZE (ciphertext) - crypto_box_SEALBYTES;
+	result_size = VARSIZE_ANY (ciphertext) - crypto_box_SEALBYTES;
 	result = _pgsodium_zalloc_bytea (result_size);
 	success = crypto_box_seal_open (
 		PGSODIUM_UCHARDATA (result),
