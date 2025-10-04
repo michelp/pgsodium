@@ -219,9 +219,9 @@ pgsodium_crypto_aead_ietf_decrypt_by_id (PG_FUNCTION_ARGS)
 		pgsodium_derive_helper (key_id,
 								crypto_aead_chacha20poly1305_IETF_KEYBYTES, context);
 
-	ciphertext_len = VARSIZE_ANY_EXHDR (ciphertext) -
-		crypto_aead_chacha20poly1305_IETF_ABYTES;
-	result = _pgsodium_zalloc_bytea (ciphertext_len);
+	ciphertext_len = VARSIZE_ANY_EXHDR (ciphertext);
+	result = _pgsodium_zalloc_bytea (ciphertext_len + VARHDRSZ -
+		crypto_aead_chacha20poly1305_IETF_ABYTES);
 
 	success =
 		crypto_aead_chacha20poly1305_ietf_decrypt (
