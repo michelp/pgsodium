@@ -177,7 +177,33 @@ SELECT bag_eq($$
     ('view pgsodium.masking_rule'                                                                                  ::text),
     ('view pgsodium.valid_key'                                                                                     ::text),
     ('view pgsodium.seclabel'                                                                                      ::text)
-  $$,
+  $$ ||
+  -- PostgreSQL 17+ automatically creates array types for composite types
+  CASE WHEN current_setting('server_version_num')::int >= 170000 THEN
+    $$ UNION VALUES
+    ('type pgsodium._key_id_context[]'                                                                             ::text),
+    ('type pgsodium.crypto_box_keypair[]'                                                                          ::text),
+    ('type pgsodium.crypto_kx_keypair[]'                                                                           ::text),
+    ('type pgsodium.crypto_kx_session[]'                                                                           ::text),
+    ('type pgsodium.crypto_sign_keypair[]'                                                                         ::text),
+    ('type pgsodium.crypto_signcrypt_keypair[]'                                                                    ::text),
+    ('type pgsodium.crypto_signcrypt_state_key[]'                                                                  ::text),
+    ('type pgsodium.key[]'                                                                                         ::text),
+    ('type pgsodium.key_status[]'                                                                                  ::text),
+    ('type pgsodium.key_type[]'                                                                                    ::text),
+    ('type pgsodium.decrypted_key'                                                                                 ::text),
+    ('type pgsodium.decrypted_key[]'                                                                               ::text),
+    ('type pgsodium.mask_columns'                                                                                  ::text),
+    ('type pgsodium.mask_columns[]'                                                                                ::text),
+    ('type pgsodium.masking_rule'                                                                                  ::text),
+    ('type pgsodium.masking_rule[]'                                                                                ::text),
+    ('type pgsodium.seclabel'                                                                                      ::text),
+    ('type pgsodium.seclabel[]'                                                                                    ::text),
+    ('type pgsodium.valid_key'                                                                                     ::text),
+    ('type pgsodium.valid_key[]'                                                                                   ::text),
+    ('type pgsodium.key'                                                                                           ::text)
+    $$
+  ELSE '' END,
   'Check extension object list');
 
 
