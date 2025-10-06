@@ -365,7 +365,18 @@ SELECT results_eq(
   ARRAY[
     'key_key_context_check',
     'pgsodium_raw',
-    'key_parent_key_fkey',
+    'key_parent_key_fkey'
+  ]::name[] ||
+-- PostgreSQL 18+ automatically creates NOT NULL constraints as named constraints
+CASE WHEN current_setting('server_version_num')::int >= 180000 THEN
+  ARRAY[
+    'key_created_not_null',
+    'key_id_not_null'
+  ]::name[]
+ELSE
+  ARRAY[]::name[]
+END ||
+  ARRAY[
     'key_pkey',
     'pgsodium_key_unique_name'
   ]::name[],
