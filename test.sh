@@ -2,7 +2,7 @@
 
 set -e
 
-versions=${1:-13 14 15 16}
+versions=${1:-14.19 15.14 16.10 17.6 18.0}
 
 for version in $versions
 do
