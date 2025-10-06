@@ -15,11 +15,11 @@ PG_FUNCTION_INFO_V1 (pgsodium_crypto_aead_ietf_noncegen);
 Datum
 pgsodium_crypto_aead_ietf_noncegen (PG_FUNCTION_ARGS)
 {
-	int         result_size =
+	size_t      result_size =
 		VARHDRSZ + crypto_aead_chacha20poly1305_IETF_NPUBBYTES;
 	bytea      *result = _pgsodium_zalloc_bytea (result_size);
 	randombytes_buf (VARDATA (result),
-		crypto_aead_chacha20poly1305_IETF_NPUBBYTES);
+					 crypto_aead_chacha20poly1305_IETF_NPUBBYTES);
 	PG_RETURN_BYTEA_P (result);
 }
 
@@ -52,9 +52,9 @@ pgsodium_crypto_aead_ietf_encrypt (PG_FUNCTION_ARGS)
 	key = PG_GETARG_BYTEA_PP (3);
 
 	ERRORIF (VARSIZE_ANY_EXHDR (nonce) !=
-		crypto_aead_chacha20poly1305_IETF_NPUBBYTES, "%s: invalid nonce");
+			 crypto_aead_chacha20poly1305_IETF_NPUBBYTES, "%s: invalid nonce");
 	ERRORIF (VARSIZE_ANY_EXHDR (key) !=
-		crypto_aead_chacha20poly1305_IETF_KEYBYTES, "%s: invalid key");
+			 crypto_aead_chacha20poly1305_IETF_KEYBYTES, "%s: invalid key");
 
 	result_size = VARSIZE_ANY_EXHDR (message) + crypto_aead_chacha20poly1305_IETF_ABYTES;
 	result = _pgsodium_zalloc_bytea (result_size + VARHDRSZ);
@@ -102,11 +102,11 @@ pgsodium_crypto_aead_ietf_decrypt (PG_FUNCTION_ARGS)
 	key = PG_GETARG_BYTEA_PP (3);
 
 	ERRORIF (VARSIZE_ANY_EXHDR (ciphertext) <=
-		crypto_aead_chacha20poly1305_IETF_ABYTES, "%s: invalid message");
+			 crypto_aead_chacha20poly1305_IETF_ABYTES, "%s: invalid message");
 	ERRORIF (VARSIZE_ANY_EXHDR (nonce) !=
-		crypto_aead_chacha20poly1305_IETF_NPUBBYTES, "%s: invalid nonce");
+			 crypto_aead_chacha20poly1305_IETF_NPUBBYTES, "%s: invalid nonce");
 	ERRORIF (VARSIZE_ANY_EXHDR (key) !=
-		crypto_aead_chacha20poly1305_IETF_KEYBYTES, "%s: invalid key");
+			 crypto_aead_chacha20poly1305_IETF_KEYBYTES, "%s: invalid key");
 
 	ciphertext_len = VARSIZE_ANY_EXHDR (ciphertext);
 	result = _pgsodium_zalloc_bytea (
@@ -160,22 +160,20 @@ pgsodium_crypto_aead_ietf_encrypt_by_id (PG_FUNCTION_ARGS)
 	context = PG_GETARG_BYTEA_P (4);
 
 	ERRORIF (VARSIZE_ANY_EXHDR (nonce) !=
-		crypto_aead_chacha20poly1305_IETF_NPUBBYTES, "%s: invalid nonce");
+			 crypto_aead_chacha20poly1305_IETF_NPUBBYTES, "%s: invalid nonce");
 	key =
 		pgsodium_derive_helper (key_id,
-		crypto_aead_chacha20poly1305_IETF_KEYBYTES, context);
+								crypto_aead_chacha20poly1305_IETF_KEYBYTES, context);
 	result_size =
-		VARSIZE_ANY (message) + crypto_aead_chacha20poly1305_IETF_ABYTES;
-	result = _pgsodium_zalloc_bytea (result_size);
+		VARSIZE_ANY_EXHDR (message) + crypto_aead_chacha20poly1305_IETF_ABYTES;
+	result = _pgsodium_zalloc_bytea (result_size + VARHDRSZ);
 	crypto_aead_chacha20poly1305_ietf_encrypt (PGSODIUM_UCHARDATA (result),
-		&result_size,
-		PGSODIUM_UCHARDATA (message),
-		VARSIZE_ANY_EXHDR (message),
-		associated != NULL ? PGSODIUM_UCHARDATA_ANY (associated) : NULL,
-		associated != NULL ? VARSIZE_ANY_EXHDR (associated) : 0,
-		NULL, PGSODIUM_UCHARDATA (nonce), PGSODIUM_UCHARDATA (key));
-	SET_VARSIZE (result,
-		VARHDRSZ + result_size + crypto_aead_chacha20poly1305_IETF_ABYTES);
+											   &result_size,
+											   PGSODIUM_UCHARDATA (message),
+											   VARSIZE_ANY_EXHDR (message),
+											   associated != NULL ? PGSODIUM_UCHARDATA_ANY (associated) : NULL,
+											   associated != NULL ? VARSIZE_ANY_EXHDR (associated) : 0,
+											   NULL, PGSODIUM_UCHARDATA (nonce), PGSODIUM_UCHARDATA (key));
 	PG_RETURN_BYTEA_P (result);
 }
 
@@ -214,16 +212,16 @@ pgsodium_crypto_aead_ietf_decrypt_by_id (PG_FUNCTION_ARGS)
 	context = PG_GETARG_BYTEA_P (4);
 
 	ERRORIF (VARSIZE_ANY_EXHDR (ciphertext) <=
-		crypto_aead_chacha20poly1305_IETF_ABYTES, "%s: invalid message");
+			 crypto_aead_chacha20poly1305_IETF_ABYTES, "%s: invalid message");
 	ERRORIF (VARSIZE_ANY_EXHDR (nonce) !=
-		crypto_aead_chacha20poly1305_IETF_NPUBBYTES, "%s: invalid nonce");
+			 crypto_aead_chacha20poly1305_IETF_NPUBBYTES, "%s: invalid nonce");
 	key =
 		pgsodium_derive_helper (key_id,
-		crypto_aead_chacha20poly1305_IETF_KEYBYTES, context);
+								crypto_aead_chacha20poly1305_IETF_KEYBYTES, context);
 
-	ciphertext_len = VARSIZE_ANY_EXHDR (ciphertext) -
-		crypto_aead_chacha20poly1305_IETF_ABYTES;
-	result = _pgsodium_zalloc_bytea (ciphertext_len);
+	ciphertext_len = VARSIZE_ANY_EXHDR (ciphertext);
+	result = _pgsodium_zalloc_bytea (ciphertext_len + VARHDRSZ -
+		crypto_aead_chacha20poly1305_IETF_ABYTES);
 
 	success =
 		crypto_aead_chacha20poly1305_ietf_decrypt (
@@ -254,7 +252,7 @@ PGDLLEXPORT PG_FUNCTION_INFO_V1 (pgsodium_crypto_aead_det_noncegen);
 Datum
 pgsodium_crypto_aead_det_noncegen (PG_FUNCTION_ARGS)
 {
-	int         result_size = VARHDRSZ + crypto_aead_det_xchacha20_NONCEBYTES;
+	size_t      result_size = VARHDRSZ + crypto_aead_det_xchacha20_NONCEBYTES;
 	bytea      *result = _pgsodium_zalloc_bytea (result_size);
 	randombytes_buf (VARDATA (result), crypto_aead_det_xchacha20_NONCEBYTES);
 	PG_RETURN_BYTEA_P (result);
@@ -289,12 +287,12 @@ pgsodium_crypto_aead_det_encrypt (PG_FUNCTION_ARGS)
 	key = PG_GETARG_BYTEA_PP (2);
 
 	ERRORIF (VARSIZE_ANY_EXHDR (key) != crypto_aead_det_xchacha20_KEYBYTES,
-		"%s: invalid key");
+			 "%s: invalid key");
 	if (!PG_ARGISNULL (3))
 	{
 		nonce = PG_GETARG_BYTEA_PP (3);
 		ERRORIF (VARSIZE_ANY_EXHDR (nonce) !=
-			crypto_aead_det_xchacha20_NONCEBYTES, "%s: invalid nonce");
+				 crypto_aead_det_xchacha20_NONCEBYTES, "%s: invalid nonce");
 	}
 	else
 	{
@@ -342,9 +340,9 @@ pgsodium_crypto_aead_det_decrypt (PG_FUNCTION_ARGS)
 	key = PG_GETARG_BYTEA_PP (2);
 
 	ERRORIF (VARSIZE_ANY_EXHDR (ciphertext) <=
-		crypto_aead_det_xchacha20_ABYTES, "%s: invalid message");
+			 crypto_aead_det_xchacha20_ABYTES, "%s: invalid message");
 	ERRORIF (VARSIZE_ANY_EXHDR (key) != crypto_aead_det_xchacha20_KEYBYTES,
-		"%s: invalid key");
+			 "%s: invalid key");
 	result_len =
 		VARSIZE_ANY_EXHDR (ciphertext) - crypto_aead_det_xchacha20_ABYTES;
 	result = _pgsodium_zalloc_bytea (result_len + VARHDRSZ);
@@ -352,7 +350,7 @@ pgsodium_crypto_aead_det_decrypt (PG_FUNCTION_ARGS)
 	{
 		nonce = PG_GETARG_BYTEA_P (3);
 		ERRORIF (VARSIZE_ANY_EXHDR (nonce) !=
-			crypto_aead_det_xchacha20_NONCEBYTES, "%s: invalid nonce");
+				 crypto_aead_det_xchacha20_NONCEBYTES, "%s: invalid nonce");
 	}
 	else
 	{
@@ -405,7 +403,7 @@ pgsodium_crypto_aead_det_encrypt_by_id (PG_FUNCTION_ARGS)
 	{
 		nonce = PG_GETARG_BYTEA_PP (4);
 		ERRORIF (VARSIZE_ANY_EXHDR (nonce) !=
-			crypto_aead_det_xchacha20_NONCEBYTES, "%s: invalid nonce");
+				 crypto_aead_det_xchacha20_NONCEBYTES, "%s: invalid nonce");
 	}
 	else
 	{
@@ -418,7 +416,7 @@ pgsodium_crypto_aead_det_encrypt_by_id (PG_FUNCTION_ARGS)
 
 	key =
 		pgsodium_derive_helper (key_id, crypto_aead_det_xchacha20_KEYBYTES,
-		context);
+								context);
 
 	success = crypto_aead_det_xchacha20_encrypt (
 		PGSODIUM_UCHARDATA (result),
@@ -467,20 +465,20 @@ pgsodium_crypto_aead_det_decrypt_by_id (PG_FUNCTION_ARGS)
 	{
 		nonce = PG_GETARG_BYTEA_PP (4);
 		ERRORIF (VARSIZE_ANY_EXHDR (nonce) !=
-			crypto_aead_det_xchacha20_NONCEBYTES, "%s: invalid nonce");
+				 crypto_aead_det_xchacha20_NONCEBYTES, "%s: invalid nonce");
 	}
 	else
 	{
 		nonce = NULL;
 	}
 	ERRORIF (VARSIZE_ANY_EXHDR (ciphertext) <=
-		crypto_aead_det_xchacha20_ABYTES, "%s: invalid message");
+			 crypto_aead_det_xchacha20_ABYTES, "%s: invalid message");
 	result_len =
 		VARSIZE_ANY_EXHDR (ciphertext) - crypto_aead_det_xchacha20_ABYTES;
 	result = _pgsodium_zalloc_bytea (result_len + VARHDRSZ);
 	key =
 		pgsodium_derive_helper (key_id, crypto_aead_det_xchacha20_KEYBYTES,
-		context);
+								context);
 
 	success = crypto_aead_det_xchacha20_decrypt (
 		PGSODIUM_UCHARDATA (result),
@@ -493,3 +491,8 @@ pgsodium_crypto_aead_det_decrypt_by_id (PG_FUNCTION_ARGS)
 	ERRORIF (success != 0, "%s: invalid ciphertext");
 	PG_RETURN_BYTEA_P (result);
 }
+
+/* Local Variables: */
+/* mode: c */
+/* c-file-style: "postgresql" */
+/* End: */
