@@ -107,7 +107,7 @@ BEGIN
               'pgsodium_keymaker']
 	LOOP
 		IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = new_role) THEN
-		    EXECUTE format($i$
+		    EXECUTE pg_catalog.format($i$
 			CREATE ROLE %I WITH
 				NOLOGIN
 				NOSUPERUSER
@@ -152,7 +152,7 @@ BEGIN
 		'crypto_sign_new_keypair'
 	]
 	LOOP
-		EXECUTE format($i$
+		EXECUTE pg_catalog.format($i$
 			REVOKE ALL ON FUNCTION %s FROM PUBLIC;
 			GRANT EXECUTE ON FUNCTION %s TO pgsodium_keymaker;
 		$i$, func, func);
@@ -188,7 +188,7 @@ BEGIN
 		'crypto_sign_update_agg2'
 	]
 	LOOP
-		EXECUTE format($i$
+		EXECUTE pg_catalog.format($i$
 			REVOKE ALL ON FUNCTION %s FROM PUBLIC;
 			GRANT EXECUTE ON FUNCTION %s TO pgsodium_keyholder;
 		$i$, func, func);
@@ -220,7 +220,7 @@ BEGIN
 		'crypto_shorthash'
 	]
 	LOOP
-		EXECUTE format($i$
+		EXECUTE pg_catalog.format($i$
 			REVOKE ALL ON FUNCTION %s FROM PUBLIC;
 			GRANT EXECUTE ON FUNCTION %s TO pgsodium_keyiduser;
 		$i$, func, func);

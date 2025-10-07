@@ -870,7 +870,7 @@ BEGIN
         'pgsodium.crypto_aead_ietf_decrypt(bytea, bytea, bytea, uuid)'
     ]
     LOOP
-        EXECUTE format($i$
+        EXECUTE pg_catalog.format($i$
             REVOKE ALL ON FUNCTION %s FROM PUBLIC;
             GRANT EXECUTE ON FUNCTION %s TO pgsodium_keyiduser;
         $i$, func, func);
