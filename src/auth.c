@@ -109,7 +109,7 @@ pgsodium_crypto_auth_verify_by_id (PG_FUNCTION_ARGS)
 	key_id = PG_GETARG_INT64 (2);
 	context = PG_GETARG_BYTEA_PP (3);
 
-	key = pgsodium_derive_helper (key_id, crypto_secretbox_KEYBYTES, context);
+	key = pgsodium_derive_helper (key_id, crypto_auth_KEYBYTES, context);
 
 	ERRORIF (VARSIZE_ANY_EXHDR (mac) != crypto_auth_BYTES, "%s: invalid mac");
 	ERRORIF (VARSIZE_ANY_EXHDR (key) != crypto_auth_KEYBYTES,

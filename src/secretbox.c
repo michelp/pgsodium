@@ -1,3 +1,20 @@
+/* doctest/secretbox
+\pset linestyle unicode
+\pset border 2
+\pset pager off
+create extension if not exists pgsodium; -- pragma:hide
+set search_path to pgsodium,public; -- pragma:hide
+-- # Secret Key Cryptography
+
+select pgsodium.crypto_secretbox_keygen() key \gset
+
+select pgsodium.crypto_secretbox_noncegen() nonce \gset
+
+select pgsodium.crypto_secretbox('bob is your uncle', :'nonce', :'key') secretbox \gset
+
+select pgsodium.crypto_secretbox_open(:'secretbox', :'nonce', :'key');
+
+ */
 #include "pgsodium.h"
 
 PG_FUNCTION_INFO_V1 (pgsodium_crypto_secretbox_keygen);
@@ -14,7 +31,7 @@ PG_FUNCTION_INFO_V1 (pgsodium_crypto_secretbox_noncegen);
 Datum
 pgsodium_crypto_secretbox_noncegen (PG_FUNCTION_ARGS)
 {
-	int         result_size = VARHDRSZ + crypto_secretbox_NONCEBYTES;
+	size_t      result_size = VARHDRSZ + crypto_secretbox_NONCEBYTES;
 	bytea      *result = _pgsodium_zalloc_bytea (result_size);
 	randombytes_buf (VARDATA (result), crypto_secretbox_NONCEBYTES);
 	PG_RETURN_BYTEA_P (result);
