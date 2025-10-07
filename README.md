@@ -164,7 +164,7 @@ hardening mitigations as possible.
 It is up to you to edit the get key script to get or generate the key
 however you want.  pgsodium can be used to generate a new random key
 with `select encode(randombytes_buf(32), 'hex')`.  Other common
-patterns including prompting for the key on boot, fetching it from an
+patterns include prompting for the key on boot, fetching it from an
 ssh server or managed cloud secret system, or using a command line
 tool to get it from a hardware security module.
 
@@ -279,7 +279,7 @@ user_data   |
 optional:
 
   - `key_type pgsodium.key_type = 'aead-det'`: The type of key to
-     create.If you do not specify a `raw_key` argument, a new derived
+     create. If you do not specify a `raw_key` argument, a new derived
      key_id of the correct type will be automatically generated in
      `key_context` argument context.  Possible values are:
      - `aead-det`
@@ -319,15 +319,15 @@ valid and not expired.
 
 The pgsodium API has two nested layers of security roles:
 
-  - `pgsodium_keyiduser` Is the less privileged role that can only
+  - `pgsodium_keyiduser` is the less privileged role that can only
     access keys by their UUID.  This is the role you would typically
     give to a user facing application.
 
   - `pgsodium_keymaker` is the more privileged role and can work with
-    raw `bytea` And managed server keys.  You would not typically give
+    raw `bytea` and managed server keys.  You would not typically give
     this role to a user facing application.
 
-Note that public key apis like `crypto_box` and `crypto_sign` do not
+Note that public key APIs like `crypto_box` and `crypto_sign` do not
 have "key id" variants, because they work with a combination of four
 keys, two keypairs for each of two parties.
 
@@ -347,7 +347,7 @@ pgsodium using the [SECURITY LABEL ...]() PostgreSQL command.
 
 If an attacker acquires a dump of the table or database, they will not
 be able to derive the keys used to encrypt the data since they will
-not have the root server managed key, which is never revealed to SQL
+not have the root server managed key, which is never revealed to SQL.
 See the [example file for more details](./example/tce.sql).
 
 In order to use TCE you must use keys created from the [Key Management
@@ -431,7 +431,7 @@ The default cryptographic algorithm for the above approach uses a
 *nonceless* encryption algorithm called `crypto_aead_det_xchacha20()`.
 This scheme has the advantage that it does not require nonce values,
 the disadvantage is that duplicate plaintexts will produce duplicate
-ciphertexts, but this information can not be used to attack the key it
+ciphertexts, but this information can not be used to attack the key, it
 can only reveal the duplication.
 
 However duplication is still information, and if you want more
@@ -483,7 +483,7 @@ associated data column.  Columns used for associated data must be
 UPSERT is not a command in PostgreSQL, it is one pattern among many
 possible when using the `INSERT ... ON CONFLICT DO ...` clause in
 Postgres to either insert a value, or do some other action, which is
-commonly to update the alreadt extant row that the command was
+commonly to update the already existant row that the command was
 attempting to INSERT.  This pattern usually looks like:
 
 ```sql
@@ -626,7 +626,7 @@ can avoid this by using derived keys.
 
 If you choose to work with your own keys and not restrict yourself to
 the `pgsodium_keyiduser` role, a useful approach is to keep keys in an
-external storage and disables logging while injecting the keys into
+external storage and disabling logging while injecting the keys into
 local variables with [`SET
 LOCAL`](https://www.postgresql.org/docs/current/sql-set.html). If the
 images of database are hacked or stolen, the keys will not be
@@ -635,7 +635,7 @@ available to the attacker.
 To disable logging of the key injections, `SET LOCAL` is also used to
 disable
 [`log_statements`](https://www.postgresql.org/docs/current/runtime-config-logging.html#RUNTIME-CONFIG-LOGGING-WHAT)
-and then re-enable normal logging afterwards. as shown below. Setting
+and then re-enable normal logging afterwards, as shown below. Setting
 `log_statement` requires superuser privileges:
 
     -- SET LOCAL must be done in a transaction block
@@ -765,7 +765,7 @@ unpredictable sequence of bytes.
 The `randombytes_buf_deterministic()` returns a `size` bytea
 containing bytes indistinguishable from random bytes without knowing
 the seed.  For a given seed, this function will always output the same
-sequence. size can be up to 2^38 (256 GB).
+sequence. Size can be up to 2^38 (256 GB).
 
 [C API
 Documentation](https://doc.libsodium.org/generating_random_data)
@@ -800,7 +800,7 @@ multiple times with the same key will produce different ciphertexts.
 
 `crypto_secretbox()` encrypts a message using a previously generated
 nonce and secret key or key id.  The encrypted message can be
-decrypted using `crypto_secretbox_open()` Note that in order to
+decrypted using `crypto_secretbox_open()`. Note that in order to
 decrypt the message, the original nonce will be needed.
 
 `crypto_secretbox_open()` decrypts a message encrypted by
@@ -920,10 +920,10 @@ Aggregates:
 ```
     crypto_sign_update_agg(message bytea) -> bytea
 
-    crypto_sign_update_agg(state, bytea message bytea) -> bytea
+    crypto_sign_update_agg(state bytea, message bytea) -> bytea
 ```
 
-These functions are used to authenticate that messages have have come
+These functions are used to authenticate that messages have come
 from a specific originator (the holder of the secret key for which you
 have the public key), and have not been tampered with.
 
@@ -1106,7 +1106,7 @@ considered collision-resistant.
 Use cases:
 
 - Hash tables Probabilistic
-- data structures such as Bloom filters
+- Data structures such as Bloom filters
 - Integrity checking in interactive protocols
 
 Example:
