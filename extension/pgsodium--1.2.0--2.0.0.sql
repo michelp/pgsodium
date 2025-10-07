@@ -169,7 +169,7 @@ BEGIN
         'crypto_aead_det_keygen'
 	]
 	LOOP
-		EXECUTE format($i$
+		EXECUTE pg_catalog.format($i$
 			REVOKE ALL ON FUNCTION %s FROM PUBLIC;
 			GRANT EXECUTE ON FUNCTION %s TO pgsodium_keymaker;
 		$i$, func, func);
@@ -194,7 +194,7 @@ BEGIN
     'crypto_aead_det_decrypt(bytea, bytea, bytea, bytea)'
 	]
 	LOOP
-		EXECUTE format($i$
+		EXECUTE pg_catalog.format($i$
 			REVOKE ALL ON FUNCTION %s FROM PUBLIC;
 			GRANT EXECUTE ON FUNCTION %s TO pgsodium_keyholder;
 		$i$, func, func);
@@ -214,7 +214,7 @@ BEGIN
     'crypto_aead_det_decrypt(bytea, bytea, bigint, bytea, bytea)'
 	]
 	LOOP
-		EXECUTE format($i$
+		EXECUTE pg_catalog.format($i$
 			REVOKE ALL ON FUNCTION %s FROM PUBLIC;
 			GRANT EXECUTE ON FUNCTION %s TO pgsodium_keyiduser;
 		$i$, func, func);
