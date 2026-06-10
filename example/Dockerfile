@@ -3,7 +3,7 @@ FROM postgres:${version}
 ARG version
 
 RUN apt-get update && apt-get install -y make git postgresql-server-dev-${version} curl build-essential libreadline-dev pgxnclient python3-notebook jupyter jupyter-core python3-pip
-RUN curl -s -L https://download.libsodium.org/libsodium/releases/libsodium-1.0.18.tar.gz | tar zxvf - && cd libsodium-1.0.18 && ./configure && make check && make install
+RUN curl -s -L https://github.com/jedisct1/libsodium/releases/download/1.0.22-RELEASE/libsodium-1.0.22.tar.gz | tar zxvf - && cd libsodium-1.0.22 && ./configure && make check && make install
 
 # RUN curl -s -L https://github.com/theory/pgtap/archive/v1.1.0.tar.gz | tar zxvf - && cd pgtap-1.1.0 && make && make install
 # RUN curl -s -L https://gitlab.com/dalibo/postgresql_anonymizer/-/archive/0.6.0/postgresql_anonymizer-0.6.0.tar.gz | tar zxvf - && cd postgresql_anonymizer-0.6.0 && make extension && make install

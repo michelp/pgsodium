@@ -8,7 +8,7 @@ SELECT cmp_ok(current_setting('server_version_num')::int, '>=', 130000, format('
 
 
 ---- EXTENSION VERSION
-SELECT results_eq('SELECT pgsodium.version()', $$VALUES ('3.1.9'::text)$$, 'Version of pgsodium is 3.1.9');
+SELECT results_eq('SELECT pgsodium.version()', $$VALUES ('3.1.11'::text)$$, 'Version of pgsodium is 3.1.11');
 
 
 ---- EXTENSION OBJECTS
@@ -80,6 +80,46 @@ SELECT bag_eq($$
     ('function pgsodium.crypto_generichash_keygen()'                                                               ::text),
     ('function pgsodium.crypto_hash_sha256(bytea)'                                                                 ::text),
     ('function pgsodium.crypto_hash_sha512(bytea)'                                                                 ::text),
+    ('function pgsodium.crypto_ipcrypt_bin2ip(bytea)'::text),
+    ('function pgsodium.crypto_ipcrypt_decrypt(bytea,bigint,bytea)'::text),
+    ('function pgsodium.crypto_ipcrypt_decrypt(bytea,bytea)'::text),
+    ('function pgsodium.crypto_ipcrypt_decrypt(bytea,uuid)'::text),
+    ('function pgsodium.crypto_ipcrypt_decrypt(inet,bytea)'::text),
+    ('function pgsodium.crypto_ipcrypt_decrypt(inet,uuid)'::text),
+    ('function pgsodium.crypto_ipcrypt_encrypt(bytea,bigint,bytea)'::text),
+    ('function pgsodium.crypto_ipcrypt_encrypt(bytea,bytea)'::text),
+    ('function pgsodium.crypto_ipcrypt_encrypt(bytea,uuid)'::text),
+    ('function pgsodium.crypto_ipcrypt_encrypt(inet,bytea)'::text),
+    ('function pgsodium.crypto_ipcrypt_encrypt(inet,uuid)'::text),
+    ('function pgsodium.crypto_ipcrypt_ip2bin(text)'::text),
+    ('function pgsodium.crypto_ipcrypt_keygen()'::text),
+    ('function pgsodium.crypto_ipcrypt_nd_decrypt(bytea,bigint,bytea)'::text),
+    ('function pgsodium.crypto_ipcrypt_nd_decrypt(bytea,bytea)'::text),
+    ('function pgsodium.crypto_ipcrypt_nd_decrypt(bytea,uuid)'::text),
+    ('function pgsodium.crypto_ipcrypt_nd_encrypt(bytea,bytea,bigint,bytea)'::text),
+    ('function pgsodium.crypto_ipcrypt_nd_encrypt(bytea,bytea,bytea)'::text),
+    ('function pgsodium.crypto_ipcrypt_nd_encrypt(bytea,bytea,uuid)'::text),
+    ('function pgsodium.crypto_ipcrypt_nd_keygen()'::text),
+    ('function pgsodium.crypto_ipcrypt_nd_tweakgen()'::text),
+    ('function pgsodium.crypto_ipcrypt_ndx_decrypt(bytea,bigint,bytea)'::text),
+    ('function pgsodium.crypto_ipcrypt_ndx_decrypt(bytea,bytea)'::text),
+    ('function pgsodium.crypto_ipcrypt_ndx_decrypt(bytea,uuid)'::text),
+    ('function pgsodium.crypto_ipcrypt_ndx_encrypt(bytea,bytea,bigint,bytea)'::text),
+    ('function pgsodium.crypto_ipcrypt_ndx_encrypt(bytea,bytea,bytea)'::text),
+    ('function pgsodium.crypto_ipcrypt_ndx_encrypt(bytea,bytea,uuid)'::text),
+    ('function pgsodium.crypto_ipcrypt_ndx_keygen()'::text),
+    ('function pgsodium.crypto_ipcrypt_ndx_tweakgen()'::text),
+    ('function pgsodium.crypto_ipcrypt_pfx_decrypt(bytea,bigint,bytea)'::text),
+    ('function pgsodium.crypto_ipcrypt_pfx_decrypt(bytea,bytea)'::text),
+    ('function pgsodium.crypto_ipcrypt_pfx_decrypt(bytea,uuid)'::text),
+    ('function pgsodium.crypto_ipcrypt_pfx_decrypt(inet,bytea)'::text),
+    ('function pgsodium.crypto_ipcrypt_pfx_decrypt(inet,uuid)'::text),
+    ('function pgsodium.crypto_ipcrypt_pfx_encrypt(bytea,bigint,bytea)'::text),
+    ('function pgsodium.crypto_ipcrypt_pfx_encrypt(bytea,bytea)'::text),
+    ('function pgsodium.crypto_ipcrypt_pfx_encrypt(bytea,uuid)'::text),
+    ('function pgsodium.crypto_ipcrypt_pfx_encrypt(inet,bytea)'::text),
+    ('function pgsodium.crypto_ipcrypt_pfx_encrypt(inet,uuid)'::text),
+    ('function pgsodium.crypto_ipcrypt_pfx_keygen()'::text),
     ('function pgsodium.crypto_kdf_derive_from_key(bigint,bigint,bytea,bytea)'                                     ::text),
     ('function pgsodium.crypto_kdf_derive_from_key(integer,bigint,bytea,uuid)'                                     ::text),
     ('function pgsodium.crypto_kdf_keygen()'                                                                       ::text),
@@ -898,6 +938,22 @@ SELECT functions_are('pgsodium', ARRAY[
     'crypto_generichash_keygen',
     'crypto_hash_sha256',
     'crypto_hash_sha512',
+    'crypto_ipcrypt_bin2ip',
+    'crypto_ipcrypt_decrypt',
+    'crypto_ipcrypt_encrypt',
+    'crypto_ipcrypt_ip2bin',
+    'crypto_ipcrypt_keygen',
+    'crypto_ipcrypt_nd_decrypt',
+    'crypto_ipcrypt_nd_encrypt',
+    'crypto_ipcrypt_nd_keygen',
+    'crypto_ipcrypt_nd_tweakgen',
+    'crypto_ipcrypt_ndx_decrypt',
+    'crypto_ipcrypt_ndx_encrypt',
+    'crypto_ipcrypt_ndx_keygen',
+    'crypto_ipcrypt_ndx_tweakgen',
+    'crypto_ipcrypt_pfx_decrypt',
+    'crypto_ipcrypt_pfx_encrypt',
+    'crypto_ipcrypt_pfx_keygen',
     'crypto_kdf_derive_from_key',
     'crypto_kdf_keygen',
     'crypto_kx_client_session_keys',
@@ -5287,7 +5343,7 @@ SELECT function_privs_are('pgsodium'::name, proname, proargtypes::regtype[]::tex
     AND oidvectortypes(proargtypes) = 'oid';
 
 SELECT unnest(ARRAY[
-    is(md5(prosrc), '1b1d814a258347381f8989c6874dc01c',
+    is(md5(prosrc), '2c212e6550b7b586d4b98953fd807f13',
        format('Function pgsodium.%s(%s) body should match checksum',
               proname, pg_get_function_identity_arguments(oid))
     ),
@@ -5819,4 +5875,4 @@ SELECT enums_are('pgsodium', ARRAY[
 ]);
 
 SELECT enum_has_labels('pgsodium','key_status', ARRAY['default','valid','invalid','expired']);
-SELECT enum_has_labels('pgsodium','key_type', ARRAY['aead-ietf','aead-det','hmacsha512','hmacsha256','auth','shorthash','generichash','kdf','secretbox','secretstream','stream_xchacha20']);
+SELECT enum_has_labels('pgsodium','key_type', ARRAY['aead-ietf','aead-det','hmacsha512','hmacsha256','auth','shorthash','generichash','kdf','secretbox','secretstream','stream_xchacha20','ipcrypt-det','ipcrypt-pfx','ipcrypt-nd','ipcrypt-ndx']);

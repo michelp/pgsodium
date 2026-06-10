@@ -265,4 +265,35 @@ PGDLLEXPORT Datum       pgsodium_cmp (PG_FUNCTION_ARGS);
 PGDLLEXPORT Datum       pgsodium_sodium_bin2base64 (PG_FUNCTION_ARGS);
 PGDLLEXPORT Datum       pgsodium_sodium_base642bin (PG_FUNCTION_ARGS);
 
+/* IP Address Encryption (ipcrypt) */
+
+PGDLLEXPORT Datum       pgsodium_crypto_ipcrypt_ip2bin (PG_FUNCTION_ARGS);
+PGDLLEXPORT Datum       pgsodium_crypto_ipcrypt_bin2ip (PG_FUNCTION_ARGS);
+
+PGDLLEXPORT Datum       pgsodium_crypto_ipcrypt_keygen (PG_FUNCTION_ARGS);
+PGDLLEXPORT Datum       pgsodium_crypto_ipcrypt_encrypt (PG_FUNCTION_ARGS);
+PGDLLEXPORT Datum       pgsodium_crypto_ipcrypt_decrypt (PG_FUNCTION_ARGS);
+PGDLLEXPORT Datum       pgsodium_crypto_ipcrypt_encrypt_by_id (PG_FUNCTION_ARGS);
+PGDLLEXPORT Datum       pgsodium_crypto_ipcrypt_decrypt_by_id (PG_FUNCTION_ARGS);
+
+PGDLLEXPORT Datum       pgsodium_crypto_ipcrypt_pfx_keygen (PG_FUNCTION_ARGS);
+PGDLLEXPORT Datum       pgsodium_crypto_ipcrypt_pfx_encrypt (PG_FUNCTION_ARGS);
+PGDLLEXPORT Datum       pgsodium_crypto_ipcrypt_pfx_decrypt (PG_FUNCTION_ARGS);
+PGDLLEXPORT Datum       pgsodium_crypto_ipcrypt_pfx_encrypt_by_id (PG_FUNCTION_ARGS);
+PGDLLEXPORT Datum       pgsodium_crypto_ipcrypt_pfx_decrypt_by_id (PG_FUNCTION_ARGS);
+
+PGDLLEXPORT Datum       pgsodium_crypto_ipcrypt_nd_keygen (PG_FUNCTION_ARGS);
+PGDLLEXPORT Datum       pgsodium_crypto_ipcrypt_nd_tweakgen (PG_FUNCTION_ARGS);
+PGDLLEXPORT Datum       pgsodium_crypto_ipcrypt_nd_encrypt (PG_FUNCTION_ARGS);
+PGDLLEXPORT Datum       pgsodium_crypto_ipcrypt_nd_decrypt (PG_FUNCTION_ARGS);
+PGDLLEXPORT Datum       pgsodium_crypto_ipcrypt_nd_encrypt_by_id (PG_FUNCTION_ARGS);
+PGDLLEXPORT Datum       pgsodium_crypto_ipcrypt_nd_decrypt_by_id (PG_FUNCTION_ARGS);
+
+PGDLLEXPORT Datum       pgsodium_crypto_ipcrypt_ndx_keygen (PG_FUNCTION_ARGS);
+PGDLLEXPORT Datum       pgsodium_crypto_ipcrypt_ndx_tweakgen (PG_FUNCTION_ARGS);
+PGDLLEXPORT Datum       pgsodium_crypto_ipcrypt_ndx_encrypt (PG_FUNCTION_ARGS);
+PGDLLEXPORT Datum       pgsodium_crypto_ipcrypt_ndx_decrypt (PG_FUNCTION_ARGS);
+PGDLLEXPORT Datum       pgsodium_crypto_ipcrypt_ndx_encrypt_by_id (PG_FUNCTION_ARGS);
+PGDLLEXPORT Datum       pgsodium_crypto_ipcrypt_ndx_decrypt_by_id (PG_FUNCTION_ARGS);
+
 #endif /* PGSODIUM_H */
