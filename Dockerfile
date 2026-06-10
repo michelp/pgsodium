@@ -23,12 +23,12 @@ RUN curl -s -L https://ftp.postgresql.org/pub/source/v${version}/postgresql-${ve
     cd .. && rm -rf postgresql-${version}
 
 # Build libsodium
-RUN curl -s -L https://github.com/jedisct1/libsodium/releases/download/1.0.20-RELEASE/libsodium-1.0.20.tar.gz | tar zxf - && \
-    cd libsodium-1.0.20 && \
+RUN curl -s -L https://github.com/jedisct1/libsodium/releases/download/1.0.22-RELEASE/libsodium-1.0.22.tar.gz | tar zxf - && \
+    cd libsodium-1.0.22 && \
     ./configure --prefix=/usr/local && \
     make -j$(nproc) && \
     make install && \
-    cd .. && rm -rf libsodium-1.0.20
+    cd .. && rm -rf libsodium-1.0.22
 
 # Build pgTAP (for testing)
 RUN curl -s -L https://github.com/theory/pgtap/archive/v1.2.0.tar.gz | tar zxf - && \

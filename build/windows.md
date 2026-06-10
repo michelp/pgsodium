@@ -1,7 +1,7 @@
 #### Building on Windows
 ---------
 
-- Download [libsodium](https://download.libsodium.org/libsodium/releases/libsodium-1.0.18-stable-msvc.zip) >= 1.018 and unzip
+- Download [libsodium](https://download.libsodium.org/libsodium/releases/libsodium-1.0.22-stable-msvc.zip) >= 1.0.18 and unzip
 - Download and run the [postgresql installer](https://www.postgresql.org/download/windows/)
 - From the `/pgsodium/build` directory, run `msbuild` on `pgsodium.vcxproj`
 	- `msbuild` can be invoked though the *x64 Native Tools Command Prompt for VS 2022*

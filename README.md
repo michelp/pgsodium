@@ -1118,6 +1118,56 @@ Example:
 
 [C API Documentation](https://doc.libsodium.org/hashing)
 
+## IP Address Encryption
+
+pgsodium exposes the libsodium `crypto_ipcrypt_*` family, which encrypts and
+anonymizes IP addresses following the
+[ipcrypt-std](https://ipcrypt-std.github.io) specification. Addresses are
+processed as their 16 byte binary form (IPv4 addresses are represented as
+IPv4-mapped IPv6 addresses). The `crypto_ipcrypt_ip2bin()` and
+`crypto_ipcrypt_bin2ip()` helpers convert between text and binary forms:
+
+    SELECT crypto_ipcrypt_ip2bin('192.0.2.1');
+    SELECT crypto_ipcrypt_bin2ip(crypto_ipcrypt_ip2bin('2001:db8::1'));
+
+Four variants are provided, each with a different privacy/utility trade-off:
+
+| Variant | Function prefix | Key | Output | Properties |
+| --- | --- | --- | --- | --- |
+| Deterministic | `crypto_ipcrypt_` | 16 bytes | 16 bytes | Format-preserving. Same input always yields the same output (joinable, but reveals equality). |
+| Prefix-preserving | `crypto_ipcrypt_pfx_` | 32 bytes | 16 bytes | Format-preserving and preserves network-prefix relationships (subnet structure stays visible). |
+| Non-deterministic | `crypto_ipcrypt_nd_` | 16 bytes | 24 bytes | Randomized per call via an 8 byte tweak (KIASU-BC). Unlinkable. |
+| Extended non-deterministic | `crypto_ipcrypt_ndx_` | 32 bytes | 32 bytes | Randomized per call via a 16 byte tweak (AES-XTS). Largest birthday bound. |
+
+For the two format-preserving variants there are `inet` overloads that accept
+and return an `inet`, in addition to the `bytea` forms:
+
+    -- generate a key and prefix-preservingly encrypt an address
+    SELECT crypto_ipcrypt_pfx_encrypt('203.0.113.42'::inet, crypto_ipcrypt_pfx_keygen());
+
+    -- deterministic encryption round-trip on the binary form
+    SELECT crypto_ipcrypt_keygen() detkey \gset
+    SELECT crypto_ipcrypt_decrypt(
+             crypto_ipcrypt_encrypt(crypto_ipcrypt_ip2bin('192.0.2.1'), :'detkey'::bytea),
+             :'detkey'::bytea);
+
+The non-deterministic variants take a caller-supplied tweak (generate one with
+`crypto_ipcrypt_nd_tweakgen()` / `crypto_ipcrypt_ndx_tweakgen()`); the tweak is
+prepended to the ciphertext, so decryption needs only the ciphertext and key:
+
+    SELECT crypto_ipcrypt_nd_keygen() ndkey \gset
+    SELECT crypto_ipcrypt_nd_encrypt(crypto_ipcrypt_ip2bin('192.0.2.1'),
+             crypto_ipcrypt_nd_tweakgen(), :'ndkey'::bytea) ndct \gset
+    SELECT crypto_ipcrypt_nd_decrypt(:'ndct'::bytea, :'ndkey'::bytea);
+
+As with the other primitives, every variant also has server-managed key
+overloads: a `key_id bigint` (plus optional 8 byte `context`) form that derives
+the key from the server root key, and a `key_uuid uuid` form that looks the key
+up in the pgsodium key table. Use `create_key('ipcrypt-det')`,
+`'ipcrypt-pfx'`, `'ipcrypt-nd'` or `'ipcrypt-ndx'` to create managed keys.
+
+[ipcrypt-std specification](https://ipcrypt-std.github.io)
+
 ## Password hashing
 
     SELECT lives_ok($$SELECT crypto_pwhash_saltgen()$$, 'crypto_pwhash_saltgen');
