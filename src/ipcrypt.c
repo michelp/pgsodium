@@ -19,6 +19,9 @@ set search_path to pgsodium,public; -- pragma:hide
 
 #include "pgsodium.h"
 
+#if __has_include(<sodium/crypto_ipcrypt.h>)
+#include <sodium/crypto_ipcrypt.h>
+
 /* ---------------------------------------------------------------------------
  * Conversion helpers between text IP addresses and the 16 byte binary form.
  * ------------------------------------------------------------------------- */
@@ -536,3 +539,113 @@ pgsodium_crypto_ipcrypt_ndx_decrypt_by_id (PG_FUNCTION_ARGS)
 		PGSODIUM_UCHARDATA_ANY (ct), PGSODIUM_UCHARDATA_ANY (key));
 	PG_RETURN_BYTEA_P (result);
 }
+
+#else /* !__has_include(<sodium/crypto_ipcrypt.h>) */
+
+/*
+ * Stub implementations for systems where libsodium < 1.0.21.
+ * The extension builds and installs normally; calling any ipcrypt
+ * function raises a clear error at runtime.
+ */
+#define IPCRYPT_UNAVAILABLE() \
+	ereport(ERROR, \
+		(errcode(ERRCODE_FEATURE_NOT_SUPPORTED), \
+		 errmsg("%s: ipcrypt requires libsodium >= 1.0.21", __func__)))
+
+PG_FUNCTION_INFO_V1(pgsodium_crypto_ipcrypt_ip2bin);
+Datum pgsodium_crypto_ipcrypt_ip2bin(PG_FUNCTION_ARGS)
+{ IPCRYPT_UNAVAILABLE(); PG_RETURN_NULL(); }
+
+PG_FUNCTION_INFO_V1(pgsodium_crypto_ipcrypt_bin2ip);
+Datum pgsodium_crypto_ipcrypt_bin2ip(PG_FUNCTION_ARGS)
+{ IPCRYPT_UNAVAILABLE(); PG_RETURN_NULL(); }
+
+PG_FUNCTION_INFO_V1(pgsodium_crypto_ipcrypt_keygen);
+Datum pgsodium_crypto_ipcrypt_keygen(PG_FUNCTION_ARGS)
+{ IPCRYPT_UNAVAILABLE(); PG_RETURN_NULL(); }
+
+PG_FUNCTION_INFO_V1(pgsodium_crypto_ipcrypt_encrypt);
+Datum pgsodium_crypto_ipcrypt_encrypt(PG_FUNCTION_ARGS)
+{ IPCRYPT_UNAVAILABLE(); PG_RETURN_NULL(); }
+
+PG_FUNCTION_INFO_V1(pgsodium_crypto_ipcrypt_decrypt);
+Datum pgsodium_crypto_ipcrypt_decrypt(PG_FUNCTION_ARGS)
+{ IPCRYPT_UNAVAILABLE(); PG_RETURN_NULL(); }
+
+PG_FUNCTION_INFO_V1(pgsodium_crypto_ipcrypt_encrypt_by_id);
+Datum pgsodium_crypto_ipcrypt_encrypt_by_id(PG_FUNCTION_ARGS)
+{ IPCRYPT_UNAVAILABLE(); PG_RETURN_NULL(); }
+
+PG_FUNCTION_INFO_V1(pgsodium_crypto_ipcrypt_decrypt_by_id);
+Datum pgsodium_crypto_ipcrypt_decrypt_by_id(PG_FUNCTION_ARGS)
+{ IPCRYPT_UNAVAILABLE(); PG_RETURN_NULL(); }
+
+PG_FUNCTION_INFO_V1(pgsodium_crypto_ipcrypt_pfx_keygen);
+Datum pgsodium_crypto_ipcrypt_pfx_keygen(PG_FUNCTION_ARGS)
+{ IPCRYPT_UNAVAILABLE(); PG_RETURN_NULL(); }
+
+PG_FUNCTION_INFO_V1(pgsodium_crypto_ipcrypt_pfx_encrypt);
+Datum pgsodium_crypto_ipcrypt_pfx_encrypt(PG_FUNCTION_ARGS)
+{ IPCRYPT_UNAVAILABLE(); PG_RETURN_NULL(); }
+
+PG_FUNCTION_INFO_V1(pgsodium_crypto_ipcrypt_pfx_decrypt);
+Datum pgsodium_crypto_ipcrypt_pfx_decrypt(PG_FUNCTION_ARGS)
+{ IPCRYPT_UNAVAILABLE(); PG_RETURN_NULL(); }
+
+PG_FUNCTION_INFO_V1(pgsodium_crypto_ipcrypt_pfx_encrypt_by_id);
+Datum pgsodium_crypto_ipcrypt_pfx_encrypt_by_id(PG_FUNCTION_ARGS)
+{ IPCRYPT_UNAVAILABLE(); PG_RETURN_NULL(); }
+
+PG_FUNCTION_INFO_V1(pgsodium_crypto_ipcrypt_pfx_decrypt_by_id);
+Datum pgsodium_crypto_ipcrypt_pfx_decrypt_by_id(PG_FUNCTION_ARGS)
+{ IPCRYPT_UNAVAILABLE(); PG_RETURN_NULL(); }
+
+PG_FUNCTION_INFO_V1(pgsodium_crypto_ipcrypt_nd_keygen);
+Datum pgsodium_crypto_ipcrypt_nd_keygen(PG_FUNCTION_ARGS)
+{ IPCRYPT_UNAVAILABLE(); PG_RETURN_NULL(); }
+
+PG_FUNCTION_INFO_V1(pgsodium_crypto_ipcrypt_nd_tweakgen);
+Datum pgsodium_crypto_ipcrypt_nd_tweakgen(PG_FUNCTION_ARGS)
+{ IPCRYPT_UNAVAILABLE(); PG_RETURN_NULL(); }
+
+PG_FUNCTION_INFO_V1(pgsodium_crypto_ipcrypt_nd_encrypt);
+Datum pgsodium_crypto_ipcrypt_nd_encrypt(PG_FUNCTION_ARGS)
+{ IPCRYPT_UNAVAILABLE(); PG_RETURN_NULL(); }
+
+PG_FUNCTION_INFO_V1(pgsodium_crypto_ipcrypt_nd_decrypt);
+Datum pgsodium_crypto_ipcrypt_nd_decrypt(PG_FUNCTION_ARGS)
+{ IPCRYPT_UNAVAILABLE(); PG_RETURN_NULL(); }
+
+PG_FUNCTION_INFO_V1(pgsodium_crypto_ipcrypt_nd_encrypt_by_id);
+Datum pgsodium_crypto_ipcrypt_nd_encrypt_by_id(PG_FUNCTION_ARGS)
+{ IPCRYPT_UNAVAILABLE(); PG_RETURN_NULL(); }
+
+PG_FUNCTION_INFO_V1(pgsodium_crypto_ipcrypt_nd_decrypt_by_id);
+Datum pgsodium_crypto_ipcrypt_nd_decrypt_by_id(PG_FUNCTION_ARGS)
+{ IPCRYPT_UNAVAILABLE(); PG_RETURN_NULL(); }
+
+PG_FUNCTION_INFO_V1(pgsodium_crypto_ipcrypt_ndx_keygen);
+Datum pgsodium_crypto_ipcrypt_ndx_keygen(PG_FUNCTION_ARGS)
+{ IPCRYPT_UNAVAILABLE(); PG_RETURN_NULL(); }
+
+PG_FUNCTION_INFO_V1(pgsodium_crypto_ipcrypt_ndx_tweakgen);
+Datum pgsodium_crypto_ipcrypt_ndx_tweakgen(PG_FUNCTION_ARGS)
+{ IPCRYPT_UNAVAILABLE(); PG_RETURN_NULL(); }
+
+PG_FUNCTION_INFO_V1(pgsodium_crypto_ipcrypt_ndx_encrypt);
+Datum pgsodium_crypto_ipcrypt_ndx_encrypt(PG_FUNCTION_ARGS)
+{ IPCRYPT_UNAVAILABLE(); PG_RETURN_NULL(); }
+
+PG_FUNCTION_INFO_V1(pgsodium_crypto_ipcrypt_ndx_decrypt);
+Datum pgsodium_crypto_ipcrypt_ndx_decrypt(PG_FUNCTION_ARGS)
+{ IPCRYPT_UNAVAILABLE(); PG_RETURN_NULL(); }
+
+PG_FUNCTION_INFO_V1(pgsodium_crypto_ipcrypt_ndx_encrypt_by_id);
+Datum pgsodium_crypto_ipcrypt_ndx_encrypt_by_id(PG_FUNCTION_ARGS)
+{ IPCRYPT_UNAVAILABLE(); PG_RETURN_NULL(); }
+
+PG_FUNCTION_INFO_V1(pgsodium_crypto_ipcrypt_ndx_decrypt_by_id);
+Datum pgsodium_crypto_ipcrypt_ndx_decrypt_by_id(PG_FUNCTION_ARGS)
+{ IPCRYPT_UNAVAILABLE(); PG_RETURN_NULL(); }
+
+#endif /* __has_include(<sodium/crypto_ipcrypt.h>) */
