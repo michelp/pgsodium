@@ -108,8 +108,19 @@ _PG_init (void)
 	char       *secret_buf = NULL;
 	size_t      secret_len = 0;
 	size_t      char_read;
-	char       *path;
 	char        sharepath[MAXPGPATH];
+
+	/*
+	 * Buffer holding the default value of pgsodium.getkey_script.
+	 *
+	 * This must have static storage duration.  DefineCustomStringVariable()
+	 * stores the bootValue pointer we hand it as-is, without copying the
+	 * string, and pg_settings dereferences that pointer lazily on every read.
+	 * A palloc'd buffer would be allocated in PostmasterContext, which every
+	 * backend frees during InitPostgres(), so reading boot_val for this GUC
+	 * would then return whatever bytes happened to reuse that freed block.
+	 */
+	static char path[MAXPGPATH];
 
 	if (sodium_init () == -1)
 	{
@@ -135,7 +146,6 @@ _PG_init (void)
 							 NULL, NULL, NULL);
 
     // try to get internal shared key
-	path = (char *) palloc0 (MAXPGPATH);
 	get_share_path (my_exec_path, sharepath);
 	snprintf (path, MAXPGPATH, "%s/extension/%s", sharepath, PG_GETKEY_EXEC);
 
