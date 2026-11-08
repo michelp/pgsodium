@@ -1,6 +1,7 @@
 # Build stage - contains all build dependencies
 FROM debian:bookworm-slim AS builder
 ARG version
+ARG configure_options=""
 ARG DEBIAN_FRONTEND=noninteractive
 
 # Install build dependencies
@@ -17,7 +18,7 @@ WORKDIR /build
 # Build PostgreSQL
 RUN curl -s -L https://ftp.postgresql.org/pub/source/v${version}/postgresql-${version}.tar.gz | tar zxf - && \
     cd postgresql-${version} && \
-    ./configure --prefix=/usr/local/pgsql CFLAGS="-O3" && \
+    ./configure --prefix=/usr/local/pgsql ${configure_options} CFLAGS="-O3" && \
     make -j$(nproc) && \
     make install && \
     cd .. && rm -rf postgresql-${version}
