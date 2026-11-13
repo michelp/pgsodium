@@ -44,7 +44,7 @@ BEGIN
 	  $c$
 	  GRANT $1 ON %I TO $2;
 	  $c$,
-	  rule.view_name,
+	  rule.view_name
 	);
 	IF debug THEN
 	  RAISE NOTICE '%', body;
