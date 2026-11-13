@@ -23,10 +23,10 @@ BEGIN
 
   body = format(
     $c$
-    DROP VIEW IF EXISTS %1$s;
-    CREATE VIEW %1$s %5$s AS SELECT %2$s
+    DROP VIEW IF EXISTS %1$I;
+    CREATE VIEW %1$I %5$s AS SELECT %2$s
     FROM %3$s;
-    ALTER VIEW %1$s OWNER TO %4$s;
+    ALTER VIEW %1$I OWNER TO %4$s;
     $c$,
     rule.view_name,
     pgsodium.decrypted_columns(relid),
@@ -42,14 +42,16 @@ BEGIN
   FOR priv IN SELECT * FROM pg_catalog.aclexplode(privs) LOOP
 	body = format(
 	  $c$
-	  GRANT $1 ON %I TO $2;
+	  GRANT %s ON %I TO %s;
 	  $c$,
-	  rule.view_name
+      priv.privilege_type,
+	  rule.view_name,
+      priv.grantee::regrole::text
 	);
 	IF debug THEN
 	  RAISE NOTICE '%', body;
 	END IF;
-	EXECUTE body USING priv.privilege_type, priv.grantee::regrole::text;
+	EXECUTE body;
   END LOOP;
 
   FOR m IN SELECT * FROM pgsodium.mask_columns where attrelid = relid LOOP
@@ -102,6 +104,6 @@ END
   $$
   LANGUAGE plpgsql
   VOLATILE
-  SET search_path='pg_catalog'
+  SET search_path='pg_catalog', 'pg_temp'
 ;
 
