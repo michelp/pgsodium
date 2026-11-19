@@ -1,4 +1,5 @@
 #include "pgsodium.h"
+#include "utils/memutils.h"
 
 #ifdef _WIN32
 #define X_OK 4
@@ -135,7 +136,8 @@ _PG_init (void)
 							 NULL, NULL, NULL);
 
     // try to get internal shared key
-	path = (char *) palloc0 (MAXPGPATH);
+	/* The GUC retains its default after PostmasterContext is deleted. */
+	path = (char *) MemoryContextAllocZero (TopMemoryContext, MAXPGPATH);
 	get_share_path (my_exec_path, sharepath);
 	snprintf (path, MAXPGPATH, "%s/extension/%s", sharepath, PG_GETKEY_EXEC);
 

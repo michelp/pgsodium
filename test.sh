@@ -15,7 +15,9 @@ do
 		TAG="pgsodium/test-$version"
 
 		echo building test image $DB_HOST
-		docker build . -t $TAG --build-arg "version=$version"
+		# Assertion builds clobber freed contexts, exposing dangling GUC defaults.
+		docker build . -t "$TAG" --build-arg "version=$version" \
+            --build-arg configure_options=--enable-cassert
 
 		echo running test container
 		docker run --rm -e POSTGRES_HOST_AUTH_METHOD=trust -d \

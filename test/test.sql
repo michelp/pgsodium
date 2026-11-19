@@ -10,9 +10,8 @@
 
 SET client_min_messages TO WARNING;
 
-SELECT EXISTS (SELECT * FROM pg_settings
-    WHERE name = 'shared_preload_libraries'
-    AND setting ilike '%pgsodium%') serverkeys \gset
+-- Detect preloading without enumerating GUC defaults before the tests start.
+SELECT current_setting('shared_preload_libraries') ilike '%pgsodium%' serverkeys \gset
 
 CREATE EXTENSION IF NOT EXISTS pgtap;
 
@@ -22,6 +21,8 @@ BEGIN;
 CREATE ROLE bobo with login password 'foo';
 
 SELECT * FROM no_plan();
+
+\ir guc.sql
 
 \ir pgsodium_schema.sql
 
