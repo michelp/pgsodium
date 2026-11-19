@@ -50,6 +50,7 @@ select (current_setting('server_version_num')::int / 10000) = 15 pg15 \gset
 \ir tce.sql
 \ir tce_rls.sql
 \ir keys.sql
+\ir guc.sql
 
 SELECT * FROM finish();
 
